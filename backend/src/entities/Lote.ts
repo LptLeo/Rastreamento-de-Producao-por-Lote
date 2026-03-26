@@ -1,8 +1,8 @@
 import { Column, Entity, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Produto } from "./Produto";
-import { Usuario } from "./Usuario";
-import { InsumoLote } from "./InsumoLote";
-import { InspecaoLote } from "./InspecaoLote";
+import { Produto } from "./Produto.js";
+import { Usuario } from "./Usuario.js";
+import { InsumoLote } from "./InsumoLote.js";
+import { InspecaoLote } from "./InspecaoLote.js";
 
 enum Turno {
   manha = "manha",
