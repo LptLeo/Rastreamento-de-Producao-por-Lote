@@ -1,5 +1,5 @@
 import type { Repository } from "typeorm";
-import { AppDataSource } from "../config/AppDataSource";
+import { AppDataSource } from "../config/AppDataSource.js";
 import { Usuario } from "../entities/Usuario.js";
 
 export class UsuarioService {
