@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Lote } from "./Lote";
 
 @Entity('product')
 export class Product {
