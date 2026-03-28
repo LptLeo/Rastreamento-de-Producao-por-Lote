@@ -1,6 +1,6 @@
 import { AppDataSource } from "../config/AppDataSource.js";
 import { Between, LessThanOrEqual, Like, MoreThanOrEqual, type Repository } from "typeorm";
-import { Lote, LoteStatus } from "../entities/Lote.js";
+import { Lote, LoteStatus, Turno } from "../entities/Lote.js";
 import type { LoteDTO } from "../dto/loteDTO.js";
 import { InsumoLote } from "../entities/InsumoLote.js";
 import type { InsumoVinculoDTO } from "./InsumoLoteService.js";
@@ -26,19 +26,26 @@ export class LoteService {
 
   // createLote
   async createLote(loteDTO: LoteDTO) {
-    const numeroGerado = await this.gerarNumeroLote(loteDTO.data);
+    const numeroGerado = await this.gerarNumeroLote(loteDTO.data_producao);
+    const { observacoes, ...restDTO } = loteDTO;
 
     const novoLote = this.loteRepo.create({
-      ...loteDTO,
+      ...restDTO,
+      ...(observacoes != null && { observacoes }),
+      operador: { id: loteDTO.operador } as any,
+      produto: { id: loteDTO.produto } as any,
+      turno: loteDTO.turno as Turno,
       numero_lote: numeroGerado,
       status: LoteStatus.em_producao,
-    })
+    });
 
     return await this.loteRepo.save(novoLote);
   }
 
   // gerarNumeroLote
-  private async gerarNumeroLote(data: Date = new Date()) {
+  private async gerarNumeroLote(dataInput: Date | string = new Date()) {
+    const data = typeof dataInput === 'string' ? new Date(dataInput) : dataInput;
+
     const inicioDia = new Date(data);
     inicioDia.setHours(0, 0, 0, 0);
 
@@ -123,7 +130,9 @@ export class LoteService {
     const where: any = {};
 
     if (filtros) {
-      if (filtros.produto_id) where.produto_id = Like(`%${filtros.produto_id}%`);
+      if (filtros.produto_id) {
+        where.produto = { id: Like(`%${filtros.produto_id}%`) };
+      }
 
       if (filtros.status) where.status = filtros.status;
 
@@ -139,7 +148,7 @@ export class LoteService {
     return await this.loteRepo.find({
       where,
       order: { aberto_em: "DESC" },
-      relations: ['operador']
+      relations: ['operador', 'produto']
     });
   }
 
@@ -147,7 +156,7 @@ export class LoteService {
   async getLoteById(loteId: number) {
     const lote = await this.loteRepo.findOne({
       where: { id: loteId },
-      relations: ['operador', 'insumos', 'inspecao', 'inspecao.inspetor_id']
+      relations: ['operador', 'produto', 'insumos', 'inspecao', 'inspecao.inspetor']
     });
 
     if (!lote) throw new Error("Lote não encontrado.");
