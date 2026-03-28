@@ -37,9 +37,11 @@ export class LoteController {
   async vincularInsumos(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const loteEncerrado = await this.loteService.encerrarProducao(Number(id));
+      const insumos = req.body;
 
-      return res.json(loteEncerrado)
+      const resultado = await this.loteService.vincularInsumos(Number(id), insumos);
+
+      return res.json(resultado);
     } catch (error: any) {
       return res.status(400).json({ message: error.message });
     }

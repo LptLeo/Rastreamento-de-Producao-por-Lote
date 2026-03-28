@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Produto } from "./Produto.js";
 import { Usuario } from "./Usuario.js";
 import { InsumoLote } from "./InsumoLote.js";
@@ -27,7 +27,8 @@ export class Lote {
   numero_lote!: string
 
   @ManyToOne(() => Produto, (produto) => produto.lotes)
-  produto_id!: string
+  @JoinColumn({ name: "produto_id" })
+  produto!: Produto;
 
   @Column({ type: "date", nullable: false })
   data_producao!: Date
@@ -36,7 +37,8 @@ export class Lote {
   turno!: Turno
 
   @ManyToOne(() => Usuario, (usuario) => usuario.lotes)
-  operador!: string
+  @JoinColumn({ name: "operador_id" })
+  operador!: Usuario;
 
   @Column({ type: "int", nullable: false })
   quantidade_produzida!: number
