@@ -67,17 +67,53 @@ export class LoteController {
     }
   }
 
+  async updateStatus(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const loteAtualizado = await this.loteService.updateStatus(Number(id), status);
+
+      return res.json(loteAtualizado);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  }
+
   async reversa(req: Request, res: Response) {
     try {
       const { loteOrigem } = req.params;
-
-      if (!loteOrigem) {
-        return res.status(400).json({ message: 'Parâmetro loteOrigem é obrigatório' });
-      }
-
-      const lotesAfetados = await this.loteService.getRastreabilidadeReversa(loteOrigem as string);
-
+      if (!loteOrigem) return res.status(400).json({ message: 'Parâmetro loteOrigem é obrigatório' });
+      const lotesAfetados = await this.loteService.getRastreabilidade({ codigo_insumo: loteOrigem as string });
       return res.json(lotesAfetados);
+    } catch (error: any) {
+      return res.status(500).json({ message: error.message });
+    }
+  }
+
+  async rastreabilidade(req: Request, res: Response) {
+    try {
+      const { lote, insumo } = req.query;
+
+      const loteQuery = lote as string | undefined;
+      const insumoQuery = insumo as string | undefined;
+
+      const filtros: any = {};
+      if (loteQuery) filtros.numero_lote = loteQuery;
+      if (insumoQuery) filtros.codigo_insumo = insumoQuery;
+
+      const consulta = await this.loteService.getRastreabilidade(filtros);
+
+      return res.json(consulta);
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message });
+    }
+  }
+
+  async dashboard(req: Request, res: Response) {
+    try {
+      const metricas = await this.loteService.getDashboardMetrics();
+
+      return res.json(metricas);
     } catch (error: any) {
       return res.status(500).json({ message: error.message });
     }

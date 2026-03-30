@@ -3,13 +3,21 @@ import { Between, LessThanOrEqual, Like, MoreThanOrEqual, type Repository } from
 import { Lote, LoteStatus, Turno } from "../entities/Lote.js";
 import type { LoteDTO } from "../dto/loteDTO.js";
 import { InsumoLote } from "../entities/InsumoLote.js";
-import type { InsumoVinculoDTO } from "./InsumoLoteService.js";
+import type { InsumoVinculoDTO } from "../dto/InsumoLoteDTO.js";
 
 interface IFiltros {
   produto_id?: string;
   status?: LoteStatus;
   dataInicio?: Date | undefined;
   dataFim?: Date | undefined;
+}
+
+export interface IDashboardMetrics {
+  produzidosHoje: number;
+  unidadesHoje: number;
+  taxaAprovacaoMes: number;
+  aguardandoInspecao: number;
+  ultimosLotes: Lote[];
 }
 
 export class LoteService {
@@ -117,6 +125,16 @@ export class LoteService {
     return await this.loteRepo.save(lote);
   }
 
+  // updateStatus
+  async updateStatus(loteId: number, novoStatus: LoteStatus, usuarioPerfil?: string) {
+    const lote = await this.loteRepo.findOneBy({ id: loteId });
+    if (!lote) throw new Error("Lote não encontrado.");
+
+    lote.status = novoStatus;
+
+    return await this.loteRepo.save(lote);
+  }
+
   // // // // //
   // Funções de Leitura
   // // // // //
@@ -164,13 +182,87 @@ export class LoteService {
     return lote;
   }
 
-  // getRastreabilidadeReversa
-  async getRastreabilidadeReversa(loteOrigemInsumo: string) {
-    const vinculos = await this.insumoLoteRepo.find({
-      where: { lote_origem: loteOrigemInsumo },
-      relations: ['lote']
+  // getRastreabilidade
+  async getRastreabilidade(filtros: { numero_lote?: string; codigo_insumo?: string }) {
+    if (filtros.numero_lote) {
+      const lote = await this.loteRepo.findOne({
+        where: { numero_lote: filtros.numero_lote },
+        relations: ['operador', 'produto', 'insumos', 'inspecao', 'inspecao.inspetor']
+      });
+      if (!lote) throw new Error("Lote não encontrado.");
+
+      return lote;
+    } else if (filtros.codigo_insumo) {
+      const vinculos = await this.insumoLoteRepo.find({
+        where: [
+          { codigo_insumo: filtros.codigo_insumo },
+          { lote_insumo: filtros.codigo_insumo },
+          { lote_origem: filtros.codigo_insumo }
+        ],
+        relations: ['lote', 'lote.produto', 'lote.operador']
+      });
+
+      const lotesMap = new Map();
+      for (const v of vinculos) {
+        if (!lotesMap.has(v.lote.id)) {
+          lotesMap.set(v.lote.id, v.lote);
+        }
+      }
+
+      return Array.from(lotesMap.values());
+    }
+
+    throw new Error("Parâmetros insuficientes para rastreabilidade.");
+  }
+
+  // getDashboardMetrics
+  async getDashboardMetrics(): Promise<IDashboardMetrics> {
+    const hoje = new Date();
+    const inicioDia = new Date(hoje.setHours(0, 0, 0, 0));
+    const fimDia = new Date(hoje.setHours(23, 59, 59, 999));
+
+    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+    const lotesHoje = await this.loteRepo.find({
+      where: { aberto_em: Between(inicioDia, fimDia) }
     });
 
-    return vinculos.map(v => v.lote);
+    const produzidosHoje = lotesHoje.length;
+    const unidadesHoje = lotesHoje.reduce((acc, lote) => acc + lote.quantidade_produzida, 0);
+
+    const aguardandoInspecao = await this.loteRepo.count({
+      where: { status: LoteStatus.aguardando_inspecao }
+    });
+
+    const todosDoMes = await this.loteRepo.find({
+      where: { aberto_em: MoreThanOrEqual(inicioMes) }
+    });
+
+    let aprovados = 0;
+    let inspecionados = 0;
+    for (const l of todosDoMes) {
+      if ([LoteStatus.aprovado, LoteStatus.aprovado_restricao, LoteStatus.reprovado].includes(l.status as LoteStatus)) {
+        inspecionados++;
+        if (l.status === LoteStatus.aprovado) {
+          aprovados++;
+        }
+      }
+    }
+
+    const taxaAprovacaoMes = inspecionados > 0 ? (aprovados / inspecionados) * 100 : 0;
+
+    const ultimosLotes = await this.loteRepo.find({
+      order: { aberto_em: "DESC" },
+      take: 10,
+      relations: ['produto', 'operador']
+    });
+
+    return {
+      produzidosHoje,
+      unidadesHoje,
+      taxaAprovacaoMes: Number(taxaAprovacaoMes.toFixed(2)),
+      aguardandoInspecao,
+      ultimosLotes
+    };
   }
 }
