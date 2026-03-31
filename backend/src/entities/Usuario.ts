@@ -10,17 +10,18 @@ export enum PerfilUsuario {
 
 @Entity("usuario")
 export class Usuario {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ type: 'text', nullable: false })
   nome!: string;
 
-  @Column({ type: 'varchar', unique: true, nullable: false })
+  // Email e senha serão usados tanto para registro quanto para login
+  @Column({ type: 'text', unique: true, nullable: false })
   email!: string;
 
-  @Column({ type: 'varchar', select: false, nullable: false })
-  senha!: string;
+  @Column({ type: 'text', nullable: false })
+  senha_hash!: string;
 
   @Column({
     type: "enum",
@@ -32,6 +33,9 @@ export class Usuario {
 
   @Column({ type: 'boolean', default: true, nullable: false })
   ativo!: boolean;
+
+  @CreateDateColumn({ type: 'timestamptz' })
+  criado_em!: Date;
 
   @OneToMany(() => Lote, (lote) => lote.operador)
   lotes!: Lote[];
