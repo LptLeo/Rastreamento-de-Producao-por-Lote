@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Lote } from "./Lote.js";
 
 @Entity("insumos_lote")
@@ -7,23 +7,21 @@ export class InsumoLote {
   id!: number;
 
   @ManyToOne(() => Lote, (lote) => lote.insumos)
+  @JoinColumn({ name: "lote_id" })
   lote!: Lote
 
-  @Column({ type: "varchar", nullable: false })
+  @Column({ type: "text", nullable: false })
   nome_insumo!: string;
 
-  @Column({ type: "varchar", nullable: true })
+  @Column({ type: "text", nullable: true })
   codigo_insumo?: string;
 
-  @Column({ type: "varchar", nullable: true })
+  @Column({ type: "text", nullable: true })
   lote_insumo?: string;
 
-  @Column({ type: "decimal", precision: 10, scale: 2, nullable: false })
+  @Column({ type: "numeric", nullable: false })
   quantidade!: number;
 
-  @Column({ type: "varchar", nullable: false })
+  @Column({ type: "text", nullable: false })
   unidade!: string;
-
-  @Column({ type: "varchar", nullable: false })
-  lote_origem!: string;
 }
