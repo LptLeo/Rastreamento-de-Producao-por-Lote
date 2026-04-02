@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
 import { ProdutoService } from '../services/produto.service.js';
-import { criarProdutoSchema, atualizarProdutoSchema } from '../dto/ProdutoDTO.js';
-import { ZodError } from 'zod';
+import { criarProdutoSchema, atualizarProdutoSchema } from '../dto/Produto.dto.js';
 import { getRequisitante } from '../utils/auth.utils.js';
+import { AppError } from '../errors/AppError.js';
 
 export class ProdutoController {
   private produtoService: ProdutoService;
@@ -12,77 +12,52 @@ export class ProdutoController {
   }
 
   create = async (req: Request, res: Response) => {
-    try {
-      const requisitante = getRequisitante(req);
-      const validatedData = criarProdutoSchema.parse(req.body);
+    const validatedData = criarProdutoSchema.parse(req.body);
 
-      const novoProduto = await this.produtoService.createProduto(validatedData, requisitante);
+    const novoProduto = await this.produtoService.createProduto(validatedData, getRequisitante(req));
 
-      return res.status(201).json(novoProduto);
-    } catch (error: any) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ errors: error.issues });
-      }
-      return res.status(400).json({ message: error.message });
-    }
+    return res.status(201).json(novoProduto);
   }
 
   getAll = async (req: Request, res: Response) => {
-    try {
-      const requisitante = getRequisitante(req);
-      const filtros: any = {};
+    const filtros: any = {};
 
-      if (req.query.search) filtros.search = String(req.query.search);
-      if (req.query.ativo) filtros.ativo = req.query.ativo === 'true';
+    if (req.query.search) filtros.search = String(req.query.search);
+    if (req.query.ativo) filtros.ativo = req.query.ativo === 'true';
 
-      const produtos = await this.produtoService.getAllProdutos(requisitante, filtros);
+    const produtos = await this.produtoService.getAllProdutos(getRequisitante(req), filtros);
 
-      return res.status(200).json(produtos);
-    } catch (error: any) {
-      return res.status(400).json({ message: error.message });
-    }
+    return res.status(200).json(produtos);
   }
 
   getById = async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      const requisitante = getRequisitante(req);
+    const { id } = req.params;
 
-      const produto = await this.produtoService.getProdutoById(Number(id), requisitante);
+    if (!id) throw new AppError("ID do produto não fornecido.", 400);
 
-      return res.status(200).json(produto);
-    } catch (error: any) {
-      return res.status(404).json({ message: error.message });
-    }
+    const produto = await this.produtoService.getProdutoById(Number(id), getRequisitante(req));
+
+    return res.status(200).json(produto);
   }
 
   update = async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      const validatedData = atualizarProdutoSchema.parse(req.body);
-      const requisitante = getRequisitante(req);
+    const { id } = req.params;
+    const validatedData = atualizarProdutoSchema.parse(req.body);
 
-      const produto = await this.produtoService.updateProduto(Number(id), validatedData, requisitante);
+    if (!id) throw new AppError("ID do produto não fornecido.", 400);
 
-      return res.status(200).json(produto);
-    } catch (error: any) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ errors: error.issues });
-      }
-      return res.status(404).json({ message: error.message });
-    }
+    const produto = await this.produtoService.updateProduto(Number(id), validatedData, getRequisitante(req));
+
+    return res.status(200).json(produto);
   }
 
   delete = async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      const requisitante = getRequisitante(req);
+    const { id } = req.params;
 
-      await this.produtoService.desativarProduto(Number(id), requisitante);
+    if (!id) throw new AppError("ID do produto não fornecido.", 400);
 
-      return res.status(204).send();
-    } catch (error: any) {
-      return res.status(404).json({ message: error.message });
-    }
+    await this.produtoService.desativarProduto(Number(id), getRequisitante(req));
+
+    return res.status(204).send();
   }
 }
