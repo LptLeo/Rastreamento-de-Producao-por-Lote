@@ -27,7 +27,8 @@ export class Lote {
   numero_lote!: string
 
   @ManyToOne(() => Produto, (produto) => produto.lotes)
-  produto_id!: Produto;
+  @JoinColumn({ name: "produto_id" })
+  produto!: Produto;
 
   @Column({ type: "date", nullable: false })
   data_producao!: Date
@@ -36,7 +37,8 @@ export class Lote {
   turno!: Turno
 
   @ManyToOne(() => Usuario, (usuario) => usuario.lotes)
-  operador_id!: Usuario;
+  @JoinColumn({ name: "operador_id" })
+  operador!: Usuario;
 
   @Column({ type: "int", nullable: false })
   quantidade_prod!: number
@@ -59,6 +61,6 @@ export class Lote {
   @OneToMany(() => InsumoLote, (insumo) => insumo.lote)
   insumos!: InsumoLote[]
 
-  @OneToOne(() => InspecaoLote, (inspecao) => inspecao.lote_id)
+  @OneToOne(() => InspecaoLote, (inspecao) => inspecao.lote)
   inspecao!: InspecaoLote
 }
