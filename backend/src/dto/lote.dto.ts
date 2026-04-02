@@ -51,7 +51,7 @@ export const insumoVinculoSchema = z.object({
     .string()
     .optional(),
 
-  lote_fornecedor: z
+  lote_insumo: z
     .string()
     .optional(),
 
@@ -59,11 +59,11 @@ export const insumoVinculoSchema = z.object({
     .string()
     .optional(),
 
-  quantidade_usada: z
+  quantidade: z
     .number({ error: "A quantidade é obrigatória e deve ser um número." })
     .positive("A quantidade deve ser maior que zero."),
 
-  unidade_medida: z
+  unidade: z
     .string({ error: "A unidade de medida é obrigatória." })
     .min(1, "A unidade de medida não pode ser vazia."),
 });
@@ -76,7 +76,7 @@ export type InsumoVinculoDTO = z.infer<typeof insumoVinculoSchema>;
 
 export const registrarInspecaoSchema = z
   .object({
-    lote_id: z
+    lote: z
       .number({ error: "O ID do lote é obrigatório." })
       .int("O ID do lote deve ser um número inteiro.")
       .positive("O ID do lote deve ser positivo."),

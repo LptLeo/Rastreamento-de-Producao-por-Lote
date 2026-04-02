@@ -3,8 +3,8 @@ import { Lote } from "./Lote.js";
 
 @Entity('produto')
 export class Produto {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
   @Column({ type: 'text', unique: true, nullable: false })
   codigo!: string;
@@ -22,6 +22,6 @@ export class Produto {
   ativo!: boolean
 
   // Relacionamento 1:N com Lote, um produto pode ter vários lotes
-  @OneToMany(() => Lote, (lote) => lote.produto_id)
+  @OneToMany(() => Lote, (lote) => lote.produto)
   lotes!: Lote[];
 }
