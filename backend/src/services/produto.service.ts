@@ -1,9 +1,10 @@
 import { AppDataSource } from "../config/AppDataSource.js";
 import { type Repository, Like } from "typeorm";
 import { Produto } from "../entities/Produto.js";
-import type { CriarProdutoDTO, AtualizarProdutoDTO } from "../dto/ProdutoDTO.js";
+import type { CriarProdutoDTO, AtualizarProdutoDTO } from "../dto/Produto.dto.js";
 import { PerfilUsuario } from "../entities/Usuario.js";
 import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
+import { AppError } from "../errors/AppError.js";
 
 export class ProdutoService {
   private produtoRepo: Repository<Produto>;
@@ -17,13 +18,11 @@ export class ProdutoService {
     verificaPermissao(requisitante.perfil, [PerfilUsuario.GESTOR]);
 
     const existeCodigo = await this.produtoRepo.findOneBy({ codigo: produtoDTO.codigo });
-    if (existeCodigo) {
-      throw new Error("Já existe um produto com este código.");
-    }
+    if (existeCodigo) throw new AppError("Já existe um produto com este código.", 409);
 
     const novoProduto = this.produtoRepo.create({
       ...produtoDTO,
-      ativo: produtoDTO.ativo ?? true,
+      ativo: produtoDTO.ativo ? produtoDTO.ativo : true,
       descricao: produtoDTO.descricao || ""
     });
 
@@ -58,7 +57,7 @@ export class ProdutoService {
 
     const produto = await this.produtoRepo.findOneBy({ id });
 
-    if (!produto) throw new Error("Produto não encontrado.");
+    if (!produto) throw new AppError("Produto não encontrado.", 404);
 
     return produto;
   }
@@ -71,7 +70,7 @@ export class ProdutoService {
 
     if (produtoDTO.codigo && produtoDTO.codigo !== produto.codigo) {
       const existeCodigo = await this.produtoRepo.findOneBy({ codigo: produtoDTO.codigo });
-      if (existeCodigo) throw new Error("Já existe um produto com este código.");
+      if (existeCodigo) throw new AppError("Já existe um produto com este código.", 409);
     }
 
     Object.assign(produto, produtoDTO);
@@ -86,6 +85,7 @@ export class ProdutoService {
     const produto = await this.getProdutoById(id, requisitante);
 
     produto.ativo = false;
+
     return await this.produtoRepo.save(produto);
   }
 }
