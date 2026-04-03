@@ -3,18 +3,19 @@ import { Lote } from "./Lote.js";
 import { Usuario } from "./Usuario.js";
 
 enum Resultados {
-  aprovado = "aprovado",
-  aprovado_restricao = "aprovado_restricao",
-  reprovado = "reprovado"
+  APROVADO = "aprovado",
+  APROVADO_RESTRICAO = "aprovado_restricao",
+  REPROVADO = "reprovado"
 }
 
 @Entity("inspecao_lote")
 export class InspecaoLote {
-  @PrimaryGeneratedColumn("uuid")
-  id!: string
+  @PrimaryGeneratedColumn()
+  id!: number
 
   @OneToOne(() => Lote, (lote) => lote.inspecao)
-  lote_id!: Lote
+  @JoinColumn({ name: "lote_id" })
+  lote!: Lote
 
   @ManyToOne(() => Usuario, (usuario) => usuario.inspecoes)
   @JoinColumn({ name: "inspetor_id" })
@@ -24,11 +25,11 @@ export class InspecaoLote {
   resultado!: Resultados
 
   @Column({ type: "int", nullable: false, default: 0 })
-  quantidade_reprovada!: number
+  quantidade_repr!: number
 
   @Column({ type: "text", nullable: true })
-  descricao_desvio!: string
+  descricao_desvio?: string
 
-  @Column({ type: "timestamp", nullable: false, default: () => "CURRENT_TIMESTAMP" })
+  @Column({ type: "timestamptz", nullable: false, default: () => "CURRENT_TIMESTAMP" })
   inspecionado_em!: Date
 }
