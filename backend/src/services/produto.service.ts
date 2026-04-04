@@ -1,7 +1,7 @@
 import { AppDataSource } from "../config/AppDataSource.js";
 import { type Repository, Like } from "typeorm";
 import { Produto } from "../entities/Produto.js";
-import type { CriarProdutoDTO, AtualizarProdutoDTO } from "../dto/Produto.dto.js";
+import type { CriarProdutoDTO, AtualizarProdutoDTO } from "../dto/produto.dto.js";
 import { PerfilUsuario } from "../entities/Usuario.js";
 import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
 import { AppError } from "../errors/AppError.js";
@@ -22,7 +22,7 @@ export class ProdutoService {
 
     const novoProduto = this.produtoRepo.create({
       ...produtoDTO,
-      ativo: produtoDTO.ativo ? produtoDTO.ativo : true,
+      ativo: produtoDTO.ativo ?? true,
       descricao: produtoDTO.descricao || ""
     });
 
