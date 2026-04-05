@@ -2,7 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn
 import { Lote } from "./Lote.js";
 import { Usuario } from "./Usuario.js";
 
-enum Resultados {
+export enum ResultadoInspecao {
   APROVADO = "aprovado",
   APROVADO_RESTRICAO = "aprovado_restricao",
   REPROVADO = "reprovado"
@@ -13,7 +13,7 @@ export class InspecaoLote {
   @PrimaryGeneratedColumn()
   id!: number
 
-  @OneToOne(() => Lote, (lote) => lote.inspecao)
+  @OneToOne(() => Lote, (lote) => lote.inspecao, { cascade: true })
   @JoinColumn({ name: "lote_id" })
   lote!: Lote
 
@@ -21,8 +21,8 @@ export class InspecaoLote {
   @JoinColumn({ name: "inspetor_id" })
   inspetor!: Usuario
 
-  @Column({ type: "enum", enum: Resultados, nullable: false })
-  resultado!: Resultados
+  @Column({ type: "enum", enum: ResultadoInspecao, nullable: false })
+  resultado!: ResultadoInspecao
 
   @Column({ type: "int", nullable: false, default: 0 })
   quantidade_repr!: number
