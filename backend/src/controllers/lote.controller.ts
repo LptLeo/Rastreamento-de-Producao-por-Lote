@@ -30,18 +30,6 @@ export class LoteController {
     return res.status(200).json(lotes);
   }
 
-  vincularInsumos = async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const insumos = req.body;
-
-    if (!id) throw new AppError("ID do lote não fornecido.", 400);
-    if (!insumos) throw new AppError("Insumos não fornecidos.", 400);
-
-    const resultado = await this.loteService.vincularInsumos(Number(id), insumos, getRequisitante(req));
-
-    return res.json(resultado);
-  }
-
   encerrar = async (req: Request, res: Response) => {
     const { id } = req.params;
     const loteEncerrado = await this.loteService.encerrarProducao(Number(id), getRequisitante(req));

@@ -15,18 +15,6 @@ export const criarLoteSchema = z.object({
 
 export type LoteDTO = z.infer<typeof criarLoteSchema>;
 
-export const insumoSchema = z.object({
-  nome_insumo: z.string().min(1, "O nome do insumo é obrigatório."),
-  codigo_insumo: z.string().optional(),
-  lote_insumo: z.string().optional(),
-  quantidade: z.number().positive("A quantidade deve ser positiva."),
-  unidade: z.string().min(1, "A unidade de medida é obrigatória."),
-});
-
-export const vincularInsumosSchema = z.array(insumoSchema).min(1, "Deve haver pelo menos um insumo.");
-
-export type VincularInsumosDTO = z.infer<typeof vincularInsumosSchema>;
-
 export const transicaoStatusSchema = z.object({
   status: loteStatusSchema,
 })
