@@ -1,7 +1,7 @@
 import { AppDataSource } from "../config/AppDataSource.js";
 import { type Repository, Like } from "typeorm";
 import { Produto } from "../entities/Produto.js";
-import type { CriarProdutoDTO, AtualizarProdutoDTO } from "../dto/Produto.dto.js";
+import type { CriarProdutoDTO, AtualizarProdutoDTO } from "../dto/produto.dto.js";
 import { PerfilUsuario } from "../entities/Usuario.js";
 import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
 import { AppError } from "../errors/AppError.js";
@@ -15,14 +15,14 @@ export class ProdutoService {
 
   // createProduto
   createProduto = async (produtoDTO: CriarProdutoDTO, requisitante: Requisitante) => {
-    verificaPermissao(requisitante.perfil, [PerfilUsuario.GESTOR]);
+    verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
 
     const existeCodigo = await this.produtoRepo.findOneBy({ codigo: produtoDTO.codigo });
     if (existeCodigo) throw new AppError("Já existe um produto com este código.", 409);
 
     const novoProduto = this.produtoRepo.create({
       ...produtoDTO,
-      ativo: produtoDTO.ativo ? produtoDTO.ativo : true,
+      ativo: produtoDTO.ativo ?? true,
       descricao: produtoDTO.descricao || ""
     });
 
@@ -31,7 +31,7 @@ export class ProdutoService {
 
   // getAllProdutos
   getAllProdutos = async (requisitante: Requisitante, filtros?: { search?: string, ativo?: boolean }) => {
-    verificaPermissao(requisitante.perfil, [PerfilUsuario.OPERADOR, PerfilUsuario.GESTOR]);
+    verificaPermissao(requisitante, [PerfilUsuario.OPERADOR, PerfilUsuario.GESTOR]);
 
     const where: any = [];
 
@@ -53,7 +53,7 @@ export class ProdutoService {
 
   // getProdutoById
   getProdutoById = async (id: number, requisitante: Requisitante) => {
-    verificaPermissao(requisitante.perfil, [PerfilUsuario.OPERADOR, PerfilUsuario.GESTOR]);
+    verificaPermissao(requisitante, [PerfilUsuario.OPERADOR, PerfilUsuario.GESTOR]);
 
     const produto = await this.produtoRepo.findOneBy({ id });
 
@@ -64,7 +64,7 @@ export class ProdutoService {
 
   // updateProduto
   updateProduto = async (id: number, produtoDTO: AtualizarProdutoDTO, requisitante: Requisitante) => {
-    verificaPermissao(requisitante.perfil, [PerfilUsuario.GESTOR]);
+    verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
 
     const produto = await this.getProdutoById(id, requisitante);
 
@@ -80,7 +80,7 @@ export class ProdutoService {
 
   // desativarProduto
   desativarProduto = async (id: number, requisitante: Requisitante) => {
-    verificaPermissao(requisitante.perfil, [PerfilUsuario.GESTOR]);
+    verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
 
     const produto = await this.getProdutoById(id, requisitante);
 

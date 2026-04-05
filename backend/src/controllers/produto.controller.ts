@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express';
 import { ProdutoService } from '../services/produto.service.js';
-import { criarProdutoSchema, atualizarProdutoSchema } from '../dto/Produto.dto.js';
 import { getRequisitante } from '../utils/auth.utils.js';
 import { AppError } from '../errors/AppError.js';
 
@@ -12,9 +11,7 @@ export class ProdutoController {
   }
 
   create = async (req: Request, res: Response) => {
-    const validatedData = criarProdutoSchema.parse(req.body);
-
-    const novoProduto = await this.produtoService.createProduto(validatedData, getRequisitante(req));
+    const novoProduto = await this.produtoService.createProduto(req.body, getRequisitante(req));
 
     return res.status(201).json(novoProduto);
   }
@@ -23,7 +20,7 @@ export class ProdutoController {
     const filtros: any = {};
 
     if (req.query.search) filtros.search = String(req.query.search);
-    if (req.query.ativo) filtros.ativo = req.query.ativo === 'true';
+    if (req.query.ativo !== undefined) filtros.ativo = req.query.ativo === 'true';
 
     const produtos = await this.produtoService.getAllProdutos(getRequisitante(req), filtros);
 
@@ -42,11 +39,10 @@ export class ProdutoController {
 
   update = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const validatedData = atualizarProdutoSchema.parse(req.body);
 
     if (!id) throw new AppError("ID do produto não fornecido.", 400);
 
-    const produto = await this.produtoService.updateProduto(Number(id), validatedData, getRequisitante(req));
+    const produto = await this.produtoService.updateProduto(Number(id), req.body, getRequisitante(req));
 
     return res.status(200).json(produto);
   }
