@@ -6,7 +6,7 @@ import { vincularInsumosSchema } from "../dto/insumoLote.dto.js";
 import { roleGuard } from "../middlewares/roleGuard.js";
 import { PerfilUsuario } from "../entities/Usuario.js";
 
-const insumoRoutes = Router();
+const insumoRoutes = Router({ mergeParams: true });
 const insumoController = new InsumoLoteController();
 
 insumoRoutes.use(authGuard);
