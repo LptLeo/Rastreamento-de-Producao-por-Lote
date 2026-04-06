@@ -14,7 +14,11 @@ export class AuthService {
   }
 
   async login(dados: LoginDTO) {
-    const usuario = await this.userRepo.findOneBy({ email: dados.email });
+    const usuario = await this.userRepo
+      .createQueryBuilder("usuario")
+      .addSelect("usuario.senha_hash")
+      .where("usuario.email = :email", { email: dados.email })
+      .getOne();
 
     if (!usuario) throw new AppError('E-mail ou senha incorretos.', 401);
 
