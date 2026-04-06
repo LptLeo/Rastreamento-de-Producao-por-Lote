@@ -8,6 +8,7 @@
     "db:down": "sudo docker compose down",
     "db:reset": "sudo docker compose down -v && sudo docker compose up -d",
     "dev": "tsx watch server.ts",
+    "seed": "tsx src/config/seed.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },
