@@ -32,9 +32,10 @@ export class LoteController {
 
   encerrar = async (req: Request, res: Response) => {
     const { id } = req.params;
+    if (!id) throw new AppError("ID do lote não fornecido.", 400);
+
     const loteEncerrado = await this.loteService.encerrarProducao(Number(id), getRequisitante(req));
 
-    if (!id) throw new AppError("ID do lote não fornecido.", 400);
     if (!loteEncerrado) throw new AppError("Lote não encontrado.", 404);
 
     return res.json(loteEncerrado);
@@ -42,9 +43,11 @@ export class LoteController {
 
   getDetalhes = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const detalhes = await this.loteService.getLoteById(Number(id), getRequisitante(req));
 
     if (!id) throw new AppError("ID do lote não fornecido.", 400);
+
+    const detalhes = await this.loteService.getLoteById(Number(id), getRequisitante(req));
+
     if (!detalhes) throw new AppError("Lote não encontrado.", 404);
 
     return res.json(detalhes);
@@ -53,10 +56,12 @@ export class LoteController {
   updateStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status } = req.body;
-    const loteAtualizado = await this.loteService.updateStatus(Number(id), status, getRequisitante(req));
 
     if (!id) throw new AppError("ID do lote não fornecido.", 400);
     if (!status) throw new AppError("Status não fornecido.", 400);
+
+    const loteAtualizado = await this.loteService.updateStatus(Number(id), status, getRequisitante(req));
+
     if (!loteAtualizado) throw new AppError("Lote não encontrado.", 404);
 
     return res.json(loteAtualizado);

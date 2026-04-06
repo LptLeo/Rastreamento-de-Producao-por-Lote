@@ -64,10 +64,10 @@ export class LoteService {
 
     const numeroGerado = await this.gerarNumeroLote(loteDTO.data_producao);
 
-    const produto = await this.produtoRepo.findOneBy({ id: Number(loteDTO.produto) });
+    const produto = await this.produtoRepo.findOneBy({ id: loteDTO.produto });
     if (!produto) throw new AppError("Produto não encontrado.", 404);
 
-    const operador = await this.usuarioRepo.findOneBy({ id: Number(loteDTO.operador) });
+    const operador = await this.usuarioRepo.findOneBy({ id: loteDTO.operador });
     if (!operador) throw new AppError("Operador não encontrado.", 404);
 
     const novoLote = this.loteRepo.create({
@@ -89,15 +89,15 @@ export class LoteService {
 
     const lote = await this.loteRepo.findOneBy({ id: loteId });
 
-    if (!lote) throw new AppError("Lote não encontrado.");
+    if (!lote) throw new AppError("Lote não encontrado.", 404);
 
-    if (lote.status !== LoteStatus.EM_PRODUCAO) throw new AppError(`Não é possível encerrar um lote com status: ${lote.status}`);
+    if (lote.status !== LoteStatus.EM_PRODUCAO) throw new AppError(`Não é possível encerrar um lote com status: ${lote.status}`, 400);
 
     const contagemInsumos = await this.insumoLoteRepo.count({
       where: { lote: { id: loteId } }
     });
 
-    if (contagemInsumos === 0) throw new AppError("Não é possível encerrar um lote sem insumos vinculados.");
+    if (contagemInsumos === 0) throw new AppError("Não é possível encerrar um lote sem insumos vinculados.", 400);
 
     lote.status = LoteStatus.AGUARDANDO_INSPECAO;
     lote.encerrado_em = new Date();
@@ -110,7 +110,7 @@ export class LoteService {
     verificaPermissao(requisitante, [PerfilUsuario.INSPETOR, PerfilUsuario.GESTOR]);
 
     const lote = await this.loteRepo.findOneBy({ id: loteId });
-    if (!lote) throw new AppError("Lote não encontrado.");
+    if (!lote) throw new AppError("Lote não encontrado.", 404);
 
     lote.status = novoStatus;
 
@@ -126,7 +126,7 @@ export class LoteService {
     verificaPermissao(requisitante, [PerfilUsuario.OPERADOR, PerfilUsuario.INSPETOR, PerfilUsuario.GESTOR]);
 
     if (filtros?.dataInicio && filtros?.dataFim && filtros.dataInicio > filtros.dataFim) {
-      throw new AppError("A data de início não pode ser posterior à data de fim.");
+      throw new AppError("A data de início não pode ser posterior à data de fim.", 400);
     }
 
     const where: any = {};
@@ -167,7 +167,7 @@ export class LoteService {
       relations: ['operador', 'produto', 'insumos', 'inspecao', 'inspecao.inspetor']
     });
 
-    if (!lote) throw new AppError("Lote não encontrado.");
+    if (!lote) throw new AppError("Lote não encontrado.", 404);
 
     return lote;
   }
