@@ -13,6 +13,7 @@ loteRoutes.post("/", roleGuard(PerfilUsuario.OPERADOR), validateBody(criarLoteSc
 loteRoutes.get("/", roleGuard(PerfilUsuario.OPERADOR, PerfilUsuario.INSPETOR, PerfilUsuario.GESTOR), loteController.getAll);
 loteRoutes.patch("/:id/encerrar", roleGuard(PerfilUsuario.OPERADOR), loteController.encerrar);
 loteRoutes.patch("/:id/status", roleGuard(PerfilUsuario.INSPETOR, PerfilUsuario.GESTOR), validateBody(transicaoStatusSchema), loteController.updateStatus);
+loteRoutes.get("/busca", roleGuard(PerfilUsuario.OPERADOR, PerfilUsuario.INSPETOR, PerfilUsuario.GESTOR), loteController.buscarSugestoes);
 loteRoutes.get("/:id", roleGuard(PerfilUsuario.OPERADOR, PerfilUsuario.INSPETOR, PerfilUsuario.GESTOR), loteController.getDetalhes);
 
 export default loteRoutes;
