@@ -66,4 +66,16 @@ export class LoteController {
 
     return res.json(loteAtualizado);
   }
+
+  buscarSugestoes = async (req: Request, res: Response) => {
+    const { q } = req.query;
+
+    if (!q || typeof q !== 'string') {
+      return res.json([]);
+    }
+
+    const sugestoes = await this.loteService.buscarSugestoes(q, getRequisitante(req));
+
+    return res.json(sugestoes);
+  }
 }

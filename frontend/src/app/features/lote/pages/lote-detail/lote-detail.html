@@ -1,0 +1,246 @@
+<div class="flex flex-col w-full min-h-screen text-white font-sans max-w-7xl mx-auto space-y-6">
+
+  <!-- ── Estado: Carregando ── -->
+  @if (carregando()) {
+    <div class="flex flex-col items-center justify-center py-32 gap-4">
+      <div class="w-8 h-8 border-2 border-[#00E5FF] border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-[12px] text-[#6B7280] uppercase tracking-wider">Carregando lote...</p>
+    </div>
+  }
+
+  <!-- ── Estado: Erro ── -->
+  @else if (erro()) {
+    <div class="flex flex-col items-center justify-center py-32 gap-4">
+      <div class="p-4 bg-red-950/20 border border-[#dc2626]/40 rounded-md text-center max-w-md">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#fca5a5"
+          class="w-8 h-8 mx-auto mb-3">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+        <p class="text-[#fca5a5] text-[13px] font-semibold mb-1">Erro ao carregar lote</p>
+        <p class="text-[#ADAAAA] text-[12px]">{{ erro() }}</p>
+      </div>
+      <button
+        (click)="voltarParaLista()"
+        class="mt-2 px-5 py-2 border border-[#484847] text-[#ADAAAA] text-[12px] font-bold uppercase tracking-wider hover:bg-[#1a1a1a] transition-colors rounded-sm">
+        Voltar para a Lista
+      </button>
+    </div>
+  }
+
+  <!-- ── Conteúdo do Lote ── -->
+  @else if (lote()) {
+    <!-- Cabeçalho da Página -->
+    <header class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
+      <div class="flex items-start gap-4">
+        <button
+          (click)="voltarParaLista()"
+          class="mt-1 flex items-center gap-1.5 text-[#ADAAAA] hover:text-white transition-colors group"
+          title="Voltar para a lista">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor" class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          </svg>
+          <span class="text-[11px] uppercase tracking-wider">Lista</span>
+        </button>
+        <div>
+          <h2 class="font-bold text-[26px] leading-tight tracking-[-0.5px] text-white font-mono">
+            {{ lote()!.numero_lote }}
+          </h2>
+          <p class="text-[14px] text-[#00E5FF] mt-0.5">{{ lote()!.produto.nome }}</p>
+        </div>
+      </div>
+
+      <!-- Badge de status principal -->
+      <div
+        class="self-start sm:self-auto px-4 py-2 rounded text-[11px] font-bold uppercase tracking-widest"
+        [style.color]="getStatusConfig(lote()!.status).cor"
+        [style.background]="getStatusConfig(lote()!.status).corBg"
+        [style.border]="'1px solid ' + getStatusConfig(lote()!.status).corBorda">
+        {{ getStatusConfig(lote()!.status).label }}
+      </div>
+    </header>
+
+    <!-- ── Cards de Informações ── -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div class="info-card col-span-2 md:col-span-1">
+        <span class="info-label">Produto</span>
+        <span class="info-value text-[#00E5FF]">{{ lote()!.produto.nome }}</span>
+      </div>
+      <div class="info-card">
+        <span class="info-label">Operador</span>
+        <span class="info-value">{{ lote()!.operador.nome }}</span>
+      </div>
+      <div class="info-card">
+        <span class="info-label">Turno</span>
+        <span class="info-value">{{ getTurnoLabel(lote()!.turno) }}</span>
+      </div>
+      <div class="info-card">
+        <span class="info-label">Data de Produção</span>
+        <span class="info-value">{{ formatarData(lote()!.data_producao) }}</span>
+      </div>
+      <div class="info-card">
+        <span class="info-label">Abertura</span>
+        <span class="info-value text-[13px]">{{ formatarDataHora(lote()!.aberto_em) }}</span>
+      </div>
+      @if (lote()!.encerrado_em) {
+        <div class="info-card">
+          <span class="info-label">Encerramento</span>
+          <span class="info-value text-[13px]">{{ formatarDataHora(lote()!.encerrado_em) }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- ── Produção ── -->
+    <div class="bg-[#131313] border border-[#484847]/30 rounded-md p-6">
+      <h3 class="section-title">Produção</h3>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-6 mt-4">
+        <div>
+          <span class="info-label">Produzidas</span>
+          <span class="text-3xl font-bold text-white">{{ lote()!.quantidade_prod }}</span>
+          <span class="text-[10px] text-[#ADAAAA] ml-1 font-bold">UN</span>
+        </div>
+        <div>
+          <span class="info-label">Reprovadas</span>
+          <span class="text-3xl font-bold"
+            [class]="lote()!.quantidade_repr > 0 ? 'text-[#fca5a5]' : 'text-white'">
+            {{ lote()!.quantidade_repr }}
+          </span>
+          <span class="text-[10px] text-[#ADAAAA] ml-1 font-bold">UN</span>
+        </div>
+        <div class="col-span-2 md:col-span-1">
+          <span class="info-label">Taxa de Aprovação</span>
+          @let taxa = calcularTaxaAprovacao(lote()!.quantidade_prod, lote()!.quantidade_repr);
+          <div class="flex items-baseline gap-2">
+            <span class="text-3xl font-bold"
+              [style.color]="taxa >= 90 ? '#9EEE35' : taxa >= 70 ? '#DFFF00' : '#fca5a5'">
+              {{ taxa }}%
+            </span>
+          </div>
+          <div class="w-full h-1.5 bg-[#484847]/30 rounded-full overflow-hidden mt-2">
+            <div
+              class="h-full rounded-full transition-all duration-700"
+              [style.width]="taxa + '%'"
+              [style.background-color]="taxa >= 90 ? '#9EEE35' : taxa >= 70 ? '#DFFF00' : '#fca5a5'"
+              [style.box-shadow]="'0 0 8px ' + (taxa >= 90 ? '#9EEE35' : taxa >= 70 ? '#DFFF00' : '#fca5a5')">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      @if (lote()!.observacoes) {
+        <div class="mt-5 pt-5 border-t border-[#484847]/30">
+          <span class="info-label">Observações</span>
+          <p class="text-[13px] text-[#ADAAAA] mt-1 leading-relaxed">{{ lote()!.observacoes }}</p>
+        </div>
+      }
+    </div>
+
+    <!-- ── Insumos Vinculados ── -->
+    <div class="bg-[#131313] border border-[#484847]/30 rounded-md p-6">
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-[11px] font-bold text-[#00E5FF] bg-[rgba(0,229,255,0.1)] border border-[#00E5FF] px-2.5 py-1 rounded">
+          {{ lote()!.insumos.length }} {{ lote()!.insumos.length === 1 ? 'item' : 'itens' }}
+        </span>
+      </div>
+
+      @if (!lote()!.insumos || lote()!.insumos.length === 0) {
+        <p class="text-[12px] text-[#6B7280] italic">Nenhum insumo vinculado a este lote.</p>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr class="border-b border-[#484847]/30">
+                <th class="table-header">Nome do Insumo</th>
+                <th class="table-header">Código</th>
+                <th class="table-header">Lote do Insumo</th>
+                <th class="table-header text-right">Qtd.</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (insumo of lote()!.insumos; track insumo.id) {
+                <tr class="border-b border-[#1e1e1e] hover:bg-[#1a1a1a] transition-colors">
+                  <td class="table-cell font-medium text-white">{{ insumo.nome_insumo }}</td>
+                  <td class="table-cell">
+                    @if (insumo.codigo_insumo) {
+                      <span class="font-mono text-[11px] text-[#ADAAAA] bg-[#1a1a1a] px-2 py-0.5 rounded">
+                        {{ insumo.codigo_insumo }}
+                      </span>
+                    } @else {
+                      <span class="text-[#484847]">—</span>
+                    }
+                  </td>
+                  <td class="table-cell">
+                    @if (insumo.lote_insumo) {
+                      <span class="font-mono text-[11px] text-[#ADAAAA]">{{ insumo.lote_insumo }}</span>
+                    } @else {
+                      <span class="text-[#484847]">—</span>
+                    }
+                  </td>
+                  <td class="table-cell text-right font-bold text-white">{{ insumo.quantidade }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <!-- ── Resultado da Inspeção ── -->
+    <div class="bg-[#131313] border border-[#484847]/30 rounded-md p-6">
+      <h3 class="section-title mb-4">Inspeção de Qualidade</h3>
+
+      @if (!lote()!.inspecao) {
+        <div class="flex items-center gap-3 py-4">
+          <div class="w-2 h-2 rounded-full bg-[#DFFF00] animate-pulse"></div>
+          <p class="text-[13px] text-[#DFFF00]">Aguardando inspeção</p>
+        </div>
+      } @else {
+        @let insp = lote()!.inspecao!;
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <div class="flex items-center gap-3 mb-4">
+              <div
+                class="px-3 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider"
+                [style.color]="getStatusConfig(insp.resultado).cor"
+                [style.background]="getStatusConfig(insp.resultado).corBg"
+                [style.border]="'1px solid ' + getStatusConfig(insp.resultado).corBorda">
+                {{ getStatusConfig(insp.resultado).label }}
+              </div>
+            </div>
+            <div class="flex flex-col gap-3">
+              <div>
+                <span class="info-label">Inspetor</span>
+                <span class="info-value">{{ insp.inspetor.nome }}</span>
+              </div>
+              @if (insp.inspecionado_em) {
+                <div>
+                  <span class="info-label">Data da Inspeção</span>
+                  <span class="info-value text-[13px]">{{ formatarDataHora(insp.inspecionado_em) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          @if (insp.descricao_desvio) {
+            <div
+              class="p-4 rounded border"
+              [style.border-color]="getStatusConfig(insp.resultado).corBorda + '60'"
+              [style.background]="getStatusConfig(insp.resultado).corBg">
+              <div class="flex items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  class="w-4 h-4 flex-shrink-0" [style.stroke]="getStatusConfig(insp.resultado).cor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+                <span class="text-[10px] font-bold uppercase tracking-wider"
+                  [style.color]="getStatusConfig(insp.resultado).cor">Descrição do Desvio</span>
+              </div>
+              <p class="text-[13px] text-[#ADAAAA] leading-relaxed">{{ insp.descricao_desvio }}</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

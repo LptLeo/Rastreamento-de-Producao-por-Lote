@@ -1,5 +1,5 @@
 import { AppDataSource } from "../config/AppDataSource.js";
-import { Between, LessThanOrEqual, MoreThanOrEqual, type Repository } from "typeorm";
+import { Between, ILike, LessThanOrEqual, MoreThanOrEqual, type Repository } from "typeorm";
 import { Lote, LoteStatus, Turno } from "../entities/Lote.js";
 import type { LoteDTO } from "../dto/lote.dto.js";
 import { InsumoLote } from "../entities/InsumoLote.js";
@@ -13,6 +13,14 @@ interface IFiltros {
   status?: LoteStatus;
   dataInicio?: Date | undefined;
   dataFim?: Date | undefined;
+}
+
+export interface SugestaoItem {
+  tipo: 'lote' | 'produto';
+  id: number | null;
+  label: string;
+  sublabel: string;
+  status?: string;
 }
 
 export class LoteService {
@@ -170,5 +178,56 @@ export class LoteService {
     if (!lote) throw new AppError("Lote não encontrado.", 404);
 
     return lote;
+  }
+
+  // buscarSugestoes — busca parcial para autocomplete do header
+  buscarSugestoes = async (q: string, requisitante: Requisitante): Promise<SugestaoItem[]> => {
+    verificaPermissao(requisitante, [PerfilUsuario.OPERADOR, PerfilUsuario.INSPETOR, PerfilUsuario.GESTOR]);
+
+    const termoTrimado = q?.trim();
+    if (!termoTrimado || termoTrimado.length < 2) return [];
+
+    const termo = `%${termoTrimado}%`;
+
+    const lotes = await this.loteRepo.find({
+      where: [
+        { numero_lote: ILike(termo) },
+        { produto: { nome: ILike(termo) } },
+      ],
+      relations: ['produto'],
+      order: { aberto_em: 'DESC' },
+      take: 15,
+    });
+
+    const sugestoes: SugestaoItem[] = [];
+    const produtosAgrupados = new Map<string, number>();
+
+    for (const lote of lotes) {
+      const numeroBate = lote.numero_lote.toLowerCase().includes(termoTrimado.toLowerCase());
+
+      if (numeroBate) {
+        sugestoes.push({
+          tipo: 'lote',
+          id: lote.id,
+          label: lote.numero_lote,
+          sublabel: lote.produto.nome,
+          status: lote.status,
+        });
+      } else {
+        const nome = lote.produto.nome;
+        produtosAgrupados.set(nome, (produtosAgrupados.get(nome) ?? 0) + 1);
+      }
+    }
+
+    for (const [nome, count] of produtosAgrupados) {
+      sugestoes.push({
+        tipo: 'produto',
+        id: null,
+        label: nome,
+        sublabel: `${count} lote${count !== 1 ? 's' : ''} encontrado${count !== 1 ? 's' : ''}`,
+      });
+    }
+
+    return sugestoes;
   }
 }
