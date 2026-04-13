@@ -18,6 +18,7 @@ import {
 } from 'rxjs/operators';
 
 import { HeaderService } from './services/header.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { SugestaoItem, LoteStatus, STATUS_CONFIG } from '../../models/lote.models';
 
 /** Padrão exato de número de lote gerado pelo backend */
@@ -31,8 +32,22 @@ const LOTE_REGEX = /^LOTE-\d{8}-\d{3}$/;
 })
 export class Header implements OnInit, OnDestroy {
   private headerService = inject(HeaderService);
+  protected authService = inject(AuthService);
   private router = inject(Router);
   private elementRef = inject(ElementRef);
+
+  // ── Estado do usuário ──────────────────────────────────────────────────
+  
+  /** Mapeia os perfis do backend para nomes amigáveis */
+  cargoFormatado = computed(() => {
+    const perfil = this.authService.usuario()?.perfil;
+    const mapa: Record<string, string> = {
+      operador: 'Operador de Linha',
+      inspetor: 'Inspetor de Qualidade',
+      gestor: 'Gestor de Produção'
+    };
+    return mapa[perfil || ''] || 'Cargo';
+  });
 
   // ── Estado da pesquisa ──────────────────────────────────────────────────
 
@@ -151,6 +166,11 @@ export class Header implements OnInit, OnDestroy {
 
   fecharDropdown(): void {
     this.dropdownAberto.set(false);
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   // ── Utilitários de template ─────────────────────────────────────────────

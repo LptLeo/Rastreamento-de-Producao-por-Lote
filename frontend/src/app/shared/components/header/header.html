@@ -131,13 +131,20 @@
     </div>
     <div class="flex items-center">
       <div class="hidden flex-col justify-center items-end mr-3 min-w-25 md:flex">
-        <span class="font-bold text-[12px] leading-[12px] tracking-[-0.35px] text-[#00E5FF]">Nome</span>
-        <span class="text-[10.4px] leading-[20px] tracking-[0.52px] text-[#ADAAAA]">Cargo</span>
+        <span class="font-bold text-[12px] leading-[12px] tracking-[-0.35px] text-[#00E5FF]">
+          {{ authService.usuario()?.nome || 'Convidado' }}
+        </span>
+        <span class="text-[10.4px] leading-[20px] tracking-[0.52px] text-[#ADAAAA]">
+          {{ cargoFormatado() }}
+        </span>
       </div>
       <div>
         <img class="w-[30px] h-[30px] rounded-sm" src="assets/icons/user-profile.svg" alt="">
       </div>
-      <button class="flex justify-center items-center ml-4 cursor-pointer md:hidden">
+      <button
+        (click)="logout()"
+        class="flex justify-center items-center ml-4 cursor-pointer md:hidden"
+        title="Sair">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#ADAAAA"
           class="size-6 min-w-[24px] min-h-[24px]">
           <path stroke-linecap="round" stroke-linejoin="round"
