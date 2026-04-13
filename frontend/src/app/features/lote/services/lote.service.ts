@@ -38,6 +38,10 @@ export class LoteFeatureService {
     return this.http.get<any[]>(`${API_URL}/produtos`);
   }
 
+  getInsumosMaster(): Observable<any[]> {
+    return this.http.get<any[]>(`${API_URL}/insumos`);
+  }
+
   /** Cria um novo lote */
   createLote(loteDTO: any): Observable<any> {
     return this.http.post<any>(`${API_URL}/lotes`, loteDTO);

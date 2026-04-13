@@ -1,6 +1,6 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Lote } from "./Lote.js";
-import { Usuario } from "./Usuario.js";
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn, type Relation } from "typeorm";
+import type { Lote } from "./Lote.js";
+import type { Usuario } from "./Usuario.js";
 
 export enum ResultadoInspecao {
   APROVADO = "aprovado",
@@ -13,13 +13,13 @@ export class InspecaoLote {
   @PrimaryGeneratedColumn()
   id!: number
 
-  @OneToOne(() => Lote, (lote) => lote.inspecao, { cascade: true })
+  @OneToOne("Lote", "inspecao", { cascade: true })
   @JoinColumn({ name: "lote_id" })
-  lote!: Lote
+  lote!: Relation<Lote>
 
-  @ManyToOne(() => Usuario, (usuario) => usuario.inspecoes)
+  @ManyToOne("Usuario", "inspecoes")
   @JoinColumn({ name: "inspetor_id" })
-  inspetor!: Usuario
+  inspetor!: Relation<Usuario>
 
   @Column({ type: "enum", enum: ResultadoInspecao, nullable: false })
   resultado!: ResultadoInspecao

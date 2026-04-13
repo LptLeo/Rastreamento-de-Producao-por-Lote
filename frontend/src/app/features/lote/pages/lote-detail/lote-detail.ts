@@ -10,6 +10,7 @@ import { AuthService } from '../../../../core/services/auth.service';
 import {
   LoteDetalhe,
   LoteStatus,
+  InsumoMaster,
   STATUS_CONFIG,
   StatusConfig,
 } from '../../../../shared/models/lote.models';
@@ -40,6 +41,7 @@ export class LoteDetail implements OnInit {
 
   // Controle de edição para OPERADORES
   processando = signal(false);
+  insumosMaster = signal<InsumoMaster[]>([]);
   
   // Lista temporária de insumos que serão enviados à API juntos (se preferir múltiplo) ou um a um
   novosInsumos = signal<{ nome_insumo: string, codigo_insumo: string, lote_insumo: string, quantidade: number, unidade: string }[]>([]);
@@ -54,6 +56,14 @@ export class LoteDetail implements OnInit {
 
   ngOnInit(): void {
     this.carregarLote();
+    this.carregarInsumosMaster();
+  }
+
+  carregarInsumosMaster() {
+    this.loteService.getInsumosMaster().subscribe({
+      next: (insumos) => this.insumosMaster.set(insumos),
+      error: (err) => console.error('Erro ao carregar insumos mestre:', err)
+    });
   }
 
   carregarLote() {
@@ -95,6 +105,19 @@ export class LoteDetail implements OnInit {
 
     this.novosInsumos.update(lista => [...lista, novo]);
     this.formInsumo.reset({ quantidade: 0, unidade: 'UNID' });
+  }
+
+  onInsumoSelected(event: Event) {
+    const id = Number((event.target as HTMLSelectElement).value);
+    const insumo = this.insumosMaster().find(i => i.id === id);
+    
+    if (insumo) {
+      this.formInsumo.patchValue({
+        nome_insumo: insumo.nome,
+        codigo_insumo: insumo.codigo,
+        unidade: insumo.unidade_padrao
+      });
+    }
   }
 
   removerInsumoDaLista(index: number) {

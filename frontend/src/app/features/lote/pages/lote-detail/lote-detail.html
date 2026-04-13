@@ -200,7 +200,18 @@
         <form [formGroup]="formInsumo" (ngSubmit)="adicionarInsumoNaLista()" class="flex flex-col md:flex-row items-end gap-4 p-4 border border-[#484847]/50 rounded bg-[#0E0E0E]">
           <div class="flex-1 w-full">
             <label class="text-[9px] font-bold text-[#6B7280] uppercase tracking-wider mb-1 block">Nome do Insumo *</label>
-            <input type="text" formControlName="nome_insumo" class="w-full bg-[#1A1A1A] border border-[#484847]/50 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E5FF]">
+            <div class="relative group">
+              <select (change)="onInsumoSelected($event)" class="w-full bg-[#1A1A1A] border border-[#484847]/50 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00E5FF] appearance-none cursor-pointer pr-10">
+                <option value="" disabled selected>Selecione um insumo...</option>
+                @for (item of insumosMaster(); track item.id) {
+                  <option [value]="item.id">{{ item.nome }}</option>
+                }
+              </select>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" 
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADAAAA] pointer-events-none group-focus-within:text-[#00E5FF] transition-colors">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </div>
           </div>
           <div class="w-full md:w-32">
             <label class="text-[9px] font-bold text-[#6B7280] uppercase tracking-wider mb-1 block">Código</label>
