@@ -6,6 +6,7 @@ import insumoRoutes from "./insumoLote.routes.js";
 import rastreabilidadeRoutes from "./rastreabilidade.routes.js";
 import inspecaoRoutes from "./inspecaoLote.routes.js";
 import authRoutes from "./auth.routes.js";
+import insumoMasterRoutes from "./insumo.routes.js";
 import { authGuard } from "../middlewares/authGuard.js";
 import metricasRoutes from "./metricas.routes.js";
 
@@ -22,5 +23,6 @@ routes.use('/lotes/:loteId/insumos', insumoRoutes);
 routes.use('/lotes/:loteId/inspecao', inspecaoRoutes);
 routes.use('/rastreabilidade', rastreabilidadeRoutes);
 routes.use('/metricas', metricasRoutes);
+routes.use('/insumos', insumoMasterRoutes);
 
 export default routes;

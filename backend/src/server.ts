@@ -1,7 +1,7 @@
 import express from 'express'
-import { AppDataSource } from './src/config/AppDataSource.js'
-import routes from './src/routes/index.routes.js'
-import { errorHandler } from './src/middlewares/errorHandler.js'
+import { AppDataSource } from './config/AppDataSource.js'
+import routes from './routes/index.routes.js'
+import { errorHandler } from './middlewares/errorHandler.js'
 import cors from 'cors'
 
 const app = express()

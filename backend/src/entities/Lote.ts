@@ -1,8 +1,8 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Produto } from "./Produto.js";
-import { Usuario } from "./Usuario.js";
-import { InsumoLote } from "./InsumoLote.js";
-import { InspecaoLote } from "./InspecaoLote.js";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, type Relation } from "typeorm";
+import type { Produto } from "./Produto.js";
+import type { Usuario } from "./Usuario.js";
+import type { InsumoLote } from "./InsumoLote.js";
+import type { InspecaoLote } from "./InspecaoLote.js";
 
 export enum Turno {
   MANHA = "manha",
@@ -26,9 +26,9 @@ export class Lote {
   @Column({ type: "text", unique: true, nullable: false })
   numero_lote!: string
 
-  @ManyToOne(() => Produto, (produto) => produto.lotes)
+  @ManyToOne("Produto", "lotes")
   @JoinColumn({ name: "produto_id" })
-  produto!: Produto;
+  produto!: Relation<Produto>;
 
   @Column({ type: "date", nullable: false })
   data_producao!: Date
@@ -36,9 +36,9 @@ export class Lote {
   @Column({ type: "enum", enum: Turno, nullable: false })
   turno!: Turno
 
-  @ManyToOne(() => Usuario, (usuario) => usuario.lotes)
+  @ManyToOne("Usuario", "lotes")
   @JoinColumn({ name: "operador_id" })
-  operador!: Usuario;
+  operador!: Relation<Usuario>;
 
   @Column({ type: "int", nullable: false })
   quantidade_prod!: number
@@ -58,9 +58,9 @@ export class Lote {
   @Column({ type: "timestamptz", nullable: true })
   encerrado_em?: Date
 
-  @OneToMany(() => InsumoLote, (insumo) => insumo.lote)
-  insumos!: InsumoLote[]
+  @OneToMany("InsumoLote", "lote")
+  insumos!: Relation<InsumoLote>[]
 
-  @OneToOne(() => InspecaoLote, (inspecao) => inspecao.lote)
-  inspecao!: InspecaoLote
+  @OneToOne("InspecaoLote", "lote")
+  inspecao!: Relation<InspecaoLote>
 }

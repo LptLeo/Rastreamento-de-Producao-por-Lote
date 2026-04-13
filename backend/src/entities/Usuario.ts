@@ -1,6 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from "typeorm";
-import { Lote } from "./Lote.js";
-import { InspecaoLote } from "./InspecaoLote.js";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, type Relation } from "typeorm";
+import type { Lote } from "./Lote.js";
+import type { InspecaoLote } from "./InspecaoLote.js";
 
 export enum PerfilUsuario {
   OPERADOR = "operador",
@@ -37,9 +37,9 @@ export class Usuario {
   @CreateDateColumn({ type: 'timestamptz' })
   criado_em!: Date;
 
-  @OneToMany(() => Lote, (lote) => lote.operador)
-  lotes!: Lote[];
+  @OneToMany("Lote", "operador")
+  lotes!: Relation<Lote>[];
 
-  @OneToMany(() => InspecaoLote, (inspecao) => inspecao.inspetor)
-  inspecoes!: InspecaoLote[];
+  @OneToMany("InspecaoLote", "inspetor")
+  inspecoes!: Relation<InspecaoLote>[];
 }

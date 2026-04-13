@@ -22,6 +22,13 @@ export interface Produto {
   nome: string;
 }
 
+export interface InsumoMaster {
+  id: number;
+  nome: string;
+  codigo: string;
+  unidade_padrao: string;
+}
+
 export interface Operador {
   id: number;
   nome: string;

@@ -1,14 +1,14 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Lote } from "./Lote.js";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, type Relation } from "typeorm";
+import type { Lote } from "./Lote.js";
 
 @Entity("insumos_lote")
 export class InsumoLote {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => Lote, (lote) => lote.insumos)
+  @ManyToOne("Lote", "insumos")
   @JoinColumn({ name: "lote_id" })
-  lote!: Lote
+  lote!: Relation<Lote>
 
   @Column({ type: "text", nullable: false })
   nome_insumo!: string;

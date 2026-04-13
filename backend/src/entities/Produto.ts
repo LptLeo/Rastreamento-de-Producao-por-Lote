@@ -1,5 +1,5 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { Lote } from "./Lote.js";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn, type Relation } from "typeorm";
+import type { Lote } from "./Lote.js";
 
 @Entity('produto')
 export class Produto {
@@ -22,6 +22,6 @@ export class Produto {
   ativo!: boolean
 
   // Relacionamento 1:N com Lote, um produto pode ter vários lotes
-  @OneToMany(() => Lote, (lote) => lote.produto)
-  lotes!: Lote[];
+  @OneToMany("Lote", "produto")
+  lotes!: Relation<Lote>[];
 }
