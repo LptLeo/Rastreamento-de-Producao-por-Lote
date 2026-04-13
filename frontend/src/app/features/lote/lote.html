@@ -79,6 +79,12 @@
       class="whitespace-nowrap px-6 py-2 rounded-md border border-[#484847]/30 text-[12px] font-bold uppercase tracking-wider transition-all shrink-0">
       Aprovado ({{ contagemPorStatus().aprovado }})
     </button>
+    <button (click)="alterarFiltro('aprovado_restricao')" [class.bg-[#00E5FF]]="filtroAtivo() === 'aprovado_restricao'"
+      [class.text-black]="filtroAtivo() === 'aprovado_restricao'" [class.bg-[#1A1A1A]]="filtroAtivo() !== 'aprovado_restricao'"
+      [class.text-[#ADAAAA]]="filtroAtivo() !== 'aprovado_restricao'" [class.hover:bg-[#484847]/20]="filtroAtivo() !== 'aprovado_restricao'"
+      class="whitespace-nowrap px-6 py-2 rounded-md border border-[#484847]/30 text-[12px] font-bold uppercase tracking-wider transition-all shrink-0">
+      Aprovado com Restrição ({{ contagemPorStatus().aprovado_restricao }})
+    </button>
     <button (click)="alterarFiltro('reprovado')" [class.bg-[#00E5FF]]="filtroAtivo() === 'reprovado'"
       [class.text-black]="filtroAtivo() === 'reprovado'" [class.bg-[#1A1A1A]]="filtroAtivo() !== 'reprovado'"
       [class.text-[#ADAAAA]]="filtroAtivo() !== 'reprovado'"
