@@ -115,6 +115,10 @@ export class Lote implements OnInit {
     this.router.navigate(['/app/lote', id]);
   }
 
+  irParaNovoLote(): void {
+    this.router.navigate(['/app/lote/novo']);
+  }
+
   getStatusConfig(status: LoteStatus) {
     return STATUS_CONFIG[status];
   }
