@@ -9,7 +9,7 @@ export interface UsuarioResumo {
 export interface LoteResumo {
   id: number;
   numero_lote: string;
-  quantidade_prod: number;
+  quantidade_planejada: number;
   status: string;
   aberto_em: string | Date;
   produto: ProdutoResumo;
