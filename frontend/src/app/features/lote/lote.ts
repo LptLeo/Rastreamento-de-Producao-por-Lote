@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LoteFeatureService } from './services/lote.service';
@@ -10,6 +10,9 @@ import { LoteCardComponent } from '../../shared/components/lote-card/lote-card';
 import { FilterTabsComponent, FilterTab } from '../../shared/components/filter-tabs/filter-tabs';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header';
 
+/** Fallback caso o backend não responda — 2 minutos como padrão de demo */
+const FALLBACK_DURACAO_MS = 2 * 60 * 1000;
+
 @Component({
   selector: 'app-lote',
   standalone: true,
@@ -17,7 +20,9 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
   templateUrl: './lote.html',
   styleUrl: './lote.css',
 })
-export class Lote implements OnInit {
+export class Lote implements OnInit, OnDestroy {
+  /** Referência do setInterval para limpeza no OnDestroy */
+  private tickIntervalId: ReturnType<typeof setInterval> | null = null;
   private loteService = inject(LoteFeatureService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -38,6 +43,13 @@ export class Lote implements OnInit {
   erro = signal<string | null>(null);
   filtroAtivo = signal<string>('todos');
 
+  /**
+   * Signal que incrementa a cada segundo.
+   * Serve como "relógio" reativo: qualquer computed que o leia
+   * será recalculado automaticamente a cada tick.
+   */
+  private tick = signal<number>(Date.now());
+
   // Sinal computado para exibir apenas os lotes que batem com o filtro selecionado
   lotes = computed(() => {
     const lista = this.lotesBase();
@@ -48,8 +60,11 @@ export class Lote implements OnInit {
   });
 
   // Estatísticas computadas
+  /** Duração de produção em ms — carregada do backend, com fallback */
+  private duracaoMs = signal<number>(FALLBACK_DURACAO_MS);
+
   producaoTotalAcumulada = computed(() => {
-    return this.lotesBase().reduce((acc, curr) => acc + (curr.quantidade_prod || 0), 0);
+    return this.lotesBase().reduce((acc, curr) => acc + (curr.quantidade_planejada || 0), 0);
   });
 
   statsCargaSistema = computed(() => {
@@ -80,16 +95,48 @@ export class Lote implements OnInit {
   });
 
   ngOnInit(): void {
-    // Escuta mudanças nos parâmetros da URL (ex: ?busca=Produto X)
     this.route.queryParams.subscribe(params => {
       const busca = params['busca'];
       this.carregarLotes(busca);
     });
+
+    /** Carrega o tempo de produção configurado no backend */
+    this.loteService.getConfig().subscribe({
+      next: (config) => {
+        this.duracaoMs.set(config.tempo_producao_minutos * 60 * 1000);
+      },
+      error: () => {
+        console.warn('[lote] Não foi possível carregar a config — usando fallback de 2 min.');
+      },
+    });
+
+    let tickCount = 0;
+    this.tickIntervalId = setInterval(() => {
+      this.tick.set(Date.now());
+      tickCount++;
+
+      // Realtime Sync Polling: A cada 5 segundos re-valida silenciosamente caso haja lote transicionando ou em produção
+      if (tickCount % 5 === 0) {
+        const precisaSincronizar = this.lotesBase().some(l => l.status === 'em_producao');
+        if (precisaSincronizar) {
+          const buscaAtual = this.route.snapshot.queryParams['busca'];
+          this.carregarLotes(buscaAtual, true);
+        }
+      }
+    }, 1000);
   }
 
-  carregarLotes(busca?: string): void {
-    this.carregando.set(true);
-    this.erro.set(null);
+  ngOnDestroy(): void {
+    if (this.tickIntervalId !== null) {
+      clearInterval(this.tickIntervalId);
+    }
+  }
+
+  carregarLotes(busca?: string, sutil = false): void {
+    if (!sutil) {
+      this.carregando.set(true);
+      this.erro.set(null);
+    }
 
     // Buscamos SEMPRE todos os lotes para manter as contagens das abas precisas
     // O filtro de status agora é aplicado localmente via Signal Computed
@@ -110,7 +157,7 @@ export class Lote implements OnInit {
         },
         error: (err) => {
           console.error('Erro ao carregar lotes:', err);
-          this.erro.set('Não foi possível carregar a lista de lotes.');
+          if (!sutil) this.erro.set('Não foi possível carregar a lista de lotes.');
         }
       });
   }
