@@ -1,27 +1,56 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn, type Relation } from "typeorm";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+  type Relation,
+} from "typeorm";
+
+import type { ReceitaItem } from "./ReceitaItem.js";
 import type { Lote } from "./Lote.js";
 
-@Entity('produto')
+/**
+ * Define um produto acabado e suas regras de qualidade.
+ * A receita (lista de matérias-primas necessárias) é gerenciada
+ * via entidade pivot ReceitaItem para armazenar quantidade por item.
+ */
+@Entity("produto")
 export class Produto {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: 'text', unique: true, nullable: false })
-  codigo!: string;
+  @Column({ type: "text", nullable: false })
+  nome!: string;
 
-  @Column({ type: 'text', nullable: false })
-  nome!: string
+  @Column({ type: "text", unique: true, nullable: false })
+  sku!: string;
 
-  @Column({ type: 'text', nullable: true })
-  descricao?: string;
+  @Column({ type: "text", nullable: false })
+  categoria!: string;
 
-  @Column({ type: 'text', nullable: false })
-  linha!: string
+  @Column({ type: "text", nullable: false })
+  linha_padrao!: string;
 
-  @Column({ type: 'boolean', default: true })
-  ativo!: boolean
+  /** Limiar de reprovação (%) para determinar o resultado da inspeção */
+  @Column({ type: "numeric", nullable: false })
+  percentual_ressalva!: number;
 
-  // Relacionamento 1:N com Lote, um produto pode ter vários lotes
+  @Column({ type: "boolean", default: true })
+  ativo!: boolean;
+
+  @CreateDateColumn({ type: "timestamptz" })
+  criado_em!: Date;
+
+  @UpdateDateColumn({ type: "timestamptz" })
+  atualizado_em!: Date;
+
+  @OneToMany("ReceitaItem", "produto", { cascade: true })
+  receita!: Relation<ReceitaItem>[];
+
   @OneToMany("Lote", "produto")
   lotes!: Relation<Lote>[];
 }
