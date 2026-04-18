@@ -8,6 +8,7 @@ import { ProdutoFilterButtonComponent } from './components/produto-filter-button
 import { ProdutoCardComponent } from './components/produto-card/produto-card';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header';
+import type { Produto } from '../../shared/models/lote.models';
 
 @Component({
   selector: 'app-produtos',
@@ -25,10 +26,20 @@ export class Produtos implements OnInit {
   carregando = signal(true);
   erro = signal<string | null>(null);
   termoPesquisa = signal('');
+  filtroAtivo = signal('todos');
+  ultimaAtualizacao = signal(new Date().toLocaleTimeString('pt-BR'));
 
-  /** Listagem filtrada por busca local */
+  /** Listagem filtrada por busca local e abas */
   produtos = computed(() => {
-    const lista = this.produtosBase();
+    let lista = this.produtosBase();
+    
+    // Filtro por abas
+    const filtro = this.filtroAtivo();
+    if (filtro === 'ativos') lista = lista.filter(p => p.ativo);
+    if (filtro === 'inativos') lista = lista.filter(p => !p.ativo);
+    if (filtro === 'sem_insumos') lista = lista.filter(p => !p.receita || p.receita.length === 0);
+
+    // Filtro por pesquisa textual
     const termo = this.termoPesquisa().toLowerCase().trim();
     if (!termo) return lista;
     return lista.filter(p =>
@@ -38,13 +49,29 @@ export class Produtos implements OnInit {
     );
   });
 
-  /** Métricas computadas localmente */
+  /** Métricas computadas localmente para as abas */
+  metrics = computed(() => {
+    const lista = this.produtosBase();
+    return {
+      total: lista.length,
+      ativos: lista.filter(p => p.ativo).length,
+      inativos: lista.filter(p => !p.ativo).length,
+      mais_produzidos: 0, // Placeholder
+      sem_insumos: lista.filter(p => !p.receita || p.receita.length === 0).length,
+      mais_produzido: lista.length > 0 ? lista[0].nome : '—'
+    };
+  });
+
   totalProdutos = computed(() => this.produtosBase().length);
   totalAtivos = computed(() => this.produtosBase().filter(p => p.ativo).length);
   totalComReceita = computed(() => this.produtosBase().filter(p => p.receita?.length > 0).length);
 
   ngOnInit(): void {
     this.carregarProdutos();
+  }
+
+  aplicarFiltroTab(tab: string): void {
+    this.filtroAtivo.set(tab);
   }
 
   carregarProdutos(): void {

@@ -2,6 +2,7 @@ import { Component, inject, computed } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DashboardService } from "./services/dashboard.service";
 import { DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header';
 
 @Component({
