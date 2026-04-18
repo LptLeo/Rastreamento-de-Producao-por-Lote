@@ -12,6 +12,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
 })
 export class Dashboard {
   private dashboardService = inject(DashboardService);
+  private router = inject(Router);
 
   dashboardResource = rxResource({
     stream: () => this.dashboardService.getDashboardData(),
@@ -22,6 +23,20 @@ export class Dashboard {
   taxaDeAprovacaoMes = computed(() => this.dashboardResource.value()?.taxa_aprovacao_mes ?? 0);
   lotesEmAberto = computed(() => this.dashboardResource.value()?.aguardando_inspecao ?? 0);
   ultimosLotes = computed(() => this.dashboardResource.value()?.ultimos_lotes ?? []);
+  dataGeracao = new Date();
+
+  irParaDetalhe(id: number): void {
+    this.router.navigate(['/app/lote', id]);
+  }
+
+  irParaNovoLote(): void {
+    this.router.navigate(['/app/lote/novo']);
+  }
+
+  exportarPDF(): void {
+    // Implementação simples via Print para demonstração industrial rápida
+    window.print();
+  }
 
   getStatusClass(status: string): string {
     const base = 'ml-auto h-[20px] text-center rounded-xs py-0.5 px-2 font-bold text-[10.4px] tracking-[0.52px] flex items-center justify-center ';
