@@ -7,11 +7,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { ProdutoFilterButtonComponent } from './components/produto-filter-button/produto-filter-button';
 import { ProdutoCardComponent } from './components/produto-card/produto-card';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header';
 
 @Component({
   selector: 'app-produtos',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProdutoFilterButtonComponent, ProdutoCardComponent, StatCardComponent],
+  imports: [CommonModule, RouterLink, ProdutoFilterButtonComponent, ProdutoCardComponent, StatCardComponent, PageHeaderComponent],
   templateUrl: './produtos.html',
 })
 export class Produtos implements OnInit, OnDestroy {

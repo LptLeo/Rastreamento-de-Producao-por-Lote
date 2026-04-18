@@ -8,11 +8,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card';
 import { LoteCardComponent } from '../../shared/components/lote-card/lote-card';
 import { FilterTabsComponent, FilterTab } from '../../shared/components/filter-tabs/filter-tabs';
+import { PageHeaderComponent } from '../../shared/components/page-header/page-header';
 
 @Component({
   selector: 'app-lote',
   standalone: true,
-  imports: [CommonModule, StatCardComponent, LoteCardComponent, FilterTabsComponent],
+  imports: [CommonModule, StatCardComponent, LoteCardComponent, FilterTabsComponent, PageHeaderComponent],
   templateUrl: './lote.html',
   styleUrl: './lote.css',
 })
