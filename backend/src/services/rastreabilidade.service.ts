@@ -130,7 +130,7 @@ export class RastreabilidadeService {
   consultar = async (termo: string, requisitante: Requisitante) => {
     verificaPermissao(requisitante, [PerfilUsuario.GESTOR, PerfilUsuario.INSPETOR, PerfilUsuario.OPERADOR]);
 
-    const ehLoteProduto = /^LOT-\d{8}-\d{3}$/.test(termo);
+    const ehLoteProduto = termo.startsWith("LOT-");
 
     if (ehLoteProduto) {
       return {
