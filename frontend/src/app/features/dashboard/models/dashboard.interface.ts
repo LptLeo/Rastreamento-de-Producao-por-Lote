@@ -17,9 +17,13 @@ export interface LoteResumo {
 }
 
 export interface DashboardData {
-  lotes_hoje: number;
-  unidades_hoje: number;
+  lotes_mes: number;
+  lotes_tendencia: number;
+  unidades_mes: number;
+  unidades_tendencia: number;
   taxa_aprovacao_mes: number;
   aguardando_inspecao: number;
   ultimos_lotes: LoteResumo[];
+  top_produtos?: { nome: string; quantidade: number }[];
+  top_funcionarios?: { nome: string; quantidade_lotes: number }[];
 }
