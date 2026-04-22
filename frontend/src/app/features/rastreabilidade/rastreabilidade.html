@@ -205,7 +205,7 @@
       </div>
 
       <!-- Nós filhos: Insumos -->
-      <div @treeChildren class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+      <div @treeChildren class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6 w-full">
         @for (consumo of resultadoLote.consumos; track consumo.id) {
         <div class="node-glow bg-[#131313] border border-[#484847]/50 hover:border-[#00E5FF]/40 rounded-xl p-5 transition-all relative">
           <div class="absolute -top-3 left-4 text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#0A0A0A] border border-[#484847]/40 text-[#6B7280]">
