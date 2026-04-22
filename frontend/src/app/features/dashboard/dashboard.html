@@ -3,12 +3,14 @@
     mobileTitle="Dashboard" mobileSubtitle="TERMINAL STATUS: ACTIVE // V1.0.4">
     <div actions class="hidden lg:flex items-center">
       <button
-        class="bg-[#201F1F] text-[11.2px] leading-[16.8px] tracking-[1.12px] text-[#FFFFFF] border-b-2 border-[#484847] px-4 py-2 mr-4"
+        class="bg-[#201F1F] text-[11.2px] leading-[16.8px] tracking-[1.12px] text-[#FFFFFF] border-b-2 border-[#484847] px-4 py-2 mr-4 transition-colors hover:bg-[#2A2A2A] active:bg-[#151515]"
+        (click)="exportarPDF()"
         type="button">
         EXPORTAR PDF
       </button>
       <button
-        class="bg-linear-[19deg] from-[#81ECFF] to-[#00E3FD] font-bold text-[11.2px] leading-[16.8px] tracking-[1.12px] text-[#004D57] px-4 py-2 rounded-[6px]"
+        class="bg-linear-[19deg] from-[#81ECFF] to-[#00E3FD] font-bold text-[11.2px] leading-[16.8px] tracking-[1.12px] text-[#004D57] px-4 py-2 rounded-[6px] transition-transform hover:scale-105 active:scale-95"
+        (click)="irParaNovoLote()"
         type="button">
         NOVO LOTE
       </button>
@@ -21,10 +23,13 @@
         <div class="bg-[#81ECFF]/10 p-2 mr-auto">
           <img class="w-[18.03px] h-[18.51px]" src="assets/icons/lotes-prod-icon.svg" alt="">
         </div>
-        <p class="font-bold text-[11.2px] leading-[16.8px] tracking-[0px] text-[#C3F400]">+12.4% ↑</p>
+        <p class="font-bold text-[11.2px] leading-[16.8px] tracking-[0px]"
+          [class.text-[#C3F400]]="lotesTendencia() >= 0" [class.text-[#FF716C]]="lotesTendencia() < 0">
+          {{ lotesTendencia() > 0 ? '+' : '' }}{{ lotesTendencia() }}% {{ lotesTendencia() >= 0 ? '↑' : '↓' }}
+        </p>
       </div>
       <div>
-        <h4 class="text-[10.4px] leading-[15.6px] tracking-[1.04px] text-[#ADAAAA] mt-3">LOTES PRODUZIDOS</h4>
+        <h4 class="text-[10.4px] leading-[15.6px] tracking-[1.04px] text-[#ADAAAA] mt-3">LOTES (MÊS ATUAL)</h4>
       </div>
       <div>
         <span class="font-bold text-[30px] leading-[36px] tracking-[0px] text-[#FFFFFF]">
@@ -32,8 +37,9 @@
         </span>
       </div>
       <div>
-        <span class="text-[10.4px] leading-[15.6px] tracking-[0px] text-[#ADAAAA] mt-[3px]">Tendência positive este
-          mês</span>
+        <span class="text-[10.4px] leading-[15.6px] tracking-[0px] text-[#ADAAAA] mt-[3px]">
+          Comparado ao mês anterior
+        </span>
       </div>
     </div>
     <div class="flex flex-col gap-1 bg-[#1A1919] p-6 border-b-2 border-[#484847]/10 rounded-[4px] order-2 col-span-1">
@@ -41,10 +47,13 @@
         <div class="bg-[#81ECFF]/10 p-2 mr-auto">
           <img class="w-[18.03px] h-[18.51px]" src="assets/icons/products-prod-icon.svg" alt="">
         </div>
-        <p class="font-bold text-[11.2px] leading-[16.8px] tracking-[0px] text-[#C3F400]">+5.2% ↑</p>
+        <p class="font-bold text-[11.2px] leading-[16.8px] tracking-[0px]"
+          [class.text-[#C3F400]]="unidadesTendencia() >= 0" [class.text-[#FF716C]]="unidadesTendencia() < 0">
+          {{ unidadesTendencia() > 0 ? '+' : '' }}{{ unidadesTendencia() }}% {{ unidadesTendencia() >= 0 ? '↑' : '↓' }}
+        </p>
       </div>
       <div>
-        <h4 class="text-[10.4px] leading-[15.6px] tracking-[1.04px] text-[#ADAAAA] mt-3">UNIDADES PRODUZIDAS</h4>
+        <h4 class="text-[10.4px] leading-[15.6px] tracking-[1.04px] text-[#ADAAAA] mt-3">UNIDADES (MÊS ATUAL)</h4>
       </div>
       <div>
         <span class="font-bold text-[30px] leading-[36px] tracking-[0px] text-[#FFFFFF]">
@@ -53,7 +62,7 @@
       </div>
       <div>
         <span class="text-[10.4px] leading-[15.6px] tracking-[0px] text-[#ADAAAA] mt-[3px]">
-          Meta mensal: 50.0k
+          Volume total no período
         </span>
       </div>
     </div>
