@@ -83,13 +83,23 @@
 
   <!-- Cards List -->
   @else {
-  <div class="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-    @for (lote of lotes(); track lote.id; let i = $index) {
-    <app-lote-card class="animate-scale-in stagger-item" [lote]="lote" (cardClick)="irParaDetalhe($event)">
+    @for (lote of lotes(); track lote.id) {
+    <app-lote-card 
+      class="animate-fade-in" 
+      [lote]="lote" 
+      [duracaoProducaoMs]="duracaoMs()"
+      (cardClick)="irParaDetalhe($event)">
     </app-lote-card>
     }
 
   </div>
+
+  @if (paginationMeta(); as meta) {
+    @if (meta.totalPaginas > 1) {
+      <app-pagination [meta]="meta" (pageChange)="onPageChange($event)"></app-pagination>
+    }
+  }
   }
 </div>

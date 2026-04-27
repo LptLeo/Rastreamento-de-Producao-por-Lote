@@ -10,6 +10,7 @@ import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
 import type { CriarLoteDTO } from "../dto/lote.dto.js";
 import { NotificacaoService } from "./notificacao.service.js";
 import { TipoNotificacao } from "../entities/Notificacao.js";
+import { PaginacaoQueryDto, formatarRespostaPaginada, type RespostaPaginada } from "../dto/paginacao.dto.js";
 
 export class LoteService {
   private loteRepo: Repository<Lote>;
@@ -163,17 +164,66 @@ export class LoteService {
     });
   };
 
-  listar = async (requisitante: Requisitante): Promise<Lote[]> => {
+  listar = async (query: PaginacaoQueryDto & { status?: string }, requisitante: Requisitante): Promise<RespostaPaginada<Lote>> => {
     verificaPermissao(requisitante, [
       PerfilUsuario.OPERADOR,
       PerfilUsuario.INSPETOR,
       PerfilUsuario.GESTOR,
     ]);
 
-    return this.loteRepo.find({
-      relations: ["operador", "produto", "consumos", "consumos.insumoEstoque"],
-      order: { aberto_em: "DESC" },
+    const { pagina, limite, busca, status } = query;
+    const skip = (pagina - 1) * limite;
+
+    const queryBuilder = this.loteRepo.createQueryBuilder("lote")
+      .leftJoinAndSelect("lote.produto", "produto")
+      .leftJoinAndSelect("lote.operador", "operador")
+      .leftJoinAndSelect("lote.inspecao", "inspecao")
+      .leftJoinAndSelect("lote.consumos", "consumos")
+      .skip(skip)
+      .take(limite)
+      .orderBy("lote.aberto_em", "DESC");
+
+    if (busca) {
+      queryBuilder.andWhere("(lote.numero_lote ILIKE :busca OR produto.nome ILIKE :busca)", { busca: `%${busca}%` });
+    }
+
+    if (status && status !== 'todos') {
+      queryBuilder.andWhere("lote.status = :status", { status });
+    }
+
+    const [lotes, total] = await queryBuilder.getManyAndCount();
+
+    return formatarRespostaPaginada([lotes, total], query);
+  };
+
+  getContagemPorStatus = async (requisitante: Requisitante): Promise<Record<string, number>> => {
+    verificaPermissao(requisitante, [PerfilUsuario.GESTOR, PerfilUsuario.OPERADOR, PerfilUsuario.INSPETOR]);
+
+    const counts = await this.loteRepo
+      .createQueryBuilder("lote")
+      .select("lote.status", "status")
+      .addSelect("COUNT(*)", "count")
+      .groupBy("lote.status")
+      .getRawMany<{ status: string; count: string }>();
+
+    const result: Record<string, number> = {
+      todos: 0,
+      em_producao: 0,
+      aguardando_inspecao: 0,
+      aprovado: 0,
+      aprovado_restricao: 0,
+      reprovado: 0,
+    };
+
+    let total = 0;
+    counts.forEach((c) => {
+      const count = Number(c.count);
+      result[c.status] = count;
+      total += count;
     });
+    result.todos = total;
+
+    return result;
   };
 
   buscarPorId = async (id: number, requisitante: Requisitante): Promise<Lote> => {

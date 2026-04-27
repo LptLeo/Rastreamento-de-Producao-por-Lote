@@ -13,7 +13,14 @@ export const criar = async (req: Request, res: Response, next: NextFunction) => 
 
 export const listar = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const resultado = await service.listar(getRequisitante(req));
+    const resultado = await service.listar(req.query as any, getRequisitante(req));
+    res.json(resultado);
+  } catch (e) { next(e); }
+};
+
+export const getContagem = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const resultado = await service.getContagemPorStatus(getRequisitante(req));
     res.json(resultado);
   } catch (e) { next(e); }
 };
