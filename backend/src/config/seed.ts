@@ -9,26 +9,35 @@ import { ConsumoInsumo } from "../entities/ConsumoInsumo.js";
 import { Inspecao, ResultadoInspecao } from "../entities/Inspecao.js";
 import { Notificacao, TipoNotificacao } from "../entities/Notificacao.js";
 import bcrypt from "bcrypt";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const SALT_ROUNDS = 12;
 
+// ─── Configurações via ENV ──────────────────────────────────────────────────
+const SEED_TOTAL_LOTES = Number(process.env.SEED_TOTAL_LOTES_PRODUCAO) || 180;
+const SEED_MESES = Number(process.env.SEED_MESES_HISTORICO) || 3;
+const SEED_REPROV_BASE = Number(process.env.SEED_REPROVACAO_BASE) || 10;
+const SEED_REPROV_VAR = Number(process.env.SEED_REPROVACAO_VARIACAO) || 10;
+const SEED_INSUMO_SURPLUS = Number(process.env.SEED_INSUMO_SURPLUS_PCT) || 35;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Retorna uma data dentro de [start, end] */
 function randomDate(start: Date, end: Date): Date {
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 }
 
-/** Retorna inteiro aleatório entre min e max (inclusive) */
 function rand(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  const minInt = Math.ceil(min);
+  const maxInt = Math.floor(max);
+  return Math.floor(Math.random() * (maxInt - minInt + 1)) + minInt;
 }
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]!;
 }
 
-/** Retorna string no formato DDMMAAAA (usando datas locais para evitar troca de dia por timezone) */
 function formatDateDDMMAAAA(d: Date): string {
   const dia = d.getDate().toString().padStart(2, "0");
   const mes = (d.getMonth() + 1).toString().padStart(2, "0");
@@ -36,16 +45,13 @@ function formatDateDDMMAAAA(d: Date): string {
   return `${dia}${mes}${ano}`;
 }
 
-/** Simula 3 meses atrás até hoje */
 const HOJE = new Date();
 const INICIO = new Date(HOJE);
-INICIO.setMonth(INICIO.getMonth() - 3);
-
-// ─── Seed ─────────────────────────────────────────────────────────────────────
+INICIO.setMonth(INICIO.getMonth() - SEED_MESES);
 
 async function seed() {
   try {
-    console.log("[seed] Conectando ao banco de dados...");
+    console.log("[seed] Iniciando geração massiva de dados...");
     await AppDataSource.initialize();
 
     const usuarioRepo  = AppDataSource.getRepository(Usuario);
@@ -59,390 +65,217 @@ async function seed() {
     const notificacaoRepo = AppDataSource.getRepository(Notificacao);
 
     // ─── 1. Usuários ────────────────────────────────────────────────────────
-
-    const emailGestor = process.env.SEED_USER_EMAIL   || "gestor@lotepim.com";
-    const senhaLimpa  = process.env.SEED_USER_PASSWORD || "senha123";
-
-    async function upsertUsuario(
-      nome: string, email: string, senha: string, perfil: PerfilUsuario, criadoPor?: Usuario
-    ): Promise<Usuario> {
+    console.log("[seed] Criando usuários...");
+    async function upsertUsuario(nome: string, email: string, perfil: PerfilUsuario): Promise<Usuario> {
       const existe = await usuarioRepo.findOneBy({ email });
-      if (existe) { console.log(`[seed] Usuário '${email}' já existe.`); return existe; }
-      console.log(`[seed] Criando usuário: ${email}`);
-      const userData = {
+      if (existe) return existe;
+      const u = usuarioRepo.create({
         nome, email,
-        senha_hash: await bcrypt.hash(senha, SALT_ROUNDS),
-        perfil, ativo: true, alerta_estoque_porcentagem: 25,
-      } as any;
-
-      if (criadoPor) {
-        userData.criadoPor = criadoPor;
-      }
-
-      return usuarioRepo.save(usuarioRepo.create(userData as Usuario));
+        senha_hash: await bcrypt.hash("senha123", SALT_ROUNDS),
+        perfil, ativo: true, alerta_estoque_porcentagem: 20
+      });
+      return usuarioRepo.save(u);
     }
 
-    const gestor   = await upsertUsuario("Gestor Inicial",   emailGestor,              senhaLimpa, PerfilUsuario.GESTOR);
-    const operador = await upsertUsuario("Carlos Operador",  "operador@lotepim.com",   "senha123", PerfilUsuario.OPERADOR, gestor);
-    const inspetor = await upsertUsuario("Ana Inspetora",    "inspetor@lotepim.com",   "senha123", PerfilUsuario.INSPETOR, gestor);
-    await upsertUsuario("Marcos Operador 2", "operador2@lotepim.com", "senha123", PerfilUsuario.OPERADOR, gestor);
-    await upsertUsuario("Julia Inspetora 2","inspetor2@lotepim.com", "senha123", PerfilUsuario.INSPETOR, gestor);
+    const gestor   = await upsertUsuario("Admin Gestor", "gestor@lotepim.com", PerfilUsuario.GESTOR);
+    const operador = await upsertUsuario("Carlos Operador", "operador@lotepim.com", PerfilUsuario.OPERADOR);
+    const inspetor = await upsertUsuario("Ana Inspetora", "inspetor@lotepim.com", PerfilUsuario.INSPETOR);
+    const op2 = await upsertUsuario("Marcos Operador 2", "operador2@lotepim.com", PerfilUsuario.OPERADOR);
+    const ins2 = await upsertUsuario("Julia Inspetora 2", "inspetor2@lotepim.com", PerfilUsuario.INSPETOR);
 
-    const operadores = [operador, await usuarioRepo.findOneBy({ email: "operador2@lotepim.com" }) as Usuario];
-    const inspetores = [inspetor, await usuarioRepo.findOneBy({ email: "inspetor2@lotepim.com" }) as Usuario];
+    const operadores = [operador, op2];
+    const inspetores = [inspetor, ins2];
 
     // ─── 2. Matérias-Primas ─────────────────────────────────────────────────
-
+    console.log("[seed] Criando catálogo de matérias-primas...");
     const mpDados = [
-      { nome: "Painel LCD 14 pol",         sku_interno: "MP-LCD14",       unidade_medida: UnidadeMedida.UN, categoria: "Displays" },
-      { nome: "Painel LED 27 pol",          sku_interno: "MP-LED27",       unidade_medida: UnidadeMedida.UN, categoria: "Displays" },
-      { nome: "Placa Mãe ATX Z790",         sku_interno: "MP-MB-Z790",     unidade_medida: UnidadeMedida.UN, categoria: "Eletrônicos" },
-      { nome: "Placa Mãe mATX B660",        sku_interno: "MP-MB-B660",     unidade_medida: UnidadeMedida.UN, categoria: "Eletrônicos" },
-      { nome: "Fonte ATX 650W",             sku_interno: "MP-FONTE650W",   unidade_medida: UnidadeMedida.UN, categoria: "Alimentação" },
-      { nome: "Fonte SFX 450W",             sku_interno: "MP-FONTE450W",   unidade_medida: UnidadeMedida.UN, categoria: "Alimentação" },
-      { nome: "Dissipador de Calor",        sku_interno: "MP-DISSIPADOR",  unidade_medida: UnidadeMedida.UN, categoria: "Refrigeração" },
-      { nome: "Pasta Térmica (gr)",         sku_interno: "MP-PASTA-TERM",  unidade_medida: UnidadeMedida.KG, categoria: "Refrigeração" },
-      { nome: "Cabo HDMI 2.1",              sku_interno: "MP-CABO-HDMI",   unidade_medida: UnidadeMedida.UN, categoria: "Cabos" },
-      { nome: "Cabo DisplayPort 1.4",       sku_interno: "MP-CABO-DP",     unidade_medida: UnidadeMedida.UN, categoria: "Cabos" },
-      { nome: "Chassi ATX Mid-Tower",       sku_interno: "MP-CHASSI-ATX",  unidade_medida: UnidadeMedida.UN, categoria: "Estrutura" },
-      { nome: "Parafusos M3 (pacote 100)",  sku_interno: "MP-PARAFUSO-M3", unidade_medida: UnidadeMedida.UN, categoria: "Fixação" },
+      { nome: "Painel LCD 14\"", sku_interno: "MP-LCD14", unidade_medida: UnidadeMedida.UN, categoria: "Displays" },
+      { nome: "Painel LED 27\"", sku_interno: "MP-LED27", unidade_medida: UnidadeMedida.UN, categoria: "Displays" },
+      { nome: "Placa Mãe ATX Z790", sku_interno: "MP-MB-Z790", unidade_medida: UnidadeMedida.UN, categoria: "Eletrônicos" },
+      { nome: "Placa Mãe mATX B660", sku_interno: "MP-MB-B660", unidade_medida: UnidadeMedida.UN, categoria: "Eletrônicos" },
+      { nome: "Fonte ATX 650W", sku_interno: "MP-FONTE650W", unidade_medida: UnidadeMedida.UN, categoria: "Alimentação" },
+      { nome: "Fonte SFX 450W", sku_interno: "MP-FONTE450W", unidade_medida: UnidadeMedida.UN, categoria: "Alimentação" },
+      { nome: "Gabinete Gamer RGB", sku_interno: "MP-GAB-RGB", unidade_medida: UnidadeMedida.UN, categoria: "Estrutura" },
+      { nome: "Cooler Processador", sku_interno: "MP-COOLER", unidade_medida: UnidadeMedida.UN, categoria: "Refrigeração" },
+      { nome: "Pasta Térmica Pro", sku_interno: "MP-PASTA", unidade_medida: UnidadeMedida.KG, categoria: "Refrigeração" },
+      { nome: "Cabo HDMI 2.1", sku_interno: "MP-HDMI", unidade_medida: UnidadeMedida.UN, categoria: "Cabos" },
+      { nome: "Parafuso M3", sku_interno: "MP-PAR-M3", unidade_medida: UnidadeMedida.UN, categoria: "Fixação" },
     ];
 
     const mps: MateriaPrima[] = [];
     for (const d of mpDados) {
-      const ex = await mpRepo.findOneBy({ sku_interno: d.sku_interno });
-      if (ex) { console.log(`[seed] MP '${d.nome}' já existe.`); mps.push(ex); continue; }
-      console.log(`[seed] Criando MP: ${d.nome}`);
-      mps.push(await mpRepo.save(mpRepo.create(d)));
+      let m = await mpRepo.findOneBy({ sku_interno: d.sku_interno });
+      if (!m) m = await mpRepo.save(mpRepo.create(d));
+      mps.push(m);
     }
 
-    const [lcd14, led27, mbZ790, mbB660, fonte650, fonte450, dissipador, pasta, cabHdmi, cabDp, chassi, parafusos] = mps as [
-      MateriaPrima, MateriaPrima, MateriaPrima, MateriaPrima,
-      MateriaPrima, MateriaPrima, MateriaPrima, MateriaPrima,
-      MateriaPrima, MateriaPrima, MateriaPrima, MateriaPrima,
-    ];
-
-    // ─── 3. Produtos com Receita ─────────────────────────────────────────────
-
-    type ProdutoDef = {
-      nome: string; sku: string; categoria: string;
-      linha_padrao: string; percentual_ressalva: number;
-      receita: { mp: MateriaPrima; qtd: number }[];
-    };
-
-    const produtosDef: ProdutoDef[] = [
-      {
-        nome: "Monitor Gamer 27\" 144Hz", sku: "PRD-MONGAME27", categoria: "Monitores",
-        linha_padrao: "Linha Gamer", percentual_ressalva: 8,
-        receita: [
-          { mp: led27,       qtd: 1 },
-          { mp: cabHdmi,     qtd: 1 },
-          { mp: cabDp,       qtd: 1 },
-          { mp: parafusos,   qtd: 2 },
-        ],
-      },
-      {
-        nome: "Monitor Office 14\" FHD", sku: "PRD-MONOFF14", categoria: "Monitores",
-        linha_padrao: "Linha Office", percentual_ressalva: 10,
-        receita: [
-          { mp: lcd14,       qtd: 1 },
-          { mp: cabHdmi,     qtd: 1 },
-          { mp: parafusos,   qtd: 1 },
-        ],
-      },
-      {
-        nome: "PC Gamer Tower ATX", sku: "PRD-PCGAMER-ATX", categoria: "Computadores",
-        linha_padrao: "Linha Gamer", percentual_ressalva: 5,
-        receita: [
-          { mp: mbZ790,      qtd: 1 },
-          { mp: fonte650,    qtd: 1 },
-          { mp: dissipador,  qtd: 1 },
-          { mp: pasta,       qtd: 0.005 },
-          { mp: chassi,      qtd: 1 },
-          { mp: parafusos,   qtd: 5 },
-        ],
-      },
-      {
-        nome: "PC Compacto mATX", sku: "PRD-PC-MATX", categoria: "Computadores",
-        linha_padrao: "Linha Office", percentual_ressalva: 10,
-        receita: [
-          { mp: mbB660,      qtd: 1 },
-          { mp: fonte450,    qtd: 1 },
-          { mp: dissipador,  qtd: 1 },
-          { mp: pasta,       qtd: 0.003 },
-          { mp: parafusos,   qtd: 4 },
-        ],
-      },
-      {
-        nome: "Kit Cabos Premium HDMI+DP", sku: "PRD-KIT-CABOS", categoria: "Acessórios",
-        linha_padrao: "Linha Acessórios", percentual_ressalva: 15,
-        receita: [
-          { mp: cabHdmi,     qtd: 2 },
-          { mp: cabDp,       qtd: 1 },
-        ],
-      },
-    ];
-
+    // ─── 3. Produtos (25 no total) ──────────────────────────────────────────
+    console.log("[seed] Criando catálogo de 25 produtos...");
     const produtos: Produto[] = [];
-    for (const def of produtosDef) {
-      const ex = await produtoRepo.findOneBy({ sku: def.sku });
-      if (ex) { console.log(`[seed] Produto '${def.nome}' já existe.`); produtos.push(ex); continue; }
-      console.log(`[seed] Criando produto: ${def.nome}`);
-      const p = await produtoRepo.save(produtoRepo.create({
-        nome: def.nome, sku: def.sku, categoria: def.categoria,
-        linha_padrao: def.linha_padrao, percentual_ressalva: def.percentual_ressalva, ativo: true,
-        criadoPor: gestor,
-      }));
-      const itens = def.receita.map(r => receitaRepo.create({
-        produto: p, materiaPrima: r.mp, quantidade: r.qtd, unidade: r.mp.unidade_medida,
-      }));
-      await receitaRepo.save(itens);
+    for (let idx = 1; idx <= 25; idx++) {
+      const sku = `PRD-MODEL-${idx.toString().padStart(3, '0')}`;
+      let p = await produtoRepo.findOneBy({ sku });
+      if (!p) {
+        p = await produtoRepo.save(produtoRepo.create({
+          nome: `Produto Modelo ${idx}`,
+          sku,
+          categoria: idx <= 10 ? "Linha Gamer" : (idx <= 20 ? "Linha Office" : "Acessórios"),
+          linha_padrao: "Industrial",
+          percentual_ressalva: rand(5, 15),
+          ativo: true,
+          criadoPor: gestor
+        }));
+
+        // 2 produtos sem receita (índices 24 e 25)
+        if (idx < 24) {
+          const numMps = rand(2, 5);
+          const selecionadas = [...mps].sort(() => 0.5 - Math.random()).slice(0, numMps);
+          for (const smp of selecionadas) {
+            await receitaRepo.save(receitaRepo.create({
+              produto: p,
+              materiaPrima: smp,
+              quantidade: smp.unidade_medida === UnidadeMedida.UN ? rand(1, 4) : 0.002,
+              unidade: smp.unidade_medida
+            }));
+          }
+        }
+      }
       produtos.push(p);
     }
 
-    // ─── 4. Lotes de InsumoEstoque (estoque físico — 3 meses) ───────────────
-
-    const fornecedoresPorMp: Record<string, string[]> = {
-      "MP-LCD14":       ["Samsung Display", "BOE Technology"],
-      "MP-LED27":       ["LG Electronics", "AU Optronics"],
-      "MP-MB-Z790":     ["ASUS Components", "MSI Industrial"],
-      "MP-MB-B660":     ["Gigabyte Technology", "ASRock"],
-      "MP-FONTE650W":   ["Corsair", "Seasonic"],
-      "MP-FONTE450W":   ["be quiet!", "FSP Group"],
-      "MP-DISSIPADOR":  ["Noctua", "Cooler Master"],
-      "MP-PASTA-TERM":  ["Arctic", "Thermal Grizzly"],
-      "MP-CABO-HDMI":   ["Belkin", "CableMatters"],
-      "MP-CABO-DP":     ["Cable Matters", "Club 3D"],
-      "MP-CHASSI-ATX":  ["Lian Li", "Fractal Design"],
-      "MP-PARAFUSO-M3": ["Würth", "Bossard"],
-    };
-
-    // Lotes de insumo: ~3 por MP = ~36 lotes no total
-    const insumosEstoque: InsumoEstoque[] = [];
-    const seqPorDiaInsumo: Record<string, number> = {};
-
+    // ─── 4. Cálculo de Demanda e Lotes de Insumo ─────────────────────────────
+    console.log("[seed] Planejando estoque de insumos...");
+    
     for (const mp of mps) {
-      const fornecedores = fornecedoresPorMp[mp.sku_interno] ?? ["Fornecedor Genérico"];
-      const qtdLotes = rand(2, 4);
+      const totalNecessario = (SEED_TOTAL_LOTES / mps.length) * 100 * 5; 
+      const totalComSurplus = totalNecessario * (1 + SEED_INSUMO_SURPLUS / 100);
+      
+      const numLotesInsumo = rand(4, 8);
+      const qtdPorLote = totalComSurplus / numLotesInsumo;
 
-      for (let i = 0; i < qtdLotes; i++) {
-        const dtRecebimento = randomDate(INICIO, HOJE);
-        const dataStr = formatDateDDMMAAAA(dtRecebimento);
+      for (let j = 1; j <= numLotesInsumo; j++) {
+        const dataRec = randomDate(INICIO, HOJE);
+        const numInt = `INS-${formatDateDDMMAAAA(dataRec)}-${mp.id}${j}`;
         
-        // Chave única para o dia: prefixo de insumo + data
-        const diaChave = `INS-${dataStr}`;
-        seqPorDiaInsumo[diaChave] = (seqPorDiaInsumo[diaChave] || 0) + 1;
-        const numInterno = `${diaChave}-${seqPorDiaInsumo[diaChave]}`;
+        const existe = await estoqueRepo.findOneBy({ numero_lote_interno: numInt });
+        if (!existe) {
+          await estoqueRepo.save(estoqueRepo.create({
+            materiaPrima: mp,
+            numero_lote_fornecedor: `FORN-${mp.sku_interno}-${j}`,
+            numero_lote_interno: numInt,
+            quantidade_inicial: qtdPorLote,
+            quantidade_atual: qtdPorLote,
+            fornecedor: "Fornecedor Global PIM",
+            turno: pick([Turno.MANHA, Turno.TARDE, Turno.NOITE]),
+            operador: pick(operadores),
+            recebido_em: dataRec,
+            ativo: true
+          }));
+        }
+      }
+    }
 
-        const ex = await estoqueRepo.findOneBy({ numero_lote_interno: numInterno });
-        if (ex) { insumosEstoque.push(ex); continue; }
-
-        const dtValidade = new Date(dtRecebimento);
-        dtValidade.setMonth(dtValidade.getMonth() + rand(6, 24));
-
-        const fornecedor = pick(fornecedores);
-        const qtdInicial = mp.unidade_medida === UnidadeMedida.UN ? rand(50, 400) : rand(5, 50);
-        const qtdAtual   = rand(Math.floor(qtdInicial * 0.1), qtdInicial);
-
-        const sufixoForn = `FORN-${mp.sku_interno}-${dtRecebimento.getFullYear()}-${seqPorDiaInsumo[diaChave]}`;
-
-        console.log(`[seed] Criando insumo estoque: ${numInterno} (${mp.nome})`);
-        const ins = await estoqueRepo.save(estoqueRepo.create({
-          materiaPrima: mp,
-          numero_lote_fornecedor: sufixoForn,
-          numero_lote_interno: numInterno,
-          quantidade_inicial: qtdInicial,
-          quantidade_atual: qtdAtual,
-          fornecedor,
-          codigo_interno: `${mp.sku_interno}-${mp.id}-${seqPorDiaInsumo[diaChave]}`,
-          turno: pick([Turno.MANHA, Turno.TARDE, Turno.NOITE]),
+    // ─── 5. Lotes de Produção (180 no total) ────────────────────────────────
+    console.log(`[seed] Gerando ${SEED_TOTAL_LOTES} lotes de produção...`);
+    
+    // 3 lotes obrigatórios iniciando HOJE (diferentes produtos)
+    const prodsParaHoje = produtos.slice(0, 3);
+    for (let k = 0; k < 3; k++) {
+      const p = prodsParaHoje[k];
+      const num = `LOT-${formatDateDDMMAAAA(HOJE)}-${k+1}`;
+      if (!(await loteRepo.findOneBy({ numero_lote: num }))) {
+        const l = loteRepo.create({
+          numero_lote: num,
+          produto: p,
+          quantidade_planejada: rand(50, 150),
+          status: LoteStatus.EM_PRODUCAO,
+          turno: pick(['manha', 'tarde', 'noite']),
           operador: pick(operadores),
-          data_validade: dtValidade,
-          observacoes: i === 0 ? "Certificado de qualidade anexo." : "",
-          ativo: true,
-        }));
-        insumosEstoque.push(ins);
+          data_producao: HOJE,
+          aberto_em: new Date(HOJE.getTime() - rand(1000, 30000)),
+        } as any);
+        await loteRepo.save(l);
       }
     }
 
-    // Indexa insumos por MP id para vincular consumos depois
-    function insumosParaMp(mpId: number): InsumoEstoque[] {
-      return insumosEstoque.filter(ie => ie.materiaPrima.id === mpId);
-    }
+    // Restante dos lotes (distribuídos no tempo)
+    const totalRestante = SEED_TOTAL_LOTES - 3;
+    const prodsComReceita = (await produtoRepo.find({ relations: ['receita', 'receita.materiaPrima'] })).filter(p => p.receita.length > 0);
 
-    // ─── 5. Lotes de produção + ConsumoInsumo + Inspeção ────────────────────
+    for (let i = 0; i < totalRestante; i++) {
+      const dataProd = randomDate(INICIO, HOJE);
+      const dataStr = formatDateDDMMAAAA(dataProd);
+      const p = pick(prodsComReceita);
+      
+      const num = `LOT-${dataStr}-${rand(100, 999)}${i}`;
+      if (await loteRepo.findOneBy({ numero_lote: num })) continue;
 
-    const turnos: ("manha"|"tarde"|"noite")[] = ["manha", "tarde", "noite"];
-    const desviosTexto = [
-      "Risco superficial na tampa.", "Parafuso faltante no conjunto.",
-      "Pintura irregular no chassi.", "Conector HDMI com folga.",
-      "Dissipador mal encaixado.", "Pasta térmica em excesso.",
-      null, null, null, null, // maioria sem desvio (aprovado)
-    ];
+      const qtdPlanj = rand(30, 200);
+      
+      const taxaReprovacaoReal = SEED_REPROV_BASE + (Math.random() * 2 * SEED_REPROV_VAR - SEED_REPROV_VAR);
+      const isReprovado = (Math.random() * 100) < taxaReprovacaoReal;
+      
+      let status = LoteStatus.APROVADO;
+      if (isReprovado) {
+        status = Math.random() > 0.5 ? LoteStatus.REPROVADO : LoteStatus.APROVADO_RESTRICAO;
+      }
 
-    const seqPorDiaLote: Record<string, number> = {};
-    let totalLotesCriados = 0;
+      const l = loteRepo.create({
+        numero_lote: num,
+        produto: p,
+        quantidade_planejada: qtdPlanj,
+        status: status,
+        turno: pick(['manha', 'tarde', 'noite']),
+        operador: pick(operadores),
+        data_producao: dataProd,
+        aberto_em: dataProd,
+        encerrado_em: new Date(dataProd.getTime() + 120000)
+      } as any);
+      const loteSalvo = await loteRepo.save(l);
 
-    for (const produto of produtos) {
-      const def = produtosDef.find(d => d.sku === produto.sku)!;
-      const qtdLotesProd = rand(6, 10); // 6-10 lotes por produto = ~35-50 lotes total
+      // Criar Consumos Reais (abate do estoque)
+      for (const item of p.receita) {
+        const estoque = await estoqueRepo.findOne({
+          where: { materiaPrima: { id: item.materiaPrima.id }, ativo: true },
+          order: { recebido_em: 'ASC' }
+        });
 
-      for (let i = 0; i < qtdLotesProd; i++) {
-        const dataProducao = randomDate(INICIO, HOJE);
-        const dataStr = formatDateDDMMAAAA(dataProducao);
-        
-        // Controle de sequencial por dia
-        seqPorDiaLote[dataStr] = (seqPorDiaLote[dataStr] || 0) + 1;
-        const numLote = `LOT-${dataStr}-${seqPorDiaLote[dataStr]}`;
-
-        const exLote = await loteRepo.findOneBy({ numero_lote: numLote });
-        if (exLote) { console.log(`[seed] Lote ${numLote} já existe.`); continue; }
-
-        totalLotesCriados++;
-        const qtdPlanejada = rand(20, 150);
-        const op = pick(operadores);
-
-        // Maioria dos lotes estará finalizada (aprovado/reprovado), alguns em produção
-        const diasAtras = (HOJE.getTime() - dataProducao.getTime()) / 86400000;
-        let status: LoteStatus;
-        let aberto_em = dataProducao;
-        let encerrado_em: Date | null = null;
-
-        if (diasAtras < 3) {
-          status = LoteStatus.EM_PRODUCAO;
-        } else if (diasAtras < 7) {
-          status = LoteStatus.AGUARDANDO_INSPECAO;
-          encerrado_em = new Date(dataProducao.getTime() + rand(1, 3) * 86400000);
-        } else {
-          const r = Math.random();
-          if (r < 0.65)      status = LoteStatus.APROVADO;
-          else if (r < 0.80) status = LoteStatus.APROVADO_RESTRICAO;
-          else               status = LoteStatus.REPROVADO;
-          encerrado_em = new Date(dataProducao.getTime() + rand(2, 10) * 86400000);
-        }
-
-        const dtValidade = new Date(dataProducao);
-        dtValidade.setMonth(dtValidade.getMonth() + rand(12, 36));
-
-        console.log(`[seed] Criando lote: ${numLote} (${produto.nome}) status=${status}`);
-        const lote = await loteRepo.save(loteRepo.create({
-          numero_lote: numLote,
-          produto,
-          quantidade_planejada: qtdPlanejada,
-          status,
-          turno: pick(turnos),
-          operador: op,
-          data_producao: dataProducao,
-          data_validade: dtValidade,
-          observacoes: Math.random() > 0.6 ? "Produção sem intercorrências." : "",
-          aberto_em,
-          encerrado_em,
-        }));
-
-        // ── ConsumoInsumo: um por item da receita ──
-        for (const recItem of def.receita) {
-          const insumosDisponiveis = insumosParaMp(recItem.mp.id);
-          if (insumosDisponiveis.length === 0) continue;
-
-          const insumoUsado = pick(insumosDisponiveis);
-          const qtdConsumida = +(recItem.qtd * qtdPlanejada).toFixed(4);
-
+        if (estoque) {
+          const qtdConsumo = item.quantidade * qtdPlanj;
           await consumoRepo.save(consumoRepo.create({
-            lote,
-            insumoEstoque: insumoUsado,
-            quantidade_consumida: qtdConsumida,
-            criado_em: dataProducao,
+            lote: loteSalvo as any,
+            insumoEstoque: estoque,
+            quantidade_consumida: qtdConsumo
           } as any));
-        }
-
-        // ── Inspeção (apenas lotes que saíram de produção) ──
-        if (
-          status === LoteStatus.APROVADO ||
-          status === LoteStatus.APROVADO_RESTRICAO ||
-          status === LoteStatus.REPROVADO
-        ) {
-          const percRessalva = produto.percentual_ressalva;
-          let qtdReprovada: number;
-          let resultado: ResultadoInspecao;
-
-          if (status === LoteStatus.APROVADO) {
-            qtdReprovada = rand(0, Math.floor(qtdPlanejada * (percRessalva / 100) * 0.8));
-            resultado = ResultadoInspecao.APROVADO;
-          } else if (status === LoteStatus.APROVADO_RESTRICAO) {
-            const limiteInf = Math.floor(qtdPlanejada * (percRessalva / 100) * 0.81);
-            const limiteSup = Math.floor(qtdPlanejada * (percRessalva / 100));
-            qtdReprovada = rand(limiteInf, limiteSup);
-            resultado = ResultadoInspecao.APROVADO_RESTRICAO;
-          } else {
-            const limiteMin = Math.floor(qtdPlanejada * (percRessalva / 100)) + 1;
-            qtdReprovada = rand(limiteMin, Math.floor(qtdPlanejada * 0.5));
-            resultado = ResultadoInspecao.REPROVADO;
-          }
-
-          const desvio = pick(desviosTexto);
-          const dtInspecao = encerrado_em
-            ? new Date(encerrado_em.getTime() + rand(1, 48) * 3600000)
-            : new Date(dataProducao.getTime() + rand(3, 15) * 86400000);
-
-          await inspecaoRepo.save(inspecaoRepo.create({
-            lote,
-            inspetor: pick(inspetores),
-            quantidade_reprovada: qtdReprovada,
-            resultado_calculado: resultado,
-            descricao_desvio: desvio ?? "",
-            criado_em: dtInspecao,
-          } as any));
+          estoque.quantidade_atual = Math.max(0, Number(estoque.quantidade_atual) - qtdConsumo);
+          await estoqueRepo.save(estoque);
         }
       }
+
+      // Criar Inspeção para lotes finalizados
+      const qtdRep = status === LoteStatus.REPROVADO 
+        ? rand(Math.floor(qtdPlanj * 0.2), qtdPlanj) 
+        : (status === LoteStatus.APROVADO_RESTRICAO ? rand(1, 10) : 0);
+      const insp = inspecaoRepo.create({
+        lote: loteSalvo as any,
+        inspetor: pick(inspetores),
+        quantidade_reprovada: qtdRep,
+        resultado_calculado: status === LoteStatus.APROVADO ? ResultadoInspecao.APROVADO : (status === LoteStatus.REPROVADO ? ResultadoInspecao.REPROVADO : ResultadoInspecao.APROVADO_RESTRICAO),
+        descricao_desvio: isReprovado ? "Desvio identificado na linha de montagem durante o seed." : "",
+        criado_em: new Date((loteSalvo as any).encerrado_em!.getTime() + 5000)
+      } as any);
+      await inspecaoRepo.save(insp);
     }
 
-    // ─── 6. Notificações ────────────────────────────────────────────────────
-    console.log("[seed] Criando notificações iniciais...");
-    const notificacoes = [
-      notificacaoRepo.create({
-        usuario: gestor,
-        mensagem: "Estoque Baixo: O insumo INS-01052026-1 (Painel LCD 14 pol) atingiu 18.5% do seu volume inicial.",
-        tipo: TipoNotificacao.ESTOQUE,
-        criado_em: new Date(HOJE.getTime() - 86400000 * 2), // 2 dias atrás
-        lida: false,
-      }),
-      notificacaoRepo.create({
-        usuario: operador,
-        mensagem: "Novo produto disponível para produção: PC Gamer Tower ATX (PRD-PCGAMER-ATX)",
-        tipo: TipoNotificacao.PRODUTO,
-        criado_em: new Date(HOJE.getTime() - 86400000 * 5), // 5 dias atrás
-        lida: true,
-      }),
-      notificacaoRepo.create({
-        usuario: inspetor,
-        mensagem: "Novo lote aguardando inspeção: LOT-10052026-1",
-        tipo: TipoNotificacao.INSPECAO,
-        criado_em: new Date(HOJE.getTime() - 3600000 * 4), // 4 horas atrás
-        lida: false,
-      })
-    ];
-    await notificacaoRepo.save(notificacoes);
-
-    // ─── Resumo ─────────────────────────────────────────────────────────────
     console.log("\n[seed] ✅ Seed concluído com sucesso!");
-    console.log("[seed] Dados criados:");
-    console.log(`  → Usuários:          5 (gestor, 2 operadores, 2 inspetores)`);
-    console.log(`  → Matérias-Primas:   ${mps.length}`);
-    console.log(`  → Produtos:          ${produtos.length} (cada um com receita)`);
-    console.log(`  → Lotes de Insumo:   ~${insumosEstoque.length} (distribuídos em 3 meses)`);
-    console.log(`  → Lotes de Produção: ~${totalLotesCriados} (com consumos e inspeções)`);
-    console.log(`  → Notificações:      ${notificacoes.length}`);
-    console.log("\nCredenciais de acesso:");
-    console.log(`  Gestor:      ${emailGestor} / ${senhaLimpa}`);
-    console.log("  Operador:    operador@lotepim.com  / senha123");
-    console.log("  Operador 2:  operador2@lotepim.com / senha123");
-    console.log("  Inspetor:    inspetor@lotepim.com  / senha123");
-    console.log("  Inspetor 2:  inspetor2@lotepim.com / senha123");
+    console.log(`  → Produtos: ${produtos.length} (2 sem receita)`);
+    console.log(`  → Lotes: ${SEED_TOTAL_LOTES} gerados (${SEED_REPROV_BASE}% base de reprovação)`);
+    console.log(`  → Insumos: Gerados com ${SEED_INSUMO_SURPLUS}% de sobra.`);
+
   } catch (error) {
     console.error("[seed] ❌ Erro ao rodar o seed:", error);
   } finally {
     await AppDataSource.destroy();
-    console.log("[seed] Conexão encerrada.");
     process.exit(0);
   }
 }

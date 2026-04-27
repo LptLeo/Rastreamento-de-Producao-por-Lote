@@ -27,7 +27,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   lote: {
     producaoTotalPeriodo: 'qualquer_momento',
-    atividadeTempoRealBase: 1000
+    atividadeTempoRealBase: 5
   }
 };
 
