@@ -1,5 +1,5 @@
-<div class="flex flex-col items-center justify-center gap-8 max-w-4xl mx-auto w-full py-10 animate-fade-in">
-  <div class="flex flex-col items-center gap-3 text-center">
+<div class="flex flex-col items-center justify-center gap-8 max-w-4xl mx-auto w-full py-10 animate-fade-in-up">
+  <div class="flex flex-col items-center gap-3 text-center animate-fade-in-up delay-75">
     <div class="w-16 h-16 rounded-2xl bg-[#00E5FF]/10 border border-[#00E5FF]/20 flex items-center justify-center mb-2">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#00E5FF" class="w-8 h-8">
         <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
@@ -10,8 +10,8 @@
   </div>
 
   <!-- Campo de Busca -->
-  <div class="w-full max-w-2xl">
-    <div class="relative flex items-center bg-[#131313] border-2 border-[#484847]/60 rounded-2xl px-5 py-4 gap-4 transition-all focus-within:border-[#00E5FF]/60 focus-within:shadow-[0_0_30px_rgba(0,229,255,0.08)]">
+  <div class="w-full max-w-2xl animate-fade-in-up delay-150">
+    <div class="relative flex items-center bg-[#131313] border-2 border-[#484847]/60 rounded-2xl px-5 py-4 gap-4 transition-all focus-within:border-[#00E5FF]/60 focus-within:shadow-[0_0_30px_rgba(0,229,255,0.08)] hover:border-[#484847]">
       @if (buscandoSugestoes) {
         <div class="w-5 h-5 border-2 border-[#484847] border-t-[#00E5FF] rounded-full animate-spin flex-shrink-0"></div>
       } @else {
@@ -62,21 +62,21 @@
 
   <!-- Erro -->
   @if (erro) {
-    <div class="p-4 bg-red-950/20 border border-red-500/30 rounded-xl text-center max-w-md w-full animate-shake">
+    <div class="p-4 bg-red-950/20 border border-red-500/30 rounded-xl text-center max-w-md w-full animate-fade-in delay-200">
       <p class="text-red-400 text-sm font-medium">{{ erro }}</p>
     </div>
   }
 
   <!-- Loading -->
   @if (buscando) {
-    <div class="flex flex-col items-center gap-3">
+    <div class="flex flex-col items-center gap-3 animate-fade-in delay-200">
       <div class="w-8 h-8 border-2 border-[#484847] border-t-[#00E5FF] rounded-full animate-spin"></div>
       <span class="text-[#6B7280] text-xs uppercase tracking-wider">Rastreando...</span>
     </div>
   }
 
   <!-- Dicas -->
-  <div class="flex gap-6 flex-wrap justify-center">
+  <div class="flex gap-6 flex-wrap justify-center animate-fade-in-up delay-300">
     <div class="flex items-center gap-2">
       <span class="w-2 h-2 rounded-full bg-[#00E5FF]"></span>
       <span class="text-[11px] text-[#6B7280]">Lotes de produção: <span class="text-[#ADAAAA] font-mono">LOT-DDMMAAAA-X</span></span>

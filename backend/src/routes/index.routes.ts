@@ -8,6 +8,7 @@ import loteRoutes from "./lote.routes.js";
 import inspecaoRoutes from "./inspecao.routes.js";
 import metricasRoutes from "./metricas.routes.js";
 import rastreabilidadeRoutes from "./rastreabilidade.routes.js";
+import notificacaoRoutes from "./notificacao.routes.js";
 import { authGuard } from "../middlewares/authGuard.js";
 
 const routes = Router();
@@ -26,5 +27,6 @@ routes.use("/lotes", loteRoutes);
 routes.use("/lotes/:loteId/inspecao", inspecaoRoutes);
 routes.use("/metricas", metricasRoutes);
 routes.use("/rastreabilidade", rastreabilidadeRoutes);
+routes.use("/notificacoes", notificacaoRoutes);
 
 export default routes;

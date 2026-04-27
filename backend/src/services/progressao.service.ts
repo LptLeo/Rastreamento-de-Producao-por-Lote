@@ -1,6 +1,9 @@
 import { LessThanOrEqual } from "typeorm";
 import { AppDataSource } from "../config/AppDataSource.js";
 import { Lote, LoteStatus } from "../entities/Lote.js";
+import { NotificacaoService } from "./notificacao.service.js";
+import { TipoNotificacao } from "../entities/Notificacao.js";
+import { PerfilUsuario } from "../entities/Usuario.js";
 
 /**
  * Job de progressão automática de lotes.
@@ -11,6 +14,11 @@ import { Lote, LoteStatus } from "../entities/Lote.js";
  */
 export class ProgressaoService {
   private intervalId: NodeJS.Timeout | null = null;
+  private notificacaoService: NotificacaoService;
+
+  constructor() {
+    this.notificacaoService = new NotificacaoService();
+  }
 
   /** Lê o tempo de produção do .env (em minutos, default 2 para demo) */
   private get tempoProducaoMs(): number {
@@ -25,7 +33,7 @@ export class ProgressaoService {
     );
 
     this.executar();
-    this.intervalId = setInterval(() => this.executar(), 30_000);
+    this.intervalId = setInterval(() => this.executar(), 2_000);
   }
 
   parar(): void {
@@ -58,6 +66,12 @@ export class ProgressaoService {
 
         console.log(
           `[progressão] Lote ${lote.numero_lote} avançado para AGUARDANDO_INSPECAO`
+        );
+
+        await this.notificacaoService.criarNotificacaoParaPerfis(
+          `Novo lote aguardando inspeção: ${lote.numero_lote}`,
+          TipoNotificacao.INSPECAO,
+          [PerfilUsuario.INSPETOR]
         );
       }
     } catch (error) {

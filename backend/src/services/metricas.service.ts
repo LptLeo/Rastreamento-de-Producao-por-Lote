@@ -13,7 +13,7 @@ export class MetricasService {
     this.loteRepo = AppDataSource.getRepository(Lote);
   }
 
-  private getIntervalo(periodo: PeriodoDashboard, dataRef: Date) {
+  private getIntervalo(periodo: PeriodoDashboard, dataRef: Date): { atual: [Date, Date], passado: [Date, Date] } {
     const inicio = new Date(dataRef);
     const fim = new Date(dataRef);
 

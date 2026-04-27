@@ -7,6 +7,8 @@ import { PerfilUsuario } from "../entities/Usuario.js";
 import { AppError } from "../errors/AppError.js";
 import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
 import type { CriarProdutoDTO, AtualizarReceitaDTO } from "../dto/produto.dto.js";
+import { NotificacaoService } from "./notificacao.service.js";
+import { TipoNotificacao } from "../entities/Notificacao.js";
 
 export class ProdutoService {
   private produtoRepo: Repository<Produto>;
@@ -92,6 +94,14 @@ export class ProdutoService {
       });
 
       if (!produtoCompleto) throw new AppError("Erro na transação ao criar produto.", 500);
+
+      // Dispara a notificação para todos os operadores
+      const notificacaoService = new NotificacaoService();
+      await notificacaoService.criarNotificacaoParaPerfis(
+        `Novo produto disponível para produção: ${produtoCompleto.nome} (${produtoCompleto.sku})`,
+        TipoNotificacao.PRODUTO,
+        [PerfilUsuario.OPERADOR]
+      );
 
       return produtoCompleto;
     });

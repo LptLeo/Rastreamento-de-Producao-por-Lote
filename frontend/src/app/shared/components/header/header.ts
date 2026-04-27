@@ -19,6 +19,7 @@ import {
 
 import { HeaderService } from './services/header.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificacaoService } from '../../../core/services/notificacao/notificacao.service';
 import { SugestaoItem, LoteStatus, STATUS_CONFIG } from '../../models/lote.models';
 
 /** Padrão exato de número de lote gerado pelo backend */
@@ -33,6 +34,7 @@ const LOTE_REGEX = /^LOTE-\d{8}-\d{3}$/;
 export class Header implements OnInit, OnDestroy {
   private headerService = inject(HeaderService);
   protected authService = inject(AuthService);
+  protected notificacaoService = inject(NotificacaoService);
   private router = inject(Router);
   private elementRef = inject(ElementRef);
 
@@ -59,6 +61,7 @@ export class Header implements OnInit, OnDestroy {
   sugestoes = signal<SugestaoItem[]>([]);
   carregando = signal(false);
   dropdownAberto = signal(false);
+  notificacoesAbertas = signal(false);
 
   /** Sugestões filtradas por tipo, usadas no template */
   loteSugestoes = computed(() => this.sugestoes().filter(s => s.tipo === 'lote'));
@@ -70,6 +73,8 @@ export class Header implements OnInit, OnDestroy {
   // ── Lifecycle ───────────────────────────────────────────────────────────
 
   ngOnInit(): void {
+    this.notificacaoService.carregarNotificacoes();
+    
     this.subscription = this.pesquisaSubject.pipe(
       debounceTime(400),
       distinctUntilChanged(),
@@ -116,6 +121,7 @@ export class Header implements OnInit, OnDestroy {
   onDocumentClick(event: MouseEvent): void {
     if (!this.elementRef.nativeElement.contains(event.target)) {
       this.fecharDropdown();
+      this.notificacoesAbertas.set(false);
     }
   }
 
@@ -170,6 +176,17 @@ export class Header implements OnInit, OnDestroy {
 
   fecharDropdown(): void {
     this.dropdownAberto.set(false);
+  }
+
+  toggleNotificacoes(): void {
+    this.notificacoesAbertas.update(v => !v);
+    if (this.notificacoesAbertas()) {
+      this.fecharDropdown();
+    }
+  }
+
+  marcarLida(id: number): void {
+    this.notificacaoService.marcarComoLida(id);
   }
 
   logout(): void {

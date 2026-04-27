@@ -28,6 +28,7 @@
           [value]="termoPesquisa"
           (input)="onInputChange($any($event.target).value)"
           (keydown)="onKeyDown($event)"
+          (focus)="notificacoesAbertas.set(false)"
           class="w-full bg-transparent text-[12px] text-[#ADAAAA] placeholder:text-[#6B7280] placeholder:text-[12px] focus:outline-none focus:ring-0">
 
         <!-- Spinner de carregamento -->
@@ -122,9 +123,66 @@
 
   <div class="flex items-center">
     <div class="flex mr-2">
-      <div class="mr-4">
-        <img class="min-w-[16px] min-h-[20px]" src="assets/icons/notifications-icon.svg" alt="">
+      <!-- ── Notificações ── -->
+      <div class="relative mr-4 flex items-center">
+        <button (click)="toggleNotificacoes()" class="relative cursor-pointer hover:opacity-80 transition-opacity">
+          <img class="min-w-[16px] min-h-[20px]" src="assets/icons/notifications-icon.svg" alt="Notificações">
+          @if (notificacaoService.naoLidasCount() > 0) {
+            <span class="absolute -top-1 -right-1 bg-yellow-500 text-black text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-[#0E0E0E]">
+              {{ notificacaoService.naoLidasCount() > 9 ? '9+' : notificacaoService.naoLidasCount() }}
+            </span>
+          }
+        </button>
+
+        @if (notificacoesAbertas()) {
+          <div class="absolute top-8 right-0 w-[320px] bg-[#0A0A0A] border border-[#484847] shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-50">
+            <div class="px-4 py-3 border-b border-[#1e1e1e] flex justify-between items-center">
+              <span class="text-[10px] font-bold text-[#ADAAAA] uppercase tracking-wider">Notificações</span>
+              <button (click)="notificacoesAbertas.set(false)" class="text-[#6B7280] hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="max-h-[300px] overflow-y-auto custom-scrollbar">
+              @if (notificacaoService.notificacoes().length === 0) {
+                <div class="px-4 py-6 text-center text-[#6B7280] text-[11px]">
+                  Nenhuma notificação no momento.
+                </div>
+              }
+
+              @for (notificacao of notificacaoService.notificacoes(); track notificacao.id) {
+                <div 
+                  class="px-4 py-3 border-b border-[#141414] hover:bg-[#1a1a1a] transition-colors relative"
+                  [class.bg-[#111111]]="!notificacao.lida">
+                  
+                  @if (!notificacao.lida) {
+                    <div class="absolute left-2 top-4 w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
+                  }
+                  
+                  <div class="ml-3 flex flex-col gap-1">
+                    <span class="text-[11px] text-[#ADAAAA] leading-tight" [class.text-white]="!notificacao.lida">
+                      {{ notificacao.mensagem }}
+                    </span>
+                    <div class="flex justify-between items-center mt-1">
+                      <span class="text-[9px] text-[#6B7280] uppercase">{{ notificacao.tipo }}</span>
+                      @if (!notificacao.lida) {
+                        <button 
+                          (click)="marcarLida(notificacao.id)"
+                          class="text-[9px] text-[#00E5FF] hover:text-white transition-colors cursor-pointer uppercase tracking-wider">
+                          Marcar como lida
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
       </div>
+
       <div class="pr-6 border-r border-[#484847]">
         <img class="min-w-[20px] min-h-[20px]" src="assets/icons/help-icon.svg" alt="">
       </div>

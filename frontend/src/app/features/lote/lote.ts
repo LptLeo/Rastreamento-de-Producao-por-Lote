@@ -148,8 +148,8 @@ export class Lote implements OnInit, OnDestroy {
       this.tick.set(Date.now());
       tickCount++;
 
-      // Realtime Sync Polling: A cada 5 segundos re-valida silenciosamente caso haja lote transicionando ou em produção
-      if (tickCount % 5 === 0) {
+      // Realtime Sync Polling: A cada 2 segundos re-valida silenciosamente caso haja lote transicionando ou em produção
+      if (tickCount % 2 === 0) {
         const precisaSincronizar = this.lotesBase().some(l => l.status === 'em_producao');
         if (precisaSincronizar) {
           const buscaAtual = this.route.snapshot.queryParams['busca'];

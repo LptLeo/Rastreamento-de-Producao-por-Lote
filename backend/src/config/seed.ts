@@ -7,6 +7,7 @@ import { InsumoEstoque, Turno } from "../entities/InsumoEstoque.js";
 import { Lote, LoteStatus } from "../entities/Lote.js";
 import { ConsumoInsumo } from "../entities/ConsumoInsumo.js";
 import { Inspecao, ResultadoInspecao } from "../entities/Inspecao.js";
+import { Notificacao, TipoNotificacao } from "../entities/Notificacao.js";
 import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 12;
@@ -55,6 +56,7 @@ async function seed() {
     const loteRepo     = AppDataSource.getRepository(Lote);
     const consumoRepo  = AppDataSource.getRepository(ConsumoInsumo);
     const inspecaoRepo = AppDataSource.getRepository(Inspecao);
+    const notificacaoRepo = AppDataSource.getRepository(Notificacao);
 
     // ─── 1. Usuários ────────────────────────────────────────────────────────
 
@@ -70,7 +72,7 @@ async function seed() {
       const userData = {
         nome, email,
         senha_hash: await bcrypt.hash(senha, SALT_ROUNDS),
-        perfil, ativo: true,
+        perfil, ativo: true, alerta_estoque_porcentagem: 25,
       } as any;
 
       if (criadoPor) {
@@ -394,6 +396,33 @@ async function seed() {
       }
     }
 
+    // ─── 6. Notificações ────────────────────────────────────────────────────
+    console.log("[seed] Criando notificações iniciais...");
+    const notificacoes = [
+      notificacaoRepo.create({
+        usuario: gestor,
+        mensagem: "Estoque Baixo: O insumo INS-01052026-1 (Painel LCD 14 pol) atingiu 18.5% do seu volume inicial.",
+        tipo: TipoNotificacao.ESTOQUE,
+        criado_em: new Date(HOJE.getTime() - 86400000 * 2), // 2 dias atrás
+        lida: false,
+      }),
+      notificacaoRepo.create({
+        usuario: operador,
+        mensagem: "Novo produto disponível para produção: PC Gamer Tower ATX (PRD-PCGAMER-ATX)",
+        tipo: TipoNotificacao.PRODUTO,
+        criado_em: new Date(HOJE.getTime() - 86400000 * 5), // 5 dias atrás
+        lida: true,
+      }),
+      notificacaoRepo.create({
+        usuario: inspetor,
+        mensagem: "Novo lote aguardando inspeção: LOT-10052026-1",
+        tipo: TipoNotificacao.INSPECAO,
+        criado_em: new Date(HOJE.getTime() - 3600000 * 4), // 4 horas atrás
+        lida: false,
+      })
+    ];
+    await notificacaoRepo.save(notificacoes);
+
     // ─── Resumo ─────────────────────────────────────────────────────────────
     console.log("\n[seed] ✅ Seed concluído com sucesso!");
     console.log("[seed] Dados criados:");
@@ -402,6 +431,7 @@ async function seed() {
     console.log(`  → Produtos:          ${produtos.length} (cada um com receita)`);
     console.log(`  → Lotes de Insumo:   ~${insumosEstoque.length} (distribuídos em 3 meses)`);
     console.log(`  → Lotes de Produção: ~${totalLotesCriados} (com consumos e inspeções)`);
+    console.log(`  → Notificações:      ${notificacoes.length}`);
     console.log("\nCredenciais de acesso:");
     console.log(`  Gestor:      ${emailGestor} / ${senhaLimpa}`);
     console.log("  Operador:    operador@lotepim.com  / senha123");
