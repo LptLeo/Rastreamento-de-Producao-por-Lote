@@ -1,7 +1,7 @@
-import { Component, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, ChangeDetectorRef, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -9,15 +9,26 @@ import { Router } from '@angular/router';
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class Login {
+export class Login implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   email: string = '';
   password: string = '';
   errorMessage: string = '';
   isLoading: boolean = false;
+
+  ngOnInit() {
+    // Verifica se há um motivo de logout forçado (ex: conta desativada)
+    this.route.queryParams.subscribe(params => {
+      if (params['motivo'] === 'desativado') {
+        this.errorMessage = 'Sua conta foi desativada pelo administrador. Acesso negado.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
   login() {
     this.errorMessage = '';

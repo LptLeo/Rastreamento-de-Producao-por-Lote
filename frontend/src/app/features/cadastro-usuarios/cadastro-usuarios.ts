@@ -295,6 +295,46 @@ export class CadastroUsuarios {
     return this.getError('confirmarSenha');
   }
 
+  irParaNovoLote(): void {
+    this.router.navigate(['/app/lote/novo']);
+  }
+
+  deativarUsuario(id: number): void {
+    this.toastService.confirm(
+      'Tem certeza que deseja desativar este colaborador? Ele perderá o acesso ao sistema imediatamente.',
+      () => {
+        this.usuarioService.delete(id).subscribe({
+          next: () => {
+            this.toastService.success('Colaborador desativado com sucesso.');
+            this.loadCadastrados();
+          },
+          error: (err) => {
+            this.toastService.error(err?.error?.message ?? 'Falha ao desativar colaborador.');
+          },
+        });
+      },
+      'Desativar'
+    );
+  }
+
+  reativarUsuario(id: number): void {
+    this.toastService.confirm(
+      'Deseja reativar o acesso deste colaborador ao sistema?',
+      () => {
+        this.usuarioService.reativar(id).subscribe({
+          next: () => {
+            this.toastService.success('Colaborador reativado com sucesso.');
+            this.loadCadastrados();
+          },
+          error: (err) => {
+            this.toastService.error(err?.error?.message ?? 'Falha ao reativar colaborador.');
+          },
+        });
+      },
+      'Reativar'
+    );
+  }
+
   private toPayload(): CreateUsuarioPayload {
     const raw = this.form.getRawValue();
     return {
