@@ -1,4 +1,4 @@
-<div class="flex flex-col gap-10 text-white min-h-[80vh] pb-20">
+<div class="flex flex-col gap-10 text-white min-h-[80vh] pb-20 page-enter-safe">
 
   <!-- ── MODO BUSCA ── -->
   @if (!modoResultado()) {
@@ -14,16 +14,17 @@
       (blur)="fecharDropdown()"
       (search)="buscar()"
       (clear)="novaBusca()"
-      (selectSuggestion)="selecionarSugestao($event)">
+      (selectSuggestion)="selecionarSugestao($event)"
+      class="animate-fade-in-up">
     </app-rastreabilidade-busca>
   }
 
   <!-- ── MODO RESULTADO (Árvore) ── -->
   @if (modoResultado() && resultado()) {
-  <div class="flex flex-col gap-8 max-w-6xl mx-auto w-full">
+  <div class="flex flex-col gap-8 max-w-6xl mx-auto w-full animate-fade-in-up delay-100">
 
     <!-- Topbar -->
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-4 animate-slide-in-left delay-200">
       <button (click)="novaBusca()"
         class="flex items-center gap-2 px-4 py-2 bg-[#131313] border border-[#484847]/40 rounded-lg text-[#ADAAAA] hover:text-[#00E5FF] hover:border-[#00E5FF]/40 transition-all text-[11px] font-bold uppercase tracking-wider">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">

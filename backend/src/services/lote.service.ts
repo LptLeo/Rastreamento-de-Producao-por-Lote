@@ -8,6 +8,8 @@ import { PerfilUsuario, Usuario } from "../entities/Usuario.js";
 import { AppError } from "../errors/AppError.js";
 import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
 import type { CriarLoteDTO } from "../dto/lote.dto.js";
+import { NotificacaoService } from "./notificacao.service.js";
+import { TipoNotificacao } from "../entities/Notificacao.js";
 
 export class LoteService {
   private loteRepo: Repository<Lote>;
@@ -59,6 +61,7 @@ export class LoteService {
     if (!operador) throw new AppError("Operador não encontrado.", 404);
 
     const numeroLote = await this.gerarNumeroLote(dto.data_producao);
+    const notificacaoService = new NotificacaoService();
 
     return AppDataSource.transaction(async (manager) => {
       const lote = manager.create(Lote, {
@@ -74,6 +77,7 @@ export class LoteService {
       });
 
       const loteSalvo = await manager.save(lote);
+      const gestores = await manager.find(Usuario, { where: { perfil: PerfilUsuario.GESTOR, ativo: true } });
 
       /** Processa cada consumo: valida estoque, abate e registra */
       for (const consumo of dto.consumos) {
@@ -109,8 +113,8 @@ export class LoteService {
           );
         }
 
-        /** Abate o estoque */
-        insumo.quantidade_atual = saldoAtual - consumo.quantidade_consumida;
+        const novoSaldo = saldoAtual - consumo.quantidade_consumida;
+        insumo.quantidade_atual = novoSaldo;
         await manager.save(insumo);
 
         /** Registra o consumo */
@@ -121,6 +125,21 @@ export class LoteService {
         });
 
         await manager.save(registro);
+
+        /** Lógica de Alerta de Estoque para Gestores */
+        const percentualAnterior = (saldoAtual / insumo.quantidade_inicial) * 100;
+        const percentualNovo = (novoSaldo / insumo.quantidade_inicial) * 100;
+
+        for (const gestor of gestores) {
+          // Se cruzou a linha da porcentagem agora (antes estava acima, agora está abaixo ou igual)
+          if (percentualAnterior > gestor.alerta_estoque_porcentagem && percentualNovo <= gestor.alerta_estoque_porcentagem) {
+            await notificacaoService.criarNotificacaoParaUsuario(
+              `Estoque Baixo: O insumo ${insumo.numero_lote_interno} (${insumo.materiaPrima.nome}) atingiu ${percentualNovo.toFixed(1)}% do seu volume inicial.`,
+              TipoNotificacao.ESTOQUE,
+              gestor
+            );
+          }
+        }
       }
 
       const loteCompleto = await manager.findOne(Lote, {

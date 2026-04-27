@@ -5,7 +5,7 @@
 
   <ng-content></ng-content>
 
-  <span class="hidden text-[14px] leading-[20px] tracking-[1.4px] lg:block transition-all group-[.is-active]:font-bold group-[.is-active]:text-[#00E5FF] uppercase">
+  <span class="hidden text-[14px] leading-[20px] tracking-[1.4px] lg:flex flex-col transition-all group-[.is-active]:font-bold group-[.is-active]:text-[#00E5FF] uppercase after:content-[attr(data-text)] after:font-bold after:h-0 after:invisible after:overflow-hidden after:pointer-events-none" [attr.data-text]="label">
     {{ label }}
   </span>
 </button>

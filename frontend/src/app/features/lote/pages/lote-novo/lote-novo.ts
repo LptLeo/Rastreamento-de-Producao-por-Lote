@@ -72,8 +72,11 @@ export class LoteNovo implements OnInit {
 
   private getTurnoAtual(): 'manha' | 'tarde' | 'noite' {
     const hora = new Date().getHours();
-    if (hora >= 6 && hora < 14) return 'manha';
-    if (hora >= 14 && hora < 22) return 'tarde';
+    // Manhã: 06:00 às 11:59
+    if (hora >= 6 && hora < 12) return 'manha';
+    // Tarde: 12:00 às 17:59
+    if (hora >= 12 && hora < 18) return 'tarde';
+    // Noite: 18:00 às 05:59
     return 'noite';
   }
 
