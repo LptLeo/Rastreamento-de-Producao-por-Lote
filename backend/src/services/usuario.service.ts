@@ -108,6 +108,12 @@ export class UsuarioService {
 
     verificaPermissao(requisitante, [PerfilUsuario.GESTOR], id);
 
+    // Segurança Pesada: Um usuário não-gestor jamais pode alterar seu próprio nível de permissão (perfil) ou status
+    if (requisitante.perfil !== PerfilUsuario.GESTOR) {
+      if ('perfil' in dto) delete dto.perfil;
+      if ('ativo' in dto) delete dto.ativo;
+    }
+
     if (dto.email && dto.email !== usuario.email) {
       const existe = await this.userRepo.findOne({ where: { email: dto.email } });
       if (existe) throw new AppError(`E-mail '${dto.email}' já está em uso`, 409);
@@ -143,6 +149,17 @@ export class UsuarioService {
     verificaPermissao(requisitante, [PerfilUsuario.GESTOR], id);
 
     usuario.ativo = false;
+    usuario.refresh_token = null; // Limpa o token para impedir renovação automática
+    await this.userRepo.save(usuario);
+  }
+
+  reactivate = async (id: number, requisitante: Requisitante): Promise<void> => {
+    verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
+
+    const usuario = await this.userRepo.findOne({ where: { id } });
+    if (!usuario) throw new AppError('Usuário não encontrado', 404);
+
+    usuario.ativo = true;
     await this.userRepo.save(usuario);
   }
 }

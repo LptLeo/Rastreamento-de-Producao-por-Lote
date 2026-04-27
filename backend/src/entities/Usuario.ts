@@ -11,6 +11,7 @@ import { EntidadeBase } from "./EntidadeBase.js";
 import type { Lote } from "./Lote.js";
 import type { InsumoEstoque } from "./InsumoEstoque.js";
 import type { Inspecao } from "./Inspecao.js";
+import type { Notificacao } from "./Notificacao.js";
 
 export enum PerfilUsuario {
   OPERADOR = "operador",
@@ -42,6 +43,9 @@ export class Usuario extends EntidadeBase {
 
   @Column({ type: "text", nullable: true, select: false })
   refresh_token!: string | null;
+  
+  @Column({ type: "int", default: 20, nullable: false })
+  alerta_estoque_porcentagem!: number;
 
   @ManyToOne("Usuario")
   @JoinColumn({ name: "criado_por_id" })
@@ -55,4 +59,7 @@ export class Usuario extends EntidadeBase {
 
   @OneToMany("Inspecao", "inspetor")
   inspecoes!: Relation<Inspecao>[];
+
+  @OneToMany("Notificacao", "usuario")
+  notificacoes!: Relation<Notificacao>[];
 }

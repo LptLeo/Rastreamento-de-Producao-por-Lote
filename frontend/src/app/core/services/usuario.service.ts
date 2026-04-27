@@ -25,6 +25,16 @@ export interface CreateUsuarioPayload {
   ativo: boolean;
 }
 
+export interface UpdateUsuarioPayload {
+  nome?: string;
+  email?: string;
+}
+
+export interface UpdateSenhaPayload {
+  senha_atual: string;
+  nova_senha: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -46,5 +56,21 @@ export class UsuarioService {
 
   create(payload: CreateUsuarioPayload) {
     return this.http.post<UsuarioPerfil>(this.API_URL, payload);
+  }
+
+  updatePerfil(id: number, payload: UpdateUsuarioPayload) {
+    return this.http.patch<UsuarioPerfil>(`${this.API_URL}/${id}`, payload);
+  }
+
+  updateSenha(id: number, payload: UpdateSenhaPayload) {
+    return this.http.patch<void>(`${this.API_URL}/${id}/senha`, payload);
+  }
+
+  delete(id: number) {
+    return this.http.delete<void>(`${this.API_URL}/${id}`);
+  }
+
+  reativar(id: number) {
+    return this.http.post<void>(`${this.API_URL}/${id}/reativar`, {});
   }
 }

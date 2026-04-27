@@ -64,4 +64,12 @@ export class UsuarioController {
 
     res.status(200).json({ message: 'Usuário inativado com sucesso' });
   }
+
+  reactivate = async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+
+    await this.usuarioService.reactivate(Number(id), this.getRequisitante(req));
+
+    res.status(200).json({ message: 'Usuário reativado com sucesso' });
+  }
 }

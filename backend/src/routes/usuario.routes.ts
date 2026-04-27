@@ -15,6 +15,7 @@ usuarioRoutes.get('/:id', usuarioController.findById);
 usuarioRoutes.post('/', roleGuard(PerfilUsuario.GESTOR), validateBody(CreateUsuarioDto), usuarioController.create);
 usuarioRoutes.patch('/:id', validateBody(UpdateUsuarioDto), usuarioController.update);
 usuarioRoutes.patch('/:id/senha', validateBody(UpdateSenhaDto), usuarioController.updateSenha);
+usuarioRoutes.post('/:id/reativar', roleGuard(PerfilUsuario.GESTOR), usuarioController.reactivate);
 usuarioRoutes.delete('/:id', roleGuard(PerfilUsuario.GESTOR), usuarioController.delete);
 
 export default usuarioRoutes;
