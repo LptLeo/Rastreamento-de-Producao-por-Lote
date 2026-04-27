@@ -10,6 +10,7 @@ import { LoteCardComponent } from '../../shared/components/lote-card/lote-card';
 import { FilterTabsComponent, FilterTab } from '../../shared/components/filter-tabs/filter-tabs';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header';
 import { ConfiguracoesService } from '../../core/services/configuracoes.service';
+import { PaginationComponent, PaginationMeta } from '../../shared/components/pagination/pagination';
 
 /** Fallback caso o backend não responda — 2 minutos como padrão de demo */
 const FALLBACK_DURACAO_MS = 2 * 60 * 1000;
@@ -17,7 +18,7 @@ const FALLBACK_DURACAO_MS = 2 * 60 * 1000;
 @Component({
   selector: 'app-lote',
   standalone: true,
-  imports: [CommonModule, StatCardComponent, LoteCardComponent, FilterTabsComponent, PageHeaderComponent, DecimalPipe],
+  imports: [CommonModule, StatCardComponent, LoteCardComponent, FilterTabsComponent, PageHeaderComponent, DecimalPipe, PaginationComponent],
   templateUrl: './lote.html',
   styleUrl: './lote.css',
 })
@@ -40,10 +41,12 @@ export class Lote implements OnInit, OnDestroy {
   ];
 
   // Estados reativos (Signals)
-  private lotesBase = signal<LoteDetalhe[]>([]); // Lista completa para contagens
+  lotes = signal<LoteDetalhe[]>([]);
+  paginationMeta = signal<PaginationMeta | null>(null);
   carregando = signal<boolean>(false);
   erro = signal<string | null>(null);
   filtroAtivo = signal<string>('todos');
+  currentPage = signal<number>(1);
 
   /**
    * Signal que incrementa a cada segundo.
@@ -52,18 +55,9 @@ export class Lote implements OnInit, OnDestroy {
    */
   private tick = signal<number>(Date.now());
 
-  // Sinal computado para exibir apenas os lotes que batem com o filtro selecionado
-  lotes = computed(() => {
-    const lista = this.lotesBase();
-    const filtro = this.filtroAtivo();
-
-    if (filtro === 'todos') return lista;
-    return lista.filter(l => l.status === filtro);
-  });
-
   // Estatísticas computadas
   /** Duração de produção em ms — carregada do backend, com fallback */
-  private duracaoMs = signal<number>(FALLBACK_DURACAO_MS);
+  protected duracaoMs = signal<number>(FALLBACK_DURACAO_MS);
 
   producaoTotalLabel = computed(() => {
     const p = this.configuracoesService.settings().lote.producaoTotalPeriodo;
@@ -77,60 +71,39 @@ export class Lote implements OnInit, OnDestroy {
   });
 
   producaoTotalAcumulada = computed(() => {
-    const period = this.configuracoesService.settings().lote.producaoTotalPeriodo;
-    const now = new Date();
-    let filteredLotes = this.lotesBase();
-
-    if (period === 'mes') {
-      filteredLotes = filteredLotes.filter(l => {
-        const d = new Date(l.aberto_em);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      });
-    } else if (period === 'semana') {
-      // Simplificação de semana (últimos 7 dias)
-      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      filteredLotes = filteredLotes.filter(l => new Date(l.aberto_em) >= oneWeekAgo);
-    } else if (period === 'dia') {
-      filteredLotes = filteredLotes.filter(l => {
-        const d = new Date(l.aberto_em);
-        return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      });
-    }
-
-    return filteredLotes.reduce((acc, curr) => acc + (curr.quantidade_planejada || 0), 0);
+    // IMPORTANTE: Como a lista é paginada, a métrica deve usar o totalItens do meta global
+    return this.paginationMeta()?.totalItens || 0;
   });
 
   statsCargaSistema = computed(() => {
-    const baseValue = this.configuracoesService.settings().lote.atividadeTempoRealBase || 1000;
-    const emProducao = this.lotesBase().filter(l => l.status === 'em_producao').length;
-    // Cálculo: (emProducao / baseValue) * 100
+    const baseValue = this.configuracoesService.settings().lote.atividadeTempoRealBase || 5;
+    // IMPORTANTE: Usa a contagem global do servidor para a métrica, não apenas a página atual
+    const emProducao = this.contagemPorStatus()['em_producao'] || 0;
     const val = (emProducao / baseValue) * 100;
     return parseFloat(val.toFixed(1));
   });
 
-  contagemPorStatus = computed(() => {
-    const counts: Record<LoteStatus | 'todos', number> = {
-      todos: this.lotesBase().length,
-      em_producao: 0,
-      aguardando_inspecao: 0,
-      aprovado: 0,
-      reprovado: 0,
-      aprovado_restricao: 0
-    };
-
-    this.lotesBase().forEach(l => {
-      if (counts[l.status] !== undefined) {
-        counts[l.status]++;
-      }
-    });
-
-    return counts;
+  contagemPorStatus = signal<Record<string, number>>({
+    todos: 0,
+    em_producao: 0,
+    aguardando_inspecao: 0,
+    aprovado: 0,
+    reprovado: 0,
+    aprovado_restricao: 0
   });
 
   ngOnInit(): void {
+    // Escuta mudanças na URL para atualizar os sinais e carregar os dados
     this.route.queryParams.subscribe(params => {
-      const busca = params['busca'];
+      const busca = params['busca'] || '';
+      const status = params['status'] || 'todos';
+      const pagina = Number(params['pagina']) || 1;
+      
+      this.filtroAtivo.set(status);
+      this.currentPage.set(pagina);
+      
       this.carregarLotes(busca);
+      this.carregarContagens();
     });
 
     /** Carrega o tempo de produção configurado no backend */
@@ -148,12 +121,13 @@ export class Lote implements OnInit, OnDestroy {
       this.tick.set(Date.now());
       tickCount++;
 
-      // Realtime Sync Polling: A cada 2 segundos re-valida silenciosamente caso haja lote transicionando ou em produção
-      if (tickCount % 2 === 0) {
-        const precisaSincronizar = this.lotesBase().some(l => l.status === 'em_producao');
-        if (precisaSincronizar) {
+      // Realtime Sync Polling: A cada 5 segundos re-valida silenciosamente caso haja lote em produção
+      if (tickCount % 5 === 0) {
+        const temLoteProduzindo = this.lotes().some(l => l.status === 'em_producao');
+        if (temLoteProduzindo) {
           const buscaAtual = this.route.snapshot.queryParams['busca'];
           this.carregarLotes(buscaAtual, true);
+          this.carregarContagens();
         }
       }
     }, 1000);
@@ -171,22 +145,23 @@ export class Lote implements OnInit, OnDestroy {
       this.erro.set(null);
     }
 
-    // Buscamos SEMPRE todos os lotes para manter as contagens das abas precisas
-    // O filtro de status agora é aplicado localmente via Signal Computed
-    this.loteService.getLotes({})
+    const filtros = {
+      pagina: this.currentPage(),
+      limite: 9, // Layout em grid 3x3
+      status: this.filtroAtivo(),
+      busca: busca || ''
+    };
+
+    this.loteService.getLotes(filtros)
       .pipe(finalize(() => this.carregando.set(false)))
       .subscribe({
-        next: (data) => {
-          if (busca) {
-            const termo = busca.toLowerCase();
-            const filtrados = data.filter(l =>
-              l.numero_lote.toLowerCase().includes(termo) ||
-              l.produto.nome.toLowerCase().includes(termo)
-            );
-            this.lotesBase.set(filtrados);
-          } else {
-            this.lotesBase.set(data);
+        next: (res) => {
+          // Só atualiza o sinal se houver mudança real nos dados (comparação simples de string)
+          // Isso evita que o Angular re-renderize os componentes a cada polling silencioso.
+          if (JSON.stringify(res.itens) !== JSON.stringify(this.lotes())) {
+            this.lotes.set(res.itens);
           }
+          this.paginationMeta.set(res.meta);
         },
         error: (err) => {
           console.error('Erro ao carregar lotes:', err);
@@ -195,13 +170,25 @@ export class Lote implements OnInit, OnDestroy {
       });
   }
 
-  alterarFiltro(status: string): void {
-    this.filtroAtivo.set(status);
-    // Não precisamos chamar carregarLotes() aqui pois o sinal computado 'lotes'
-    // reagirá automaticamente à mudança de filtroAtivo()
+  carregarContagens(): void {
+    this.loteService.getContagem().subscribe({
+      next: (counts) => this.contagemPorStatus.set(counts),
+      error: (err) => console.error('Erro ao carregar contagens:', err)
+    });
+  }
+
+  onPageChange(pagina: number): void {
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { busca: null },
+      queryParams: { pagina },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  alterarFiltro(status: string): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { status, pagina: 1, busca: null },
       queryParamsHandling: 'merge'
     });
   }

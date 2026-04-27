@@ -1,4 +1,11 @@
 import { z } from "zod";
+import { PaginacaoQueryDto } from "./paginacao.dto.js";
+
+export const ListLotesQueryDto = PaginacaoQueryDto.extend({
+  status: z.string().optional(),
+});
+
+export type ListLotesQueryDto = z.infer<typeof ListLotesQueryDto>;
 
 const turnoSchema = z.enum(["manha", "tarde", "noite"], {
   message: "Turno inválido. Valores aceitos: manha, tarde, noite.",

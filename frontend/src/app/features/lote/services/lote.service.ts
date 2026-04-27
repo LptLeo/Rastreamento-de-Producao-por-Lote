@@ -9,6 +9,16 @@ export interface LoteConfig {
   tempo_producao_minutos: number;
 }
 
+export interface RespostaPaginada<T> {
+  itens: T[];
+  meta: {
+    totalItens: number;
+    itensPorPagina: number;
+    totalPaginas: number;
+    paginaAtual: number;
+  };
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -19,16 +29,22 @@ export class LoteFeatureService {
     return this.http.get<LoteDetalhe>(`${API_URL}/lotes/${id}`);
   }
 
-  getLotes(filtros?: Record<string, string>): Observable<LoteDetalhe[]> {
+  getLotes(filtros?: Record<string, string | number>): Observable<RespostaPaginada<LoteDetalhe>> {
     let params = new HttpParams();
 
     if (filtros) {
       Object.entries(filtros).forEach(([key, value]) => {
-        if (value) params = params.set(key, value);
+        if (value !== undefined && value !== null && value !== '') {
+          params = params.set(key, String(value));
+        }
       });
     }
 
-    return this.http.get<LoteDetalhe[]>(`${API_URL}/lotes`, { params });
+    return this.http.get<RespostaPaginada<LoteDetalhe>>(`${API_URL}/lotes`, { params });
+  }
+
+  getContagem(): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>(`${API_URL}/lotes/stats/contagem`);
   }
 
   getProdutos(): Observable<any[]> {

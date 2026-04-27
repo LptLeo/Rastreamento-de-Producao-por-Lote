@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectorRef, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LoteDetalhe, STATUS_CONFIG } from '../../models/lote.models';
 
@@ -7,12 +7,14 @@ import { LoteDetalhe, STATUS_CONFIG } from '../../models/lote.models';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './lote-card.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block h-full min-w-0'
   }
 })
 export class LoteCardComponent implements OnInit, OnDestroy {
   @Input({ required: true }) lote!: LoteDetalhe;
+  @Input() duracaoProducaoMs: number = 2 * 60 * 1000;
   @Output() cardClick = new EventEmitter<number>();
 
   private cdr = inject(ChangeDetectorRef);
@@ -21,12 +23,10 @@ export class LoteCardComponent implements OnInit, OnDestroy {
   private intervalId: any;
 
   ngOnInit() {
-    // Definimos o progresso logo após a renderização inicial para ativar a transição
-    setTimeout(() => {
-      this.atualizarProgresso();
-    }, 100);
+    // Calcula o progresso inicial imediatamente
+    this.atualizarProgresso();
 
-    // Se estiver em produção, fazemos o "tick" para atualizar a barra e a porcentagem dinamicamente
+    // Se estiver em produção, faz o "tick" a cada segundo
     if (this.lote.status === 'em_producao') {
       this.intervalId = setInterval(() => {
         this.atualizarProgresso();
@@ -45,7 +45,7 @@ export class LoteCardComponent implements OnInit, OnDestroy {
   }
 
   get config() {
-    return STATUS_CONFIG[this.lote.status];
+    return STATUS_CONFIG[this.lote.status] || { label: 'Status', cor: '#fff', corBg: '#000', corBorda: '#fff' };
   }
 
   atualizarProgresso() {
@@ -54,19 +54,21 @@ export class LoteCardComponent implements OnInit, OnDestroy {
       const agora = new Date().getTime();
       const decorrido = agora - inicio;
       
-      // O tempo de produção configurado no backend demo é de 2 minutos (120.000 ms)
-      const tempoTotal = 2 * 60 * 1000;
-      
-      const p = Math.floor((decorrido / tempoTotal) * 100);
+      const p = Math.floor((decorrido / this.duracaoProducaoMs) * 100);
       
       // Limita a barra entre 0 e 99% enquanto o status for 'em_producao'
-      this.animatedProgresso = Math.min(Math.max(p, 0), 99);
+      const novoProgresso = Math.min(Math.max(p, 0), 99);
+      
+      if (this.animatedProgresso !== novoProgresso) {
+        this.animatedProgresso = novoProgresso;
+        this.cdr.markForCheck();
+      }
     } else {
-      this.animatedProgresso = 100;
+      if (this.animatedProgresso !== 100) {
+        this.animatedProgresso = 100;
+        this.cdr.markForCheck();
+      }
     }
-    
-    // Força o Angular a perceber a mudança no setInterval e atualizar a tela imediatamente
-    this.cdr.markForCheck();
   }
 
   get dataFormatada(): string {
