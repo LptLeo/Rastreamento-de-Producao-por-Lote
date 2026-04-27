@@ -64,6 +64,12 @@
     [insumos]="insumos()" 
     [carregando]="carregando()">
   </app-estoque-list>
+
+  @if (paginationMetaEstoque(); as meta) {
+    @if (meta.totalPaginas > 1) {
+      <app-pagination [meta]="meta" (pageChange)="onPageChange($event)"></app-pagination>
+    }
+  }
   }
 
   @if (abaAtiva() === 'catalogo') {
@@ -83,6 +89,12 @@
     [catalogo]="catalogo()" 
     [carregando]="carregando()">
   </app-catalogo-table>
+
+  @if (paginationMetaCatalogo(); as meta) {
+    @if (meta.totalPaginas > 1) {
+      <app-pagination [meta]="meta" (pageChange)="onPageChange($event)"></app-pagination>
+    }
+  }
   }
 </div>
 
@@ -101,7 +113,7 @@
   [isOpen]="modalEstoqueAberto()"
   [salvando]="salvandoEstoque()"
   [erro]="erroEstoque()"
-  [catalogo]="catalogoBase()"
+  [catalogo]="catalogo()"
   (close)="fecharModalEstoque()"
   (save)="salvarEstoque($event)">
 </app-registrar-entrada-modal>

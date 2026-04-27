@@ -6,6 +6,7 @@ import { PerfilUsuario, Usuario } from "../entities/Usuario.js";
 import { AppError } from "../errors/AppError.js";
 import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
 import type { CriarInsumoEstoqueDTO } from "../dto/insumoEstoque.dto.js";
+import { PaginacaoQueryDto, formatarRespostaPaginada, type RespostaPaginada } from "../dto/paginacao.dto.js";
 
 export class InsumoEstoqueService {
   private repo: Repository<InsumoEstoque>;
@@ -75,17 +76,38 @@ export class InsumoEstoqueService {
     return this.repo.save(entidade);
   };
 
-  listar = async (requisitante: Requisitante): Promise<InsumoEstoque[]> => {
+  listar = async (query: PaginacaoQueryDto & { materia_prima_id?: string }, requisitante: Requisitante): Promise<RespostaPaginada<InsumoEstoque>> => {
     verificaPermissao(requisitante, [
       PerfilUsuario.OPERADOR,
       PerfilUsuario.INSPETOR,
       PerfilUsuario.GESTOR,
     ]);
 
-    return this.repo.find({
-      relations: ["materiaPrima", "operador"],
-      order: { recebido_em: "DESC" },
-    });
+    const { pagina, limite, busca, materia_prima_id } = query;
+    const skip = (pagina - 1) * limite;
+
+    const queryBuilder = this.repo.createQueryBuilder("ie")
+      .leftJoinAndSelect("ie.materiaPrima", "mp")
+      .leftJoinAndSelect("ie.operador", "op")
+      .skip(skip)
+      .take(limite)
+      .orderBy("ie.recebido_em", "DESC")
+      .addOrderBy("mp.nome", "ASC");
+
+    if (busca) {
+      queryBuilder.andWhere(
+        "(ie.numero_lote_interno ILIKE :busca OR ie.numero_lote_fornecedor ILIKE :busca OR mp.nome ILIKE :busca)",
+        { busca: `%${busca}%` }
+      );
+    }
+
+    if (materia_prima_id) {
+      queryBuilder.andWhere("mp.id = :mpId", { mpId: Number(materia_prima_id) });
+    }
+
+    const [itens, total] = await queryBuilder.getManyAndCount();
+
+    return formatarRespostaPaginada([itens, total], query);
   };
 
   buscarPorId = async (id: number, requisitante: Requisitante): Promise<InsumoEstoque> => {

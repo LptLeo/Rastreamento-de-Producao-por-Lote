@@ -1,9 +1,19 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { map, Observable } from 'rxjs';
 import type { InsumoEstoque } from '../../../shared/models/lote.models';
 
 const API_URL = 'http://localhost:3000/api';
+
+export interface RespostaPaginada<T> {
+  itens: T[];
+  meta: {
+    totalItens: number;
+    itensPorPagina: number;
+    totalPaginas: number;
+    paginaAtual: number;
+  };
+}
 
 @Injectable({
   providedIn: 'root',
@@ -11,9 +21,19 @@ const API_URL = 'http://localhost:3000/api';
 export class InsumosService {
   private http = inject(HttpClient);
 
-  /** Lista todos os lotes de insumo em estoque */
-  getAll(): Observable<InsumoEstoque[]> {
-    return this.http.get<InsumoEstoque[]>(`${API_URL}/insumos-estoque`);
+  /** Lista lotes de insumo com paginação e filtros */
+  getAll(filtros?: Record<string, string | number>): Observable<RespostaPaginada<InsumoEstoque>> {
+    let params = new HttpParams();
+
+    if (filtros) {
+      Object.entries(filtros).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params = params.set(key, String(value));
+        }
+      });
+    }
+
+    return this.http.get<RespostaPaginada<InsumoEstoque>>(`${API_URL}/insumos-estoque`, { params });
   }
 
   /** Busca um lote de insumo por ID */
@@ -26,9 +46,27 @@ export class InsumosService {
     return this.http.post<InsumoEstoque>(`${API_URL}/insumos-estoque`, payload);
   }
 
-  /** Lista matérias-primas do catálogo */
+  /** Lista matérias-primas do catálogo com paginação e filtros */
+  getMateriasPrimasPaginado(filtros?: Record<string, string | number>): Observable<RespostaPaginada<any>> {
+    let params = new HttpParams();
+
+    if (filtros) {
+      Object.entries(filtros).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params = params.set(key, String(value));
+        }
+      });
+    }
+
+    return this.http.get<RespostaPaginada<any>>(`${API_URL}/materias-primas`, { params });
+  }
+
+  /** Lista matérias-primas do catálogo (paginado mas carregando catálogo grande) */
   getMateriasPrimas(): Observable<any[]> {
-    return this.http.get<any[]>(`${API_URL}/materias-primas`);
+    const params = new HttpParams().set('limite', '100');
+    return this.http.get<any>(`${API_URL}/materias-primas`, { params }).pipe(
+      map(res => res.itens || [])
+    );
   }
 
   /** Cria uma nova matéria-prima no catálogo */
