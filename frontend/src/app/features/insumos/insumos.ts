@@ -11,6 +11,7 @@ import { EstoqueListComponent } from './components/estoque-list/estoque-list.com
 import { CatalogoTableComponent } from './components/catalogo-table/catalogo-table.component';
 import { NovaMpModalComponent } from './components/nova-mp-modal/nova-mp-modal.component';
 import { RegistrarEntradaModalComponent } from './components/registrar-entrada-modal/registrar-entrada-modal.component';
+import { PaginationComponent, PaginationMeta } from '../../shared/components/pagination/pagination';
 
 @Component({
   selector: 'app-insumos',
@@ -21,7 +22,8 @@ import { RegistrarEntradaModalComponent } from './components/registrar-entrada-m
     EstoqueListComponent,
     CatalogoTableComponent,
     NovaMpModalComponent,
-    RegistrarEntradaModalComponent
+    RegistrarEntradaModalComponent,
+    PaginationComponent
   ],
   templateUrl: './insumos.html',
 })
@@ -32,9 +34,15 @@ export class Insumos implements OnInit {
 
   abaAtiva = signal<'estoque' | 'catalogo'>('estoque');
 
-  insumosBase = signal<InsumoEstoque[]>([]);
-  catalogoBase = signal<any[]>([]);
+  insumos = signal<InsumoEstoque[]>([]);
+  catalogo = signal<any[]>([]);
   categoriasMp = signal<string[]>([]);
+  
+  paginationMetaEstoque = signal<PaginationMeta | null>(null);
+  paginationMetaCatalogo = signal<PaginationMeta | null>(null);
+  
+  currentPageEstoque = signal(1);
+  currentPageCatalogo = signal(1);
 
   carregando = signal(true);
   erro = signal<string | null>(null);
@@ -50,80 +58,93 @@ export class Insumos implements OnInit {
   salvandoEstoque = signal(false);
   erroEstoque = signal<string | null>(null);
 
-  /** Listagem filtrada para estoque */
-  insumos = computed(() => {
-    const lista = this.insumosBase();
-    const termo = this.termoPesquisa().toLowerCase().trim();
-    if (!termo) return lista;
-    return lista.filter(ie =>
-      ie.materiaPrima?.nome.toLowerCase().includes(termo) ||
-      ie.numero_lote_interno.toLowerCase().includes(termo) ||
-      ie.fornecedor.toLowerCase().includes(termo)
-    );
-  });
-
-  /** Listagem filtrada para catálogo */
-  catalogo = computed(() => {
-    const lista = this.catalogoBase();
-    const termo = this.termoPesquisa().toLowerCase().trim();
-    if (!termo) return lista;
-    return lista.filter(mp =>
-      mp.nome.toLowerCase().includes(termo) ||
-      mp.sku_interno.toLowerCase().includes(termo) ||
-      mp.categoria.toLowerCase().includes(termo)
-    );
-  });
-
-  /** Métricas computadas localmente */
-  totalRegistros = computed(() => this.insumosBase().length);
-  totalComSaldo = computed(() => this.insumosBase().filter(ie => Number(ie.quantidade_atual) > 0).length);
-  totalEsgotados = computed(() => this.insumosBase().filter(ie => Number(ie.quantidade_atual) === 0).length);
-
-  totalCatalogo = computed(() => this.catalogoBase().length);
+  /** Métricas */
+  totalRegistros = signal(0);
+  totalComSaldo = signal(0);
+  totalEsgotados = signal(0);
+  totalCatalogo = signal(0);
 
   ngOnInit(): void {
-    this.carregarDados();
+    this.carregarCategorias();
+    this.carregarEstoque();
+    this.carregarCatalogo();
   }
 
-  carregarDados(): void {
+  carregarEstoque(): void {
     this.carregando.set(true);
-    
-    // Carrega ambas as listas
-    this.insumosService.getAll().subscribe({
-      next: (dados) => this.insumosBase.set(dados),
-      error: () => this.erro.set('Erro ao carregar insumos de estoque.'),
-      complete: () => this.verificarFimCarregamento()
-    });
+    const filtros = {
+      pagina: this.currentPageEstoque(),
+      limite: 10,
+      busca: this.abaAtiva() === 'estoque' ? this.termoPesquisa().trim() : ''
+    };
 
-    this.insumosService.getMateriasPrimas().subscribe({
-      next: (dados) => this.catalogoBase.set(dados),
-      error: () => console.error('Erro ao carregar catálogo.'),
-      complete: () => this.verificarFimCarregamento()
-    });
+    this.insumosService.getAll(filtros)
+      .pipe(finalize(() => this.carregando.set(false)))
+      .subscribe({
+        next: (res) => {
+          this.insumos.set(res.itens);
+          this.paginationMetaEstoque.set(res.meta);
+          this.totalRegistros.set(res.meta.totalItens);
+          // Em um cenário real, o backend deveria retornar essas contagens de métricas
+          this.totalComSaldo.set(res.itens.filter(i => Number(i.quantidade_atual) > 0).length);
+          this.totalEsgotados.set(res.itens.filter(i => Number(i.quantidade_atual) === 0).length);
+        },
+        error: () => this.erro.set('Erro ao carregar insumos de estoque.')
+      });
+  }
 
+  carregarCatalogo(): void {
+    const filtros = {
+      pagina: this.currentPageCatalogo(),
+      limite: 10,
+      busca: this.abaAtiva() === 'catalogo' ? this.termoPesquisa().trim() : ''
+    };
+
+    this.insumosService.getMateriasPrimasPaginado(filtros).subscribe({
+      next: (res: any) => {
+        this.catalogo.set(res.itens);
+        this.paginationMetaCatalogo.set(res.meta);
+        this.totalCatalogo.set(res.meta.totalItens);
+      },
+      error: () => console.error('Erro ao carregar catálogo.')
+    });
+  }
+
+  carregarCategorias(): void {
     this.insumosService.getCategoriasMateriasPrimas().subscribe({
       next: (dados) => this.categoriasMp.set(dados),
-      error: () => console.error('Erro ao carregar categorias.'),
-      complete: () => this.verificarFimCarregamento()
+      error: () => console.error('Erro ao carregar categorias.')
     });
   }
 
-  private loadCount = 0;
-  verificarFimCarregamento(): void {
-    this.loadCount++;
-    if (this.loadCount >= 3) {
-      this.carregando.set(false);
-      this.loadCount = 0;
+  onPageChange(pagina: number): void {
+    if (this.abaAtiva() === 'estoque') {
+      this.currentPageEstoque.set(pagina);
+      this.carregarEstoque();
+    } else {
+      this.currentPageCatalogo.set(pagina);
+      this.carregarCatalogo();
     }
   }
 
   setAba(aba: 'estoque' | 'catalogo'): void {
     this.abaAtiva.set(aba);
     this.termoPesquisa.set('');
+    this.currentPageEstoque.set(1);
+    this.currentPageCatalogo.set(1);
+    this.carregarEstoque();
+    this.carregarCatalogo();
   }
 
   onSearch(event: Event): void {
-    this.termoPesquisa.set((event.target as HTMLInputElement).value);
+    const valor = (event.target as HTMLInputElement).value;
+    this.termoPesquisa.set(valor);
+    
+    // Reset de página para busca
+    this.currentPageEstoque.set(1);
+    this.currentPageCatalogo.set(1);
+    this.carregarEstoque();
+    this.carregarCatalogo();
   }
 
   // --- Modal Logic ---
@@ -145,8 +166,8 @@ export class Insumos implements OnInit {
     this.insumosService.criarMateriaPrima(payload)
       .pipe(finalize(() => this.salvandoMp.set(false)))
       .subscribe({
-        next: (novaMp) => {
-          this.catalogoBase.update(lista => [...lista, novaMp]);
+        next: () => {
+          this.carregarCatalogo();
           this.fecharModalNovaMp();
         },
         error: (err) => {
@@ -176,16 +197,6 @@ export class Insumos implements OnInit {
 
   salvarEstoque(payload: any): void {
     const mpId = Number(payload.materia_prima_id);
-    const mp = this.catalogoBase().find(item => item.id === mpId);
-
-    // Validação extra de segurança para UN
-    if (mp?.unidade_medida === 'UN' && !Number.isInteger(Number(payload.quantidade_inicial))) {
-      this.erroEstoque.set('Para Matérias-Primas com unidade "UN", a quantidade deve ser um número inteiro.');
-      return;
-    }
-
-    const dataValidadeFinal = (!payload.naoAplicaValidade && payload.data_validade) ? payload.data_validade : null;
-
     this.salvandoEstoque.set(true);
     this.erroEstoque.set(null);
     
@@ -195,14 +206,14 @@ export class Insumos implements OnInit {
       fornecedor: payload.fornecedor,
       quantidade_inicial: Number(payload.quantidade_inicial),
       turno: payload.turno,
-      data_validade: dataValidadeFinal
+      data_validade: (!payload.naoAplicaValidade && payload.data_validade) ? payload.data_validade : null
     };
 
     this.insumosService.create(formattedPayload)
       .pipe(finalize(() => this.salvandoEstoque.set(false)))
       .subscribe({
-        next: (novoLote) => {
-          this.insumosBase.update(lista => [novoLote, ...lista]);
+        next: () => {
+          this.carregarEstoque();
           this.fecharModalEstoque();
         },
         error: (err) => {
