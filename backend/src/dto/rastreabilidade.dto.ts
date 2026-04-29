@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { PaginacaoQueryDto } from "./paginacao.dto.js";
 
-export const queryRastreabilidadeSchema = z.object({
+export const queryRastreabilidadeSchema = PaginacaoQueryDto.extend({
   termo: z
-    .string("O termo de busca é obrigatório.")
+    .string()
     .min(1, "Digite um número de lote, código ou lote de insumo para pesquisar."),
 });
 

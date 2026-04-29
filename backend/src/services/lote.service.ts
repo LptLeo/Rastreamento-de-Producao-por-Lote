@@ -132,10 +132,19 @@ export class LoteService {
         const percentualNovo = (novoSaldo / insumo.quantidade_inicial) * 100;
 
         for (const gestor of gestores) {
-          // Se cruzou a linha da porcentagem agora (antes estava acima, agora está abaixo ou igual)
-          if (percentualAnterior > gestor.alerta_estoque_porcentagem && percentualNovo <= gestor.alerta_estoque_porcentagem) {
+          // Alerta 1: Cruzou a linha da porcentagem configurada (ex: 20%), mas ainda não é zero
+          if (percentualAnterior > gestor.alerta_estoque_porcentagem && percentualNovo <= gestor.alerta_estoque_porcentagem && percentualNovo > 0) {
             await notificacaoService.criarNotificacaoParaUsuario(
               `Estoque Baixo: O insumo ${insumo.numero_lote_interno} (${insumo.materiaPrima.nome}) atingiu ${percentualNovo.toFixed(1)}% do seu volume inicial.`,
+              TipoNotificacao.ESTOQUE,
+              gestor
+            );
+          }
+
+          // Alerta 2: Estoque zerou completamente (Urgente)
+          if (percentualAnterior > 0 && percentualNovo === 0) {
+            await notificacaoService.criarNotificacaoParaUsuario(
+              `URGENTE: O lote de insumo ${insumo.numero_lote_interno} (${insumo.materiaPrima.nome}) ACABOU completamente.`,
               TipoNotificacao.ESTOQUE,
               gestor
             );
