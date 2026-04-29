@@ -5,6 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   OneToOne,
+  Index,
   type Relation,
 } from "typeorm";
 
@@ -30,6 +31,7 @@ export enum LoteStatus {
  */
 @Entity("lote")
 export class Lote extends EntidadeBase {
+  @Index({ unique: true })
   @Column({ type: "text", unique: true, nullable: false })
   numero_lote!: string;
 
@@ -40,6 +42,7 @@ export class Lote extends EntidadeBase {
   @Column({ type: "int", nullable: false })
   quantidade_planejada!: number;
 
+  @Index()
   @Column({ type: "enum", enum: LoteStatus, nullable: false })
   status!: LoteStatus;
 
@@ -54,6 +57,7 @@ export class Lote extends EntidadeBase {
   @JoinColumn({ name: "operador_id" })
   operador!: Relation<Usuario>;
 
+  @Index()
   @Column({ type: "date", nullable: false })
   data_producao!: Date;
 
@@ -63,6 +67,7 @@ export class Lote extends EntidadeBase {
   @Column({ type: "text", nullable: true })
   observacoes!: string;
 
+  @Index()
   @Column({ type: "timestamptz", nullable: false, default: () => "CURRENT_TIMESTAMP" })
   aberto_em!: Date;
 

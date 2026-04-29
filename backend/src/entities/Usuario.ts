@@ -4,6 +4,7 @@ import {
   OneToMany,
   ManyToOne,
   JoinColumn,
+  Index,
   type Relation,
 } from "typeorm";
 
@@ -24,6 +25,7 @@ export class Usuario extends EntidadeBase {
   @Column({ type: "text", nullable: false })
   nome!: string;
 
+  @Index({ unique: true })
   @Column({ type: "text", unique: true, nullable: false })
   email!: string;
 

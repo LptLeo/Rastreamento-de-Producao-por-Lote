@@ -3,6 +3,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  Index,
   type Relation,
 } from "typeorm";
 
@@ -29,6 +30,7 @@ export class InsumoEstoque extends EntidadeBase {
   @Column({ type: "text", nullable: true })
   numero_lote_fornecedor!: string;
 
+  @Index({ unique: true })
   @Column({ type: "text", unique: true, nullable: false })
   numero_lote_interno!: string;
 
@@ -57,6 +59,7 @@ export class InsumoEstoque extends EntidadeBase {
   @Column({ type: "text", nullable: true })
   observacoes!: string;
 
+  @Index()
   @Column({
     type: "timestamptz",
     nullable: false,

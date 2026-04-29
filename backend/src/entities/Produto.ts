@@ -4,6 +4,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  Index,
   type Relation,
 } from "typeorm";
 
@@ -19,9 +20,11 @@ import type { Usuario } from "./Usuario.js";
  */
 @Entity("produto")
 export class Produto extends EntidadeBase {
+  @Index()
   @Column({ type: "text", nullable: false })
   nome!: string;
 
+  @Index({ unique: true })
   @Column({ type: "text", unique: true, nullable: false })
   sku!: string;
 
