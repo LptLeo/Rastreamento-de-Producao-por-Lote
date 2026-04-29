@@ -6,7 +6,7 @@ import {
   type Relation,
 } from "typeorm";
 
-import { EntidadeBase } from "./EntidadeBase.js";
+import { EntidadeBase } from "./base.entity.js";
 import type { MateriaPrima } from "./MateriaPrima.js";
 import type { Usuario } from "./Usuario.js";
 
@@ -17,9 +17,8 @@ export enum Turno {
 }
 
 /**
- * Representa a entrada física de um material no estoque.
- * Cada registro é um lote recebido do fornecedor, com número de
- * rastreamento interno gerado automaticamente pelo sistema.
+ * Representa um lote físico de matéria-prima recebido no estoque.
+ * Rastreia a quantidade original e o saldo atual após consumos.
  */
 @Entity("insumo_estoque")
 export class InsumoEstoque extends EntidadeBase {
@@ -58,9 +57,10 @@ export class InsumoEstoque extends EntidadeBase {
   @Column({ type: "text", nullable: true })
   observacoes!: string;
 
-  @Column({ type: "boolean", default: true })
-  ativo!: boolean;
-
-  @Column({ type: "timestamptz", nullable: false, default: () => "CURRENT_TIMESTAMP" })
+  @Column({
+    type: "timestamptz",
+    nullable: false,
+    default: () => "CURRENT_TIMESTAMP",
+  })
   recebido_em!: Date;
 }

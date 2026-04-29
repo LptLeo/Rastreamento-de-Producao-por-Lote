@@ -58,9 +58,9 @@ export class ProdutosService {
 
   getMateriasPrimas(): Observable<MateriaPrima[]> {
     // Para simplificar receitas, carregamos um limite alto para o catálogo.
-    const params = new HttpParams().set('limite', '100');
-    return this.http.get<any>(`${API_URL}/materias-primas`, { params }).pipe(
-      map(res => res.itens || [])
+    const params = new HttpParams().set('limite', '1000');
+    return this.http.get<RespostaPaginada<MateriaPrima>>(`${API_URL}/materias-primas`, { params }).pipe(
+      map(res => res.itens)
     );
   }
 

@@ -1,5 +1,5 @@
 import { Entity, Column, ManyToOne, JoinColumn, type Relation } from "typeorm";
-import { EntidadeBase } from "./EntidadeBase.js";
+import { EntidadeBase } from "./base.entity.js";
 import type { Usuario } from "./Usuario.js";
 
 export enum TipoNotificacao {

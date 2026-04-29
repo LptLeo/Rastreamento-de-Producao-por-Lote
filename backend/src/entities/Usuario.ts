@@ -7,7 +7,7 @@ import {
   type Relation,
 } from "typeorm";
 
-import { EntidadeBase } from "./EntidadeBase.js";
+import { EntidadeBase } from "./base.entity.js";
 import type { Lote } from "./Lote.js";
 import type { InsumoEstoque } from "./InsumoEstoque.js";
 import type { Inspecao } from "./Inspecao.js";
@@ -37,9 +37,6 @@ export class Usuario extends EntidadeBase {
     nullable: false,
   })
   perfil!: PerfilUsuario;
-
-  @Column({ type: "boolean", default: true, nullable: false })
-  ativo!: boolean;
 
   @Column({ type: "text", nullable: true, select: false })
   refresh_token!: string | null;

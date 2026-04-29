@@ -9,7 +9,7 @@ const coageNumber = z.union([z.string(), z.number()]).optional().transform(v => 
 
 export const PaginacaoQueryDto = z.object({
   pagina: coageNumber.transform(v => (v !== undefined ? Math.max(1, v) : 1)),
-  limite: coageNumber.transform(v => (v !== undefined ? Math.min(100, Math.max(1, v)) : 10)),
+  limite: coageNumber.transform(v => (v !== undefined ? Math.min(1000, Math.max(1, v)) : 10)),
   busca: z.string().optional(),
 });
 

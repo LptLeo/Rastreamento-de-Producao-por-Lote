@@ -6,7 +6,7 @@ import {
   type Relation,
 } from "typeorm";
 
-import { EntidadeBase } from "./EntidadeBase.js";
+import { EntidadeBase } from "./base.entity.js";
 import type { Produto } from "./Produto.js";
 import type { MateriaPrima } from "./MateriaPrima.js";
 

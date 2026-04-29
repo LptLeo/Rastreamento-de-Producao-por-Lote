@@ -3,7 +3,7 @@ import {
   Entity,
 } from "typeorm";
 
-import { EntidadeBase } from "./EntidadeBase.js";
+import { EntidadeBase } from "./base.entity.js";
 
 /**
  * Catálogo central de materiais.

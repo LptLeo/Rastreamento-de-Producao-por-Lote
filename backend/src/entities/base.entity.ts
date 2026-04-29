@@ -2,6 +2,7 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Column,
 } from "typeorm";
 
 /**
@@ -17,4 +18,7 @@ export abstract class EntidadeBase {
 
   @UpdateDateColumn({ type: "timestamptz" })
   atualizado_em!: Date;
+
+  @Column({ type: "boolean", default: true, nullable: false })
+  ativo!: boolean;
 }

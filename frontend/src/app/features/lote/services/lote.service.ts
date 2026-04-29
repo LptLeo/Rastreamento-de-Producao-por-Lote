@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import type { LoteDetalhe } from '../../../shared/models/lote.models';
 
 const API_URL = 'http://localhost:3000/api';
@@ -48,7 +49,9 @@ export class LoteFeatureService {
   }
 
   getProdutos(): Observable<any[]> {
-    return this.http.get<any[]>(`${API_URL}/produtos`);
+    return this.http.get<RespostaPaginada<any>>(`${API_URL}/produtos`, { params: { limite: 1000 } }).pipe(
+      map(res => res.itens)
+    );
   }
 
   /** Busca o tempo de produção configurado no backend para cálculo da barra de progresso */

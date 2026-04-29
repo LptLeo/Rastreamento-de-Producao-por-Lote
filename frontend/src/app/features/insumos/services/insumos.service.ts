@@ -63,9 +63,9 @@ export class InsumosService {
 
   /** Lista matérias-primas do catálogo (paginado mas carregando catálogo grande) */
   getMateriasPrimas(): Observable<any[]> {
-    const params = new HttpParams().set('limite', '100');
-    return this.http.get<any>(`${API_URL}/materias-primas`, { params }).pipe(
-      map(res => res.itens || [])
+    const params = new HttpParams().set('limite', '1000');
+    return this.http.get<RespostaPaginada<any>>(`${API_URL}/materias-primas`, { params }).pipe(
+      map(res => res.itens)
     );
   }
 

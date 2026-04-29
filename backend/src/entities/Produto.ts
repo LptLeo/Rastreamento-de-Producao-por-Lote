@@ -7,7 +7,7 @@ import {
   type Relation,
 } from "typeorm";
 
-import { EntidadeBase } from "./EntidadeBase.js";
+import { EntidadeBase } from "./base.entity.js";
 import type { ReceitaItem } from "./ReceitaItem.js";
 import type { Lote } from "./Lote.js";
 import type { Usuario } from "./Usuario.js";
@@ -34,9 +34,6 @@ export class Produto extends EntidadeBase {
   /** Limiar de reprovação (%) para determinar o resultado da inspeção */
   @Column({ type: "numeric", nullable: false })
   percentual_ressalva!: number;
-
-  @Column({ type: "boolean", default: true })
-  ativo!: boolean;
 
   @ManyToOne("Usuario")
   @JoinColumn({ name: "criado_por_id" })

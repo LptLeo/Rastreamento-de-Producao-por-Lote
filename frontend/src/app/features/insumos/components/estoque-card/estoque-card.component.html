@@ -33,7 +33,7 @@
     <div class="flex justify-between items-center bg-[#1A1A1A]/30 px-3 py-2 rounded">
       <span class="text-[#ADAAAA] text-[9px] uppercase font-bold tracking-wider">Saldo</span>
       <div class="flex items-center gap-1.5">
-        <span class="text-white text-sm font-bold">{{ item.quantidade_atual }} / {{ item.quantidade_inicial }}</span>
+        <span class="text-white text-sm font-bold">{{ item.quantidade_atual | number:'1.0-2' }} / {{ item.quantidade_inicial | number:'1.0-2' }}</span>
         <span class="text-[#6B7280] text-[9px] font-bold uppercase">{{ item.materiaPrima.unidade_medida }}</span>
       </div>
     </div>
