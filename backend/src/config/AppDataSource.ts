@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from "typeorm";
 import dotenv from "dotenv";
+import { join } from 'path';
 
 dotenv.config();
 
@@ -11,12 +12,16 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || "postgres",
   password: process.env.DB_PASSWORD || "postgres",
   database: process.env.DB_NAME || "postgres",
-  entities: [process.env.NODE_ENV === 'development'
-    ? "src/entities/**/*.{ts,js}"
-    : "dist/entities/**/*.{js}"],
-  migrations: [process.env.NODE_ENV === 'development'
-    ? "src/migrations/**/*.{ts,js}"
-    : "dist/migrations/**/*.{js}"],
+  entities: [
+    join(process.cwd(), process.env.NODE_ENV === 'development'
+      ? "src/entities/**/*.{ts,js}"
+      : "dist/entities/**/*.{js}")
+  ],
+  migrations: [
+    join(process.cwd(), process.env.NODE_ENV === 'development'
+      ? "src/migrations/**/*.{ts,js}"
+      : "dist/migrations/**/*.{js}")
+  ],
   subscribers: [],
   synchronize: process.env.NODE_ENV === "development",
   logging: false,
