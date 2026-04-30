@@ -11,6 +11,9 @@ import { FilterTabsComponent, FilterTab } from '../../shared/components/filter-t
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.js';
 import { ConfiguracoesService } from '../../core/services/configuracoes.service.js';
 import { PaginationComponent, PaginationMeta } from '../../shared/components/pagination/pagination.js';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { DashboardService } from '../dashboard/services/dashboard.service.js';
+import { DashboardData } from '../dashboard/models/dashboard.interface.js';
 
 /** Fallback caso o backend não responda — 2 minutos como padrão de demo */
 const FALLBACK_DURACAO_MS = 2 * 60 * 1000;
@@ -26,6 +29,7 @@ export class Lote implements OnInit, OnDestroy {
   /** Referência do setInterval para limpeza no OnDestroy */
   private tickIntervalId: ReturnType<typeof setInterval> | null = null;
   private loteService = inject(LoteFeatureService);
+  private dashboardService = inject(DashboardService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private configuracoesService = inject(ConfiguracoesService);
@@ -61,7 +65,7 @@ export class Lote implements OnInit, OnDestroy {
 
   producaoTotalLabel = computed(() => {
     const p = this.configuracoesService.settings().lote.producaoTotalPeriodo;
-    const map = {
+    const map: Record<string, string> = {
       qualquer_momento: 'Produção Total Acumulada',
       mes: 'Produção (Mês Atual)',
       semana: 'Produção (Última Semana)',
@@ -70,9 +74,15 @@ export class Lote implements OnInit, OnDestroy {
     return map[p] || 'Produção Total';
   });
 
+  dashboardResource = rxResource<DashboardData, any>({
+    stream: () => this.dashboardService.getDashboardData(
+      'mes',
+      this.configuracoesService.settings().lote.producaoTotalPeriodo
+    ),
+  });
+
   producaoTotalAcumulada = computed(() => {
-    // IMPORTANTE: Como a lista é paginada, a métrica deve usar o totalItens do meta global
-    return this.paginationMeta()?.totalItens || 0;
+    return this.dashboardResource.value()?.unidades_mes || 0;
   });
 
   statsCargaSistema = computed(() => {
