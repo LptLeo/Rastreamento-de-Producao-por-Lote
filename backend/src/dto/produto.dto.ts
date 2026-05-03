@@ -3,6 +3,9 @@ import { PaginacaoQueryDto } from "./paginacao.dto.js";
 
 export const ListProdutosQueryDto = PaginacaoQueryDto.extend({
   categoria: z.string().optional(),
+  status: z.string().optional(),
+  ordenacao: z.string().optional(),
+  linha: z.string().optional(),
 });
 
 export type ListProdutosQueryDto = z.infer<typeof ListProdutosQueryDto>;
@@ -55,3 +58,8 @@ export type AtualizarProdutoDTO = z.infer<typeof atualizarProdutoSchema>;
 
 export const atualizarReceitaSchema = z.array(receitaItemSchema);
 export type AtualizarReceitaDTO = z.infer<typeof atualizarReceitaSchema>;
+
+export const alternarStatusProdutoSchema = z.object({
+  ativo: z.boolean(),
+});
+export type AlternarStatusProdutoDTO = z.infer<typeof alternarStatusProdutoSchema>;

@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ProdutosService } from '../../services/produtos.service.js';
 import { Produto } from '../../../../shared/models/lote.models.js';
 import { finalize } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service.js';
 
 import { ProdutoInfoCardsComponent } from './components/produto-info-cards/produto-info-cards.component.js';
 import { ProdutoReceitaComponent } from './components/produto-receita/produto-receita.component.js';
@@ -18,6 +19,7 @@ export class ProdutoDetail implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private produtosService = inject(ProdutosService);
+  private authService = inject(AuthService);
 
   produto = signal<Produto | null>(null);
   carregando = signal<boolean>(true);
@@ -27,6 +29,9 @@ export class ProdutoDetail implements OnInit {
   modoEdicaoReceita = signal<boolean>(false);
   receitaEditada = signal<any[]>([]);
   salvandoReceita = signal<boolean>(false);
+  alterandoStatus = signal<boolean>(false);
+
+  isGestor = computed(() => this.authService.usuario()?.perfil === 'gestor');
 
   mpDisponiveis = computed(() => {
     const idsUsados = this.receitaEditada().map((r: any) => r.materiaPrima.id);
@@ -158,5 +163,29 @@ export class ProdutoDetail implements OnInit {
 
   voltarParaLista(): void {
     this.router.navigate(['/app/produtos']);
+  }
+
+  alternarStatus(): void {
+    const prod = this.produto();
+    if (!prod) return;
+
+    const acao = prod.ativo ? 'desativar' : 'ativar';
+    const confirmado = window.confirm(`Tem certeza que deseja ${acao} o produto "${prod.nome}"?`);
+    if (!confirmado) return;
+
+    this.alterandoStatus.set(true);
+    const novoStatus = !prod.ativo;
+
+    this.produtosService.alternarStatus(prod.id, novoStatus)
+      .pipe(finalize(() => this.alterandoStatus.set(false)))
+      .subscribe({
+        next: (atualizado) => {
+          this.produto.set(atualizado);
+        },
+        error: (err) => {
+          console.error('Erro ao alternar status do produto:', err);
+          alert(err.error?.message || 'Erro ao alterar o status do produto.');
+        }
+      });
   }
 }
