@@ -13,12 +13,14 @@ import { InsumoNovo } from './features/insumos/pages/insumo-novo/insumo-novo.js'
 import { Perfil } from './features/perfil/perfil.js';
 import { CadastroUsuarios } from './features/cadastro-usuarios/cadastro-usuarios.js';
 import { authGuard } from './core/guards/auth/auth-guard.js';
+import { guestGuard } from './core/guards/auth/guest-guard.js';
 import { MainLayout } from './core/layouts/main-layout/main-layout.js';
 
 export const routes: Routes = [
   {
     path: 'login',
     component: Login,
+    canActivate: [guestGuard],
     pathMatch: 'full'
   },
   {

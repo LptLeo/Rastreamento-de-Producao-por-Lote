@@ -1,13 +1,15 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service.js';
 import { LoteFeatureService } from '../../services/lote.service.js';
 import type { Produto, ReceitaItem, InsumoEstoque } from '../../../../shared/models/lote.models.js';
-import { finalize } from 'rxjs';
+import { finalize, of } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { LoteInsumoItemComponent } from './components/lote-insumo-item/lote-insumo-item.js';
+import { criarLoteSchema } from '../../../../core/schemas/lote.schema.js';
+import { ZodError } from 'zod';
 
 @Component({
   selector: 'app-lote-novo',
@@ -26,18 +28,71 @@ export class LoteNovo implements OnInit {
     stream: () => this.loteService.getProdutos()
   });
 
-  produtos = computed(() => this.produtosResource.value() || []);
-  salvando = signal(false);
-  erro = signal<string | null>(null);
+  /** Resource para carregar insumos disponíveis para o produto selecionado */
+  insumosResource = rxResource({
+    params: () => {
+      const pId = Number(this.form.controls.produto_id.value);
+      const produto = this.produtos().find(p => p.id === pId);
+      return produto?.receita?.map((r: any) => r.materiaPrima.id) || [];
+    },
+    stream: ({ params: mpIds }) => {
+      if (!mpIds.length) return of([]);
+      return this.loteService.getInsumosDisponiveis(mpIds);
+    }
+  });
 
-  /** Receita do produto selecionado */
-  receitaAtual = signal<ReceitaItem[]>([]);
+  produtos = computed(() => this.produtosResource.value() || []);
+  insumosList = computed(() => this.insumosResource.value() || []);
 
   /** Insumos em estoque disponíveis, agrupados por matéria-prima ID */
-  insumosDisponiveis = signal<Map<number, InsumoEstoque[]>>(new Map());
+  insumosDisponiveis = computed(() => {
+    const mapa = new Map<number, InsumoEstoque[]>();
+    for (const insumo of this.insumosList()) {
+      const mpId = insumo.materiaPrima.id;
+      const lista = mapa.get(mpId) ?? [];
+      lista.push(insumo);
+      mapa.set(mpId, lista);
+    }
+    return mapa;
+  });
+
+  salvando = signal(false);
+  erro = signal<string | null>(null);
+  fieldErrors = signal<Record<string, string>>({});
 
   /** Flag de carregamento dos insumos */
-  carregandoInsumos = signal(false);
+  carregandoInsumos = computed(() => this.insumosResource.isLoading());
+
+  constructor() {
+    /** Reação automática para mudança de produto - reconstrói o FormArray de consumos */
+    effect(() => {
+      const produtoId = Number(this.form.controls.produto_id.value);
+      const produto = this.produtos().find(p => p.id === produtoId);
+
+      this.consumosArray.clear();
+      
+      if (!produto || !produto.receita?.length) return;
+
+      const qtdPlanejada = Number(this.form.controls.quantidade_planejada.value) || 1;
+
+      for (const item of produto.receita) {
+        let consumidoInicial = item.quantidade * qtdPlanejada;
+        if (item.unidade !== 'UN') consumidoInicial = Number(consumidoInicial.toFixed(2));
+        else consumidoInicial = Math.floor(consumidoInicial);
+
+        this.consumosArray.push(
+          this.fb.nonNullable.group({
+            materia_prima_id: [item.materiaPrima.id],
+            materia_prima_nome: [item.materiaPrima.nome],
+            quantidade_necessaria: [item.quantidade],
+            unidade: [item.unidade],
+            insumo_estoque_id: [0, [Validators.required, Validators.min(1)]],
+            quantidade_consumida: [consumidoInicial, [Validators.required, Validators.min(0.01)]],
+          })
+        );
+      }
+    });
+  }
 
   private getHojeLocal(): string {
     const hoje = new Date();
@@ -113,66 +168,6 @@ export class LoteNovo implements OnInit {
         ctrl.get('quantidade_consumida')?.setValue(novoValor);
       });
     });
-
-    /** Reação automática para mudança de produto */
-    this.form.controls.produto_id.valueChanges.subscribe(() => {
-      this.onProdutoChange();
-    });
-  }
-
-  /**
-   * Dispara quando o operador seleciona um produto.
-   * Carrega a receita e busca insumos disponíveis para cada matéria-prima.
-   */
-  onProdutoChange(): void {
-    const produtoId = Number(this.form.controls.produto_id.value);
-    const produto = this.produtos().find(p => p.id === produtoId);
-
-    this.consumosArray.clear();
-    this.receitaAtual.set([]);
-    this.insumosDisponiveis.set(new Map());
-
-    if (!produto || !produto.receita?.length) return;
-
-    this.receitaAtual.set(produto.receita);
-
-    const qtdPlanejada = Number(this.form.controls.quantidade_planejada.value) || 1;
-
-    for (const item of produto.receita) {
-      let consumidoInicial = item.quantidade * qtdPlanejada;
-      if (item.unidade !== 'UN') consumidoInicial = Number(consumidoInicial.toFixed(2));
-      else consumidoInicial = Math.floor(consumidoInicial);
-
-      this.consumosArray.push(
-        this.fb.nonNullable.group({
-          materia_prima_id: [item.materiaPrima.id],
-          materia_prima_nome: [item.materiaPrima.nome],
-          quantidade_necessaria: [item.quantidade],
-          unidade: [item.unidade],
-          insumo_estoque_id: [0, [Validators.required, Validators.min(1)]],
-          quantidade_consumida: [consumidoInicial, [Validators.required, Validators.min(0.01)]],
-        })
-      );
-    }
-
-    const mpIds = produto.receita.map((r: any) => r.materiaPrima.id);
-    this.carregandoInsumos.set(true);
-
-    this.loteService.getInsumosDisponiveis(mpIds)
-      .pipe(finalize(() => this.carregandoInsumos.set(false)))
-      .subscribe({
-        next: (insumos) => {
-          const mapa = new Map<number, InsumoEstoque[]>();
-          for (const insumo of insumos) {
-            const mpId = insumo.materiaPrima.id;
-            const lista = mapa.get(mpId) ?? [];
-            lista.push(insumo);
-            mapa.set(mpId, lista);
-          }
-          this.insumosDisponiveis.set(mapa);
-        },
-        error: () => this.erro.set('Falha ao carregar insumos disponíveis.'),
-      });
   }
 
   getInsumosParaMP(materiaPrimaId: number): InsumoEstoque[] {
@@ -184,12 +179,29 @@ export class LoteNovo implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) return;
-
     this.erro.set(null);
-    this.salvando.set(true);
+    this.fieldErrors.set({});
 
     const formValue = this.form.getRawValue();
+
+    try {
+      // Validação rigorosa com Zod
+      criarLoteSchema.parse(formValue);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const errors: Record<string, string> = {};
+        err.issues.forEach((e: any) => {
+          if (e.path[0]) {
+            errors[e.path[0].toString()] = e.message;
+          }
+        });
+        this.fieldErrors.set(errors);
+        this.erro.set('Existem erros no formulário. Por favor, corrija-os.');
+      }
+      return;
+    }
+
+    this.salvando.set(true);
 
     const payload = {
       produto_id: Number(formValue.produto_id),
