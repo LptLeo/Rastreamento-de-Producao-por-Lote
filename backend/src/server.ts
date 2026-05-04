@@ -10,7 +10,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Configuração de Origens Permitidas
@@ -51,18 +51,20 @@ app.set("trust proxy", 1);
 app.use("/api", routes);
 app.use(errorHandler);
 
-AppDataSource.initialize()
-  .then(() => {
-    console.log("Banco de dados conectado com sucesso.");
+if (process.env.NODE_ENV !== "test") {
+  AppDataSource.initialize()
+    .then(() => {
+      console.log("Banco de dados conectado com sucesso.");
 
-    /** Inicia o job de progressão automática de lotes */
-    const progressao = new ProgressaoService();
-    progressao.iniciar();
+      /** Inicia o job de progressão automática de lotes */
+      const progressao = new ProgressaoService();
+      progressao.iniciar();
 
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT}`);
+      app.listen(PORT, () => {
+        console.log(`Servidor rodando na porta ${PORT}`);
+      });
+    })
+    .catch((error) => {
+      console.error("Erro ao conectar com o banco:", error);
     });
-  })
-  .catch((error) => {
-    console.error("Erro ao conectar com o banco:", error);
-  });
+}
