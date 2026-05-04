@@ -17,6 +17,11 @@ jobs:
     steps:
     - name: Checkout do código
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Verificar padronização dos Commits (Commitlint)
+      uses: wagoid/commitlint-github-action@v6
 
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4

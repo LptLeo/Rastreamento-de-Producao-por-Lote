@@ -21,10 +21,19 @@ export async function startTestContainer() {
   process.env.DB_PASSWORD = 'test_pass';
   process.env.DB_NAME = 'test_db';
   process.env.NODE_ENV = 'test';
+  process.env.JWT_SECRET = 'secret_test';
+  process.env.JWT_REFRESH_SECRET = 'refresh_secret_test';
 
   console.log(`[test] ✅ Container pronto em ${process.env.DB_HOST}:${process.env.DB_PORT}`);
 
   if (!AppDataSource.isInitialized) {
+    AppDataSource.setOptions({
+      host: container.getHost(),
+      port: container.getMappedPort(5432),
+      username: 'test_user',
+      password: 'test_pass',
+      database: 'test_db',
+    });
     await AppDataSource.initialize();
   }
 

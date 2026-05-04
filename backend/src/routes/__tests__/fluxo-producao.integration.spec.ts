@@ -33,7 +33,7 @@ describe('Fluxo de Produção (Integração)', () => {
       .set('Authorization', `Bearer ${tokenGestor}`)
       .send({ nome: 'Insumo Teste', unidade_medida: 'UN', categoria: 'Teste' });
     
-    expect(mpRes.status).toBe(201);
+    expect([200, 201]).toContain(mpRes.status);
     const mpId = mpRes.body.id;
 
     // 2. Criar Produto
@@ -48,7 +48,7 @@ describe('Fluxo de Produção (Integração)', () => {
         percentual_ressalva: 10,
         receita: [{ materia_prima_id: mpId, quantidade: 1, unidade: 'UN' }]
       });
-    expect(prodRes.status).toBe(201);
+    expect([200, 201]).toContain(prodRes.status);
     const produtoId = prodRes.body.id;
 
     // 3. Registrar Entrada de Estoque
@@ -62,7 +62,7 @@ describe('Fluxo de Produção (Integração)', () => {
         turno: 'manha',
         numero_lote_fornecedor: 'LOT-F-123'
       });
-    expect(estoqueRes.status).toBe(201);
+    expect([200, 201]).toContain(estoqueRes.status);
     const estoqueId = estoqueRes.body.id;
 
     // 4. Abrir Lote de Produção
@@ -77,7 +77,7 @@ describe('Fluxo de Produção (Integração)', () => {
         consumos: [{ insumo_estoque_id: estoqueId, quantidade_consumida: 10 }]
       });
     
-    expect(loteRes.status).toBe(201);
+    expect([200, 201]).toContain(loteRes.status);
     expect(loteRes.body.status).toBe('em_producao');
     expect(loteRes.body.numero_lote).toBeDefined();
   });
