@@ -108,14 +108,14 @@ export class ProdutoService {
     });
   };
 
-  listar = async (query: PaginacaoQueryDto & { categoria?: string }, requisitante: Requisitante): Promise<RespostaPaginada<Produto>> => {
+  listar = async (query: PaginacaoQueryDto & { categoria?: string, status?: string, ordenacao?: string, linha?: string }, requisitante: Requisitante): Promise<RespostaPaginada<Produto>> => {
     verificaPermissao(requisitante, [
       PerfilUsuario.OPERADOR,
       PerfilUsuario.INSPETOR,
       PerfilUsuario.GESTOR,
     ]);
 
-    const { pagina, limite, busca, categoria } = query;
+    const { pagina, limite, busca, categoria, status, ordenacao, linha } = query;
     const skip = (pagina - 1) * limite;
 
     const queryBuilder = this.produtoRepo.createQueryBuilder("produto")
@@ -124,15 +124,83 @@ export class ProdutoService {
       .leftJoinAndSelect("produto.criadoPor", "criadoPor")
       .leftJoinAndSelect("produto.lotes", "lotes")
       .skip(skip)
-      .take(limite)
-      .orderBy("produto.nome", "ASC");
+      .take(limite);
 
     if (busca) {
       queryBuilder.andWhere("(produto.nome ILIKE :busca OR produto.sku ILIKE :busca)", { busca: `%${busca}%` });
     }
 
+    if (linha && linha !== 'todas') {
+      queryBuilder.andWhere("produto.linha_padrao = :linha", { linha });
+    }
+
     if (categoria && categoria !== 'todas') {
       queryBuilder.andWhere("produto.categoria = :categoria", { categoria });
+    }
+
+    if (status && status !== 'todos') {
+      if (status === 'ativos') {
+        queryBuilder.andWhere("produto.ativo = true");
+      } else if (status === 'inativos') {
+        queryBuilder.andWhere("produto.ativo = false");
+      } else if (status === 'sem_insumos') {
+        queryBuilder.andWhere((qb) => {
+          const subQuery = qb.subQuery()
+            .select("r.id")
+            .from(ReceitaItem, "r")
+            .where("r.produto_id = produto.id")
+            .getQuery();
+          return `NOT EXISTS ${subQuery}`;
+        });
+      }
+    }
+
+    switch (ordenacao) {
+      case 'mais_recentes':
+        queryBuilder.orderBy("produto.criado_em", "DESC");
+        break;
+      case 'menos_recentes':
+        queryBuilder.orderBy("produto.criado_em", "ASC");
+        break;
+      case 'mais_produzidos':
+        queryBuilder.addSelect((subQuery) => {
+            return subQuery.select("COALESCE(SUM(l.quantidade_planejada), 0)").from("lote", "l").where("l.produto_id = produto.id");
+        }, "qtd_produzida");
+        queryBuilder.orderBy("qtd_produzida", "DESC");
+        break;
+      case 'menos_produzidos':
+        queryBuilder.addSelect((subQuery) => {
+            return subQuery.select("COALESCE(SUM(l.quantidade_planejada), 0)").from("lote", "l").where("l.produto_id = produto.id");
+        }, "qtd_produzida");
+        queryBuilder.orderBy("qtd_produzida", "ASC");
+        break;
+      case 'mais_lotes':
+        queryBuilder.addSelect((subQuery) => {
+            return subQuery.select("COUNT(l.id)").from("lote", "l").where("l.produto_id = produto.id");
+        }, "qtd_lotes");
+        queryBuilder.orderBy("qtd_lotes", "DESC");
+        break;
+      case 'menos_lotes':
+        queryBuilder.addSelect((subQuery) => {
+            return subQuery.select("COUNT(l.id)").from("lote", "l").where("l.produto_id = produto.id");
+        }, "qtd_lotes");
+        queryBuilder.orderBy("qtd_lotes", "ASC");
+        break;
+      case 'mais_insumos':
+        queryBuilder.addSelect((subQuery) => {
+            return subQuery.select("COUNT(r.id)").from("receita_item", "r").where("r.produto_id = produto.id");
+        }, "qtd_insumos");
+        queryBuilder.orderBy("qtd_insumos", "DESC");
+        break;
+      case 'menos_insumos':
+        queryBuilder.addSelect((subQuery) => {
+            return subQuery.select("COUNT(r.id)").from("receita_item", "r").where("r.produto_id = produto.id");
+        }, "qtd_insumos");
+        queryBuilder.orderBy("qtd_insumos", "ASC");
+        break;
+      default:
+        queryBuilder.orderBy("produto.nome", "ASC");
+        break;
     }
 
     const [produtos, total] = await queryBuilder.getManyAndCount();
@@ -167,6 +235,18 @@ export class ProdutoService {
       .getRawMany<{ categoria: string }>();
 
     return resultados.map((r) => r.categoria);
+  };
+
+  listarLinhas = async (requisitante: Requisitante): Promise<string[]> => {
+    verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
+
+    const resultados = await this.produtoRepo
+      .createQueryBuilder("p")
+      .select("DISTINCT p.linha_padrao", "linha")
+      .orderBy("p.linha_padrao", "ASC")
+      .getRawMany<{ linha: string }>();
+
+    return resultados.map((r) => r.linha);
   };
 
   atualizarReceita = async (
@@ -214,5 +294,50 @@ export class ProdutoService {
 
       return produtoAtualizado;
     });
+  };
+
+  alternarStatus = async (id: number, ativo: boolean, requisitante: Requisitante): Promise<Produto> => {
+    verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
+
+    const produto = await this.produtoRepo.findOneBy({ id });
+    if (!produto) {
+      throw new AppError("Produto não encontrado.", 404);
+    }
+
+    produto.ativo = ativo;
+    await this.produtoRepo.save(produto);
+
+    const produtoAtualizado = await this.produtoRepo.findOne({
+      where: { id },
+      relations: ["receita", "receita.materiaPrima", "criadoPor"],
+    });
+
+    return produtoAtualizado!;
+  };
+
+  getContagem = async (requisitante: Requisitante): Promise<any> => {
+    verificaPermissao(requisitante, [
+      PerfilUsuario.OPERADOR,
+      PerfilUsuario.INSPETOR,
+      PerfilUsuario.GESTOR,
+    ]);
+
+    const total = await this.produtoRepo.count();
+    const ativos = await this.produtoRepo.count({ where: { ativo: true } });
+    const inativos = await this.produtoRepo.count({ where: { ativo: false } });
+
+    const sem_insumos = await this.produtoRepo
+      .createQueryBuilder("p")
+      .leftJoin("p.receita", "receita")
+      .where("receita.id IS NULL")
+      .getCount();
+
+    return {
+      total,
+      ativos,
+      inativos,
+      sem_insumos,
+      mais_produzidos: 0 // Placeholder
+    };
   };
 }

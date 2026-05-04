@@ -40,11 +40,11 @@ export const AppDataSource = new DataSource({
     Usuario
   ],
   migrations: [
-    join(process.cwd(), process.env.NODE_ENV === 'development'
+    join(process.cwd(), process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
       ? "src/migrations/**/*.{ts,js}"
       : "dist/migrations/**/*.{js}")
   ],
   subscribers: [],
-  synchronize: process.env.NODE_ENV === "development",
+  synchronize: process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test",
   logging: false,
 });

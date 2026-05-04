@@ -49,7 +49,8 @@
           <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Produto *</label>
           <div class="relative group">
             <select formControlName="produto_id"
-              class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors appearance-none cursor-pointer">
+              class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors appearance-none cursor-pointer"
+              [class.border-red-500]="fieldErrors()['produto_id']">
               <option [value]="0" disabled>Selecione um produto...</option>
               @for (prod of produtos(); track prod.id) {
               <option [value]="prod.id">{{ prod.nome }} ({{ prod.sku }})</option>
@@ -60,6 +61,9 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
             </svg>
           </div>
+          @if (fieldErrors()['produto_id']) {
+            <span class="text-[10px] text-red-400 font-medium">{{ fieldErrors()['produto_id'] }}</span>
+          }
         </div>
       </div>
 
@@ -68,7 +72,8 @@
         <div class="flex flex-col gap-2">
           <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Data de Produção *</label>
           <div class="relative date-container cursor-pointer h-[42px]" (click)="datePicker.showPicker()">
-            <div class="w-full h-full bg-[#0E0E0E] border border-[#484847]/80 rounded px-4 flex justify-between items-center transition-colors hover:border-[#00E5FF] group">
+            <div class="w-full h-full bg-[#0E0E0E] border border-[#484847]/80 rounded px-4 flex justify-between items-center transition-colors hover:border-[#00E5FF] group"
+              [class.border-red-500]="fieldErrors()['data_producao']">
               <span class="text-sm font-medium" [class.text-[#ADAAAA]]="!form.value.data_producao">
                 {{ dataFormatada }}
               </span>
@@ -80,13 +85,17 @@
             <input #datePicker type="date" formControlName="data_producao"
               class="absolute inset-0 opacity-0 cursor-pointer pointer-events-none">
           </div>
+          @if (fieldErrors()['data_producao']) {
+            <span class="text-[10px] text-red-400 font-medium">{{ fieldErrors()['data_producao'] }}</span>
+          }
         </div>
 
         <div class="flex flex-col gap-2">
           <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Turno *</label>
           <div class="relative group">
             <select formControlName="turno"
-              class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors appearance-none cursor-pointer">
+              class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors appearance-none cursor-pointer"
+              [class.border-red-500]="fieldErrors()['turno']">
               <option value="manha">Manhã</option>
               <option value="tarde">Tarde</option>
               <option value="noite">Noite</option>
@@ -96,6 +105,9 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
             </svg>
           </div>
+          @if (fieldErrors()['turno']) {
+            <span class="text-[10px] text-red-400 font-medium">{{ fieldErrors()['turno'] }}</span>
+          }
         </div>
       </div>
 
@@ -105,9 +117,13 @@
           <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Quantidade Planejada *</label>
           <div class="relative">
             <input type="number" min="1" formControlName="quantidade_planejada"
-              class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded pl-4 pr-12 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors">
+              class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded pl-4 pr-12 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors"
+              [class.border-red-500]="fieldErrors()['quantidade_planejada']">
             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#ADAAAA]">UN</span>
           </div>
+          @if (fieldErrors()['quantidade_planejada']) {
+            <span class="text-[10px] text-red-400 font-medium">{{ fieldErrors()['quantidade_planejada'] }}</span>
+          }
         </div>
 
         <div class="flex flex-col gap-2">
@@ -135,7 +151,7 @@
       <!-- Seção de Consumos (gerada dinamicamente pela receita) -->
       <!-- ═══════════════════════════════════════════════════════ -->
 
-      @if (receitaAtual().length > 0) {
+      @if ((produtoSelecionado()?.receita?.length ?? 0) > 0) {
       <div class="border-t border-[#484847]/30 pt-6 mt-2">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-2 h-2 rounded-full bg-[#00E5FF] animate-pulse"></div>
@@ -143,6 +159,15 @@
             Vinculação de Insumos (Receita)
           </h3>
         </div>
+
+        @if (fieldErrors()['consumos']) {
+          <div class="mb-4 p-3 bg-red-950/30 border border-red-500/50 rounded flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#fca5a5" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+            <span class="text-[11px] text-red-400 font-bold uppercase tracking-wider">{{ fieldErrors()['consumos'] }}</span>
+          </div>
+        }
 
         <p class="text-[12px] text-[#6B7280] mb-4">
           Selecione quais lotes de insumo em estoque serão consumidos para fabricar este lote.
@@ -157,56 +182,10 @@
 
         <div formArrayName="consumos" class="flex flex-col gap-4">
           @for (consumo of consumosArray.controls; track consumo; let i = $index) {
-          <div [formGroupName]="i"
-            class="bg-[#0E0E0E] border border-[#484847]/40 rounded-md p-4 flex flex-col gap-3">
-            <!-- Header do item -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <div class="w-1.5 h-1.5 rounded-full bg-[#00E5FF]"></div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-white">
-                  {{ consumo.get('materia_prima_nome')?.value }}
-                </span>
-              </div>
-              <span class="text-[10px] font-bold text-[#6B7280] uppercase">
-                {{ consumo.get('quantidade_necessaria')?.value | number:'1.0-3' }} {{ consumo.get('unidade')?.value }} / unidade
-              </span>
-            </div>
-
-            <!-- Dropdown de lote de insumo + Quantidade -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div class="sm:col-span-2 flex flex-col gap-1">
-                <label class="text-[9px] font-bold tracking-[1px] uppercase text-[#6B7280]">Lote de Estoque *</label>
-                <div class="relative group">
-                  <select formControlName="insumo_estoque_id"
-                    class="w-full bg-[#131313] border border-[#484847]/60 rounded pl-3 pr-10 py-2 text-[12px] text-white focus:outline-none focus:border-[#00E5FF] transition-colors appearance-none cursor-pointer">
-                    <option [value]="0" disabled>Selecione um lote...</option>
-                    @for (insumo of getInsumosParaMP(consumo.get('materia_prima_id')?.value); track insumo.id) {
-                    <option [value]="insumo.id">
-                      {{ insumo.numero_lote_interno }} — {{ insumo.fornecedor }} (Saldo: {{ insumo.quantidade_atual | number:'1.0-3' }} {{ insumo.materiaPrima.unidade_medida }})
-                    </option>
-                    }
-                  </select>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#ADAAAA] pointer-events-none">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <label class="text-[9px] font-bold tracking-[1px] uppercase text-[#6B7280]">Qtd. a Consumir *</label>
-                <div class="relative">
-                  <input type="number" formControlName="quantidade_consumida"
-                    [min]="consumo.get('unidade')?.value === 'UN' ? '1' : '0.01'"
-                    [step]="consumo.get('unidade')?.value === 'UN' ? '1' : '0.01'"
-                    class="w-full bg-[#131313] border border-[#484847]/60 rounded pl-3 pr-10 py-2 text-[12px] text-white focus:outline-none focus:border-[#00E5FF] transition-colors">
-                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-[#ADAAAA]">
-                    {{ consumo.get('unidade')?.value }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+            <app-lote-insumo-item 
+              [formGroup]="$any(consumo)"
+              [insumosDisponiveis]="getInsumosParaMP(consumo.get('materia_prima_id')?.value)">
+            </app-lote-insumo-item>
           }
         </div>
       </div>

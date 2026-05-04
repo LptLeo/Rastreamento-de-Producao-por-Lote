@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { Lote } from './lote.js';
+import { provideRouter } from '@angular/router';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe('Lote', () => {
   let component: Lote;
@@ -8,12 +9,13 @@ describe('Lote', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Lote],
+      imports: [Lote, HttpClientTestingModule],
+      providers: [provideRouter([])]
     }).compileComponents();
 
     fixture = TestBed.createComponent(Lote);
     component = fixture.componentInstance;
-    await fixture.whenStable();
+    fixture.detectChanges();
   });
 
   it('should create', () => {

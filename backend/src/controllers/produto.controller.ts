@@ -25,9 +25,23 @@ export const buscarPorId = async (req: Request, res: Response, next: NextFunctio
   } catch (e) { next(e); }
 };
 
+export const getContagem = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const resultado = await service.getContagem(getRequisitante(req));
+    res.json(resultado);
+  } catch (e) { next(e); }
+};
+
 export const listarCategorias = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const resultado = await service.listarCategorias(getRequisitante(req));
+    res.json(resultado);
+  } catch (e) { next(e); }
+};
+
+export const listarLinhas = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const resultado = await service.listarLinhas(getRequisitante(req));
     res.json(resultado);
   } catch (e) { next(e); }
 };
@@ -39,6 +53,13 @@ export const atualizarReceita = async (req: Request, res: Response, next: NextFu
       req.body,
       getRequisitante(req)
     );
+    res.json(resultado);
+  } catch (e) { next(e); }
+};
+
+export const alternarStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const resultado = await service.alternarStatus(Number(req.params.id), req.body.ativo, getRequisitante(req));
     res.json(resultado);
   } catch (e) { next(e); }
 };

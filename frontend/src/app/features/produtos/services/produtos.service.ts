@@ -49,12 +49,20 @@ export class ProdutosService {
     return this.http.get<RespostaPaginada<Produto>>(`${API_URL}/produtos`, { params });
   }
 
+  getContagem(): Observable<any> {
+    return this.http.get<any>(`${API_URL}/produtos/contagem`);
+  }
+
   getProdutoById(id: number): Observable<Produto> {
     return this.http.get<Produto>(`${API_URL}/produtos/${id}`);
   }
 
   getCategorias(): Observable<string[]> {
     return this.http.get<string[]>(`${API_URL}/produtos/categorias`);
+  }
+
+  getLinhas(): Observable<string[]> {
+    return this.http.get<string[]>(`${API_URL}/produtos/linhas`);
   }
 
   getMateriasPrimas(): Observable<MateriaPrima[]> {
@@ -71,5 +79,9 @@ export class ProdutosService {
 
   atualizarReceita(id: number, receita: { materia_prima_id: number; quantidade: number; unidade: string }[]): Observable<Produto> {
     return this.http.patch<Produto>(`${API_URL}/produtos/${id}/receita`, receita);
+  }
+
+  alternarStatus(id: number, ativo: boolean): Observable<Produto> {
+    return this.http.patch<Produto>(`${API_URL}/produtos/${id}/status`, { ativo });
   }
 }
