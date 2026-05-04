@@ -1,0 +1,92 @@
+import { jest } from '@jest/globals';
+import { AppError } from '../../errors/AppError.js';
+import { PerfilUsuario } from '../../entities/Usuario.js';
+
+const mockLoteRepo = { createQueryBuilder: jest.fn() };
+const mockInsumoRepo = { createQueryBuilder: jest.fn() };
+const mockConsumoRepo = { createQueryBuilder: jest.fn() };
+
+const mockAppDataSource = {
+  getRepository: jest.fn((entity: any) => {
+    if (entity.name === 'Lote' || entity === 'Lote') return mockLoteRepo;
+    if (entity.name === 'InsumoEstoque' || entity === 'InsumoEstoque') return mockInsumoRepo;
+    if (entity.name === 'ConsumoInsumo' || entity === 'ConsumoInsumo') return mockConsumoRepo;
+    return {} as any;
+  })
+};
+
+jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
+  AppDataSource: mockAppDataSource
+}));
+
+const { RastreabilidadeService } = await import('../rastreabilidade.service.js');
+
+describe('RastreabilidadeService', () => {
+  let service: any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new RastreabilidadeService();
+  });
+
+  describe('consultar', () => {
+    const req = { id: 1, perfil: PerfilUsuario.GESTOR };
+    const query = { pagina: 1, limite: 10 };
+
+    it('deve chamar consultarPorLote quando o termo inicia com LOT-', async () => {
+      const mockQB = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ id: 1, numero_lote: 'LOT-123' })
+      };
+      mockLoteRepo.createQueryBuilder.mockReturnValue(mockQB as any);
+
+      const result = await service.consultar('LOT-123', query, req);
+      
+      expect(result.tipo).toBe('lote');
+      expect(result.resultado.numero_lote).toBe('LOT-123');
+    });
+
+    it('deve chamar consultarPorInsumo quando o termo NÃO inicia com LOT-', async () => {
+      // Mock para contagem (subquery)
+      const mockQBCount = {
+        select: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([{ lote_id: 1 }])
+      };
+      // Mock para busca real
+      const mockQBData = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { 
+            lote: { id: 1, numero_lote: 'L-1', produto: { nome: 'P' }, data_producao: new Date() },
+            insumoEstoque: { materiaPrima: { nome: 'MP' }, numero_lote_interno: 'INS-1' }
+          }
+        ])
+      };
+
+      mockConsumoRepo.createQueryBuilder
+        .mockReturnValueOnce(mockQBCount as any)
+        .mockReturnValueOnce(mockQBData as any);
+
+      const result = await service.consultar('INS-123', query, req);
+      
+      expect(result.tipo).toBe('insumo');
+      expect(result.resultado.itens.length).toBe(1);
+    });
+
+    it('deve lançar erro se nenhum lote for encontrado', async () => {
+      const mockQB = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null)
+      };
+      mockLoteRepo.createQueryBuilder.mockReturnValue(mockQB as any);
+
+      await expect(service.consultar('LOT-999', query, req)).rejects.toThrow(/Nenhum lote encontrado/);
+    });
+  });
+});
