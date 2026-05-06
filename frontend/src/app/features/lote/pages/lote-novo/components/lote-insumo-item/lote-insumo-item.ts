@@ -12,7 +12,7 @@ import type { InsumoEstoque } from '../../../../../../shared/models/lote.models.
 export class LoteInsumoItemComponent {
   /** O FormGroup que representa este item no FormArray */
   formGroup = input.required<FormGroup>();
-  
+
   /** Lista de lotes de insumo disponíveis para esta matéria-prima */
   insumosDisponiveis = input<InsumoEstoque[]>([]);
 }

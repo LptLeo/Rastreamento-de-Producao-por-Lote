@@ -39,19 +39,21 @@ export class LoteDetail {
   params = toSignal(this.route.paramMap);
   loteId = computed(() => Number(this.params()?.get('id')));
 
-  /** 
+  /**
    * Resource Reativo: Busca o lote sempre que o ID mudar.
    */
   loteResource = rxResource({
     params: () => ({ id: this.loteId() }),
-    stream: ({ params }) => this.loteService.getLoteById(params.id)
+    stream: ({ params }) => this.loteService.getLoteById(params.id),
   });
 
   // Derivações reativas
   lote = computed(() => this.loteResource.value() || null);
   carregando = computed(() => this.loteResource.isLoading());
-  erro = computed(() => this.loteResource.error() ? 'Não foi possível carregar os dados do lote.' : null);
-  
+  erro = computed(() =>
+    this.loteResource.error() ? 'Não foi possível carregar os dados do lote.' : null,
+  );
+
   processando = signal(false);
 
   /** Formulário de inspeção */
@@ -63,8 +65,8 @@ export class LoteDetail {
   qtdReprovadaInput = signal(0);
 
   constructor() {
-    /** 
-     * Sincroniza a validação do formulário com a quantidade planejada do lote 
+    /**
+     * Sincroniza a validação do formulário com a quantidade planejada do lote
      * assim que o lote é carregado ou alterado.
      */
     effect(() => {
@@ -132,8 +134,7 @@ export class LoteDetail {
       .pipe(finalize(() => this.processando.set(false)))
       .subscribe({
         next: () => this.loteResource.reload(),
-        error: (err) =>
-          alert('Erro: ' + (err.error?.message || 'Erro desconhecido.')),
+        error: (err) => alert('Erro: ' + (err.error?.message || 'Erro desconhecido.')),
       });
   }
 

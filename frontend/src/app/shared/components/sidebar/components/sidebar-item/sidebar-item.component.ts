@@ -5,7 +5,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   selector: 'app-sidebar-item',
   standalone: true,
   imports: [RouterLink, RouterLinkActive],
-  templateUrl: './sidebar-item.component.html'
+  templateUrl: './sidebar-item.component.html',
 })
 export class SidebarItemComponent {
   @Input({ required: true }) link!: string;

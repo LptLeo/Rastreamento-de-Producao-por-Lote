@@ -7,8 +7,8 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   templateUrl: './stat-card.html',
   host: {
-    class: 'flex-1 flex flex-col min-w-0'
-  }
+    class: 'flex-1 flex flex-col min-w-0',
+  },
 })
 export class StatCardComponent {
   @Input({ required: true }) title!: string;

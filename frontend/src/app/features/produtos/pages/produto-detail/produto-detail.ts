@@ -52,7 +52,7 @@ export class ProdutoDetail implements OnInit {
   carregarMateriasPrimas(): void {
     this.produtosService.getMateriasPrimas().subscribe({
       next: (mps) => this.materiasPrimas.set(mps),
-      error: (e) => console.error('Erro ao carregar matérias-primas', e)
+      error: (e) => console.error('Erro ao carregar matérias-primas', e),
     });
   }
 
@@ -60,7 +60,8 @@ export class ProdutoDetail implements OnInit {
     this.carregando.set(true);
     this.erro.set(null);
 
-    this.produtosService.getProdutoById(id)
+    this.produtosService
+      .getProdutoById(id)
       .pipe(finalize(() => this.carregando.set(false)))
       .subscribe({
         next: (data) => {
@@ -70,8 +71,10 @@ export class ProdutoDetail implements OnInit {
         },
         error: (err) => {
           console.error('Erro ao carregar produto:', err);
-          this.erro.set('Não foi possível carregar os detalhes do produto. Ele pode não existir ou o servidor está offline.');
-        }
+          this.erro.set(
+            'Não foi possível carregar os detalhes do produto. Ele pode não existir ou o servidor está offline.',
+          );
+        },
       });
   }
 
@@ -92,21 +95,24 @@ export class ProdutoDetail implements OnInit {
   }
 
   adicionarMateriaPrima(mpId: number): void {
-    const mp = this.materiasPrimas().find(m => m.id === Number(mpId));
+    const mp = this.materiasPrimas().find((m) => m.id === Number(mpId));
     if (!mp) return;
 
-    this.receitaEditada.update(receita => {
-      return [...receita, {
-        id: 0, // novo item
-        materiaPrima: mp,
-        quantidade: 1,
-        unidade: mp.unidade_medida
-      }];
+    this.receitaEditada.update((receita) => {
+      return [
+        ...receita,
+        {
+          id: 0, // novo item
+          materiaPrima: mp,
+          quantidade: 1,
+          unidade: mp.unidade_medida,
+        },
+      ];
     });
   }
 
   removerItemReceita(index: number): void {
-    this.receitaEditada.update(receita => {
+    this.receitaEditada.update((receita) => {
       const nova = [...receita];
       nova.splice(index, 1);
       return nova;
@@ -116,8 +122,8 @@ export class ProdutoDetail implements OnInit {
   atualizarQuantidade(index: number, novaQtd: string): void {
     const qtd = Number(novaQtd);
     if (isNaN(qtd) || qtd <= 0) return;
-    
-    this.receitaEditada.update(receita => {
+
+    this.receitaEditada.update((receita) => {
       const nova = [...receita];
       nova[index].quantidade = qtd;
       return nova;
@@ -129,13 +135,14 @@ export class ProdutoDetail implements OnInit {
     if (!prod) return;
 
     this.salvandoReceita.set(true);
-    const payload = this.receitaEditada().map(item => ({
+    const payload = this.receitaEditada().map((item) => ({
       materia_prima_id: item.materiaPrima.id,
       quantidade: item.quantidade,
-      unidade: item.unidade
+      unidade: item.unidade,
     }));
 
-    this.produtosService.atualizarReceita(prod.id, payload)
+    this.produtosService
+      .atualizarReceita(prod.id, payload)
       .pipe(finalize(() => this.salvandoReceita.set(false)))
       .subscribe({
         next: (atualizado) => {
@@ -145,19 +152,19 @@ export class ProdutoDetail implements OnInit {
         },
         error: (err) => {
           console.error('Erro ao salvar receita:', err);
-          
+
           let errorMsg = err.error?.message || 'Erro ao salvar a receita.';
-          
+
           if (err.error?.details && Array.isArray(err.error.details)) {
             const details = err.error.details.map((d: any) => d.mensagem).join('\n');
             if (details) {
               errorMsg += `\n\nDetalhes:\n${details}`;
             }
           }
-          
+
           alert(errorMsg);
           // O modo de edição NÃO é fechado se der erro, permitindo que o usuário conserte e salve de novo.
-        }
+        },
       });
   }
 
@@ -176,7 +183,8 @@ export class ProdutoDetail implements OnInit {
     this.alterandoStatus.set(true);
     const novoStatus = !prod.ativo;
 
-    this.produtosService.alternarStatus(prod.id, novoStatus)
+    this.produtosService
+      .alternarStatus(prod.id, novoStatus)
       .pipe(finalize(() => this.alterandoStatus.set(false)))
       .subscribe({
         next: (atualizado) => {
@@ -185,7 +193,7 @@ export class ProdutoDetail implements OnInit {
         error: (err) => {
           console.error('Erro ao alternar status do produto:', err);
           alert(err.error?.message || 'Erro ao alterar o status do produto.');
-        }
+        },
       });
   }
 }

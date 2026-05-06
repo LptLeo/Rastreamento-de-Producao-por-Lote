@@ -35,17 +35,17 @@ export class RegistrarEntradaModalComponent implements OnInit {
     quantidade_inicial: [null as number | null, [Validators.required, Validators.min(0.01)]],
     data_validade: [null as string | null],
     naoAplicaValidade: [false],
-    turno: [this.getTurnoAtual(), Validators.required]
+    turno: [this.getTurnoAtual(), Validators.required],
   });
 
   private mpIdSelecionado = toSignal(
-    this.formEstoque.controls.materia_prima_id.valueChanges.pipe(startWith(null))
+    this.formEstoque.controls.materia_prima_id.valueChanges.pipe(startWith(null)),
   );
 
   unidadeSelecionada = computed(() => {
     const mpId = Number(this.mpIdSelecionado());
     if (!mpId) return '--';
-    const mp = this.catalogo.find(item => item.id === mpId);
+    const mp = this.catalogo.find((item) => item.id === mpId);
     return mp ? mp.unidade_medida : '--';
   });
 

@@ -12,7 +12,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const token = authService.getTokenAcesso();
   const authReq = req.clone({
     withCredentials: true,
-    setHeaders: token ? { Authorization: `Bearer ${token}` } : {}
+    setHeaders: token ? { Authorization: `Bearer ${token}` } : {},
   });
 
   return next(authReq).pipe(
@@ -59,7 +59,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         switchMap((res) => {
           const retryReq = req.clone({
             withCredentials: true,
-            setHeaders: { Authorization: `Bearer ${res.tokenAcesso}` }
+            setHeaders: { Authorization: `Bearer ${res.tokenAcesso}` },
           });
           return next(retryReq);
         }),
@@ -67,8 +67,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           // Renovação mid-session falhou: usuário precisa logar novamente
           router.navigate(['/login']);
           return throwError(() => refreshError);
-        })
+        }),
       );
-    })
+    }),
   );
 };

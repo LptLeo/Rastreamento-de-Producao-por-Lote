@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { catchError, of, ReplaySubject, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { Router } from '@angular/router';
 
 export interface UserInfo {
   id: number;
@@ -14,6 +15,7 @@ export interface UserInfo {
 })
 export class AuthService {
   private http = inject(HttpClient);
+  private router = inject(Router);
   private readonly AUTH_URL = `${environment.apiUrl}/auth`;
 
   // Armazena o Access Token apenas em memória (proteção XSS)
@@ -31,7 +33,7 @@ export class AuthService {
 
   constructor() {}
 
-  /** 
+  /**
    * Método chamado pelo APP_INITIALIZER para garantir que a sessão
    * seja verificada ANTES do app carregar.
    */
@@ -47,7 +49,7 @@ export class AuthService {
       .pipe(
         tap((res) => {
           this.setSessao(res.tokenAcesso, res.usuario);
-        })
+        }),
       );
   }
 
@@ -59,7 +61,7 @@ export class AuthService {
         tap((res) => {
           this.tokenAcesso.set(res.tokenAcesso);
           this.decodificarUsuarioDoToken(res.tokenAcesso);
-        })
+        }),
       );
   }
 
@@ -83,9 +85,9 @@ export class AuthService {
           this.logoutLocal();
           this._sessaoCarregada$.next();
           this._sessaoCarregada$.complete();
-        }
+        },
       }),
-      catchError(() => of(null))
+      catchError(() => of(null)),
     );
   }
 
@@ -107,9 +109,15 @@ export class AuthService {
   }
 
   logout() {
-    return this.http.post(`${this.AUTH_URL}/logout`, {}, { withCredentials: true }).pipe(
-      tap(() => this.logoutLocal())
-    ).subscribe();
+    return this.http
+      .post(`${this.AUTH_URL}/logout`, {}, { withCredentials: true })
+      .pipe(
+        tap(() => {
+          this.logoutLocal();
+          this.router.navigate(['/login']);
+        }),
+      )
+      .subscribe();
   }
 
   private logoutLocal() {

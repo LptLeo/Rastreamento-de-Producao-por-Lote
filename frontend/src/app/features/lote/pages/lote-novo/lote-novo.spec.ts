@@ -20,7 +20,7 @@ describe('LoteNovo Component', () => {
     mockLoteService = {
       getProdutos: jest.fn().mockReturnValue(of([])),
       getInsumosDisponiveis: jest.fn().mockReturnValue(of([])),
-      createLote: jest.fn()
+      createLote: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -28,8 +28,8 @@ describe('LoteNovo Component', () => {
       providers: [
         { provide: Router, useValue: mockRouter },
         { provide: AuthService, useValue: mockAuthService },
-        { provide: LoteFeatureService, useValue: mockLoteService }
-      ]
+        { provide: LoteFeatureService, useValue: mockLoteService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(LoteNovo);
@@ -53,11 +53,13 @@ describe('LoteNovo Component', () => {
         produto_id: 1,
         quantidade_planejada: -5,
         turno: 'manha',
-        data_producao: '2026-01-01'
+        data_producao: '2026-01-01',
       });
-      
+
       component.onSubmit();
-      expect(component.fieldErrors()['quantidade_planejada']).toBe('A quantidade deve ser maior que zero.');
+      expect(component.fieldErrors()['quantidade_planejada']).toBe(
+        'A quantidade deve ser maior que zero.',
+      );
     });
   });
 
@@ -69,9 +71,7 @@ describe('LoteNovo Component', () => {
         turno: 'manha',
         data_producao: '2026-01-01',
         sem_validade: true,
-        consumos: [
-          { materia_prima_id: 1, insumo_estoque_id: 10, quantidade_consumida: 10 }
-        ]
+        consumos: [{ materia_prima_id: 1, insumo_estoque_id: 10, quantidade_consumida: 10 }],
       };
 
       // Mock de produtos carregados para passar na validação interna se houver
@@ -82,17 +82,19 @@ describe('LoteNovo Component', () => {
         quantidade_planejada: 100,
         turno: 'manha',
         data_producao: '2026-01-01',
-        sem_validade: true
+        sem_validade: true,
       });
 
       // Simula adição de um consumo no FormArray
       const fb = (component as any).fb;
       const consumosArray = component.consumosArray;
-      consumosArray.push(fb.group({
-        materia_prima_id: [1],
-        insumo_estoque_id: [10],
-        quantidade_consumida: [10]
-      }));
+      consumosArray.push(
+        fb.group({
+          materia_prima_id: [1],
+          insumo_estoque_id: [10],
+          quantidade_consumida: [10],
+        }),
+      );
 
       mockLoteService.createLote.mockReturnValue(of({ id: 99 }));
 
@@ -101,5 +103,24 @@ describe('LoteNovo Component', () => {
       expect(mockLoteService.createLote).toHaveBeenCalled();
       expect(mockRouter.navigate).toHaveBeenCalledWith(['/app/lote', 99]);
     });
+  });
+
+  it('deve recalcular quantidade consumida sem casas decimais para unidade UN', () => {
+    const fb = (component as any).fb;
+    component.consumosArray.clear();
+    component.consumosArray.push(
+      fb.group({
+        materia_prima_id: [1],
+        materia_prima_nome: ['Tampa'],
+        quantidade_necessaria: [1.8],
+        unidade: ['UN'],
+        insumo_estoque_id: [10],
+        quantidade_consumida: [1],
+      }),
+    );
+
+    component.form.controls.quantidade_planejada.setValue(3);
+
+    expect(component.consumosArray.at(0).get('quantidade_consumida')?.value).toBe(5);
   });
 });

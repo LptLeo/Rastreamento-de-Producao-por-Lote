@@ -21,6 +21,6 @@ export const authGuard: CanActivateFn = () => {
 
   return authService.sessaoCarregada$.pipe(
     take(1),
-    map(() => authService.isLoggedIn() ? true : router.parseUrl('/login'))
+    map(() => (authService.isLoggedIn() ? true : router.parseUrl('/login'))),
   );
 };

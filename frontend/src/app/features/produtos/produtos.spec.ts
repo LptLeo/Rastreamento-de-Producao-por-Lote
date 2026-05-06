@@ -17,10 +17,10 @@ describe('Produtos', () => {
           provide: ActivatedRoute,
           useValue: {
             queryParams: of({}),
-            snapshot: { queryParams: {} }
-          }
-        }
-      ]
+            snapshot: { queryParams: {} },
+          },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Produtos);

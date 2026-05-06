@@ -68,16 +68,19 @@ export class ProdutosService {
   getMateriasPrimas(): Observable<MateriaPrima[]> {
     // Para simplificar receitas, carregamos um limite alto para o catálogo.
     const params = new HttpParams().set('limite', '1000');
-    return this.http.get<RespostaPaginada<MateriaPrima>>(`${API_URL}/materias-primas`, { params }).pipe(
-      map(res => res.itens)
-    );
+    return this.http
+      .get<RespostaPaginada<MateriaPrima>>(`${API_URL}/materias-primas`, { params })
+      .pipe(map((res) => res.itens));
   }
 
   criarProduto(payload: CriarProdutoPayload): Observable<Produto> {
     return this.http.post<Produto>(`${API_URL}/produtos`, payload);
   }
 
-  atualizarReceita(id: number, receita: { materia_prima_id: number; quantidade: number; unidade: string }[]): Observable<Produto> {
+  atualizarReceita(
+    id: number,
+    receita: { materia_prima_id: number; quantidade: number; unidade: string }[],
+  ): Observable<Produto> {
     return this.http.patch<Produto>(`${API_URL}/produtos/${id}/receita`, receita);
   }
 

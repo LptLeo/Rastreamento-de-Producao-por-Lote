@@ -50,9 +50,9 @@ export class LoteFeatureService {
   }
 
   getProdutos(): Observable<any[]> {
-    return this.http.get<RespostaPaginada<any>>(`${API_URL}/produtos`, { params: { limite: 1000 } }).pipe(
-      map(res => res.itens)
-    );
+    return this.http
+      .get<RespostaPaginada<any>>(`${API_URL}/produtos`, { params: { limite: 1000 } })
+      .pipe(map((res) => res.itens));
   }
 
   /** Busca o tempo de produção configurado no backend para cálculo da barra de progresso */

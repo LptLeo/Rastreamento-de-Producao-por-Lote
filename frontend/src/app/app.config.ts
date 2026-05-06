@@ -1,4 +1,9 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, APP_INITIALIZER, LOCALE_ID } from '@angular/core';
+import {
+  ApplicationConfig,
+  provideBrowserGlobalErrorListeners,
+  APP_INITIALIZER,
+  LOCALE_ID,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { registerLocaleData } from '@angular/common';
@@ -23,13 +28,13 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     {
       provide: LOCALE_ID,
-      useValue: 'pt-BR'
+      useValue: 'pt-BR',
     },
     {
       provide: APP_INITIALIZER,
       useFactory: inicializarApp,
       deps: [AuthService],
-      multi: true
-    }
-  ]
+      multi: true,
+    },
+  ],
 };

@@ -11,11 +11,7 @@ import {
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subject, Subscription, of } from 'rxjs';
-import {
-  debounceTime,
-  distinctUntilChanged,
-  switchMap,
-} from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 import { HeaderService } from './services/header.service.js';
 import { AuthService } from '../../../core/services/auth.service.js';
@@ -39,14 +35,14 @@ export class Header implements OnInit, OnDestroy {
   private elementRef = inject(ElementRef);
 
   // ── Estado do usuário ──────────────────────────────────────────────────
-  
+
   /** Mapeia os perfis do backend para nomes amigáveis */
   cargoFormatado = computed(() => {
     const perfil = this.authService.usuario()?.perfil;
     const mapa: Record<string, string> = {
       operador: 'Operador de Linha',
       inspetor: 'Inspetor de Qualidade',
-      gestor: 'Gestor de Produção'
+      gestor: 'Gestor de Produção',
     };
     return mapa[perfil || ''] || 'Cargo';
   });
@@ -68,8 +64,8 @@ export class Header implements OnInit, OnDestroy {
   notificacoesAbertas = signal(false);
 
   /** Sugestões filtradas por tipo, usadas no template */
-  loteSugestoes = computed(() => this.sugestoes().filter(s => s.tipo === 'lote'));
-  produtoSugestoes = computed(() => this.sugestoes().filter(s => s.tipo === 'produto'));
+  loteSugestoes = computed(() => this.sugestoes().filter((s) => s.tipo === 'lote'));
+  produtoSugestoes = computed(() => this.sugestoes().filter((s) => s.tipo === 'produto'));
 
   private pesquisaSubject = new Subject<string>();
   private subscription?: Subscription;
@@ -78,27 +74,27 @@ export class Header implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.notificacaoService.carregarNotificacoes();
-    
-    this.subscription = this.pesquisaSubject.pipe(
-      debounceTime(400),
-      distinctUntilChanged(),
-      switchMap((termo) => {
-        if (!termo || termo.trim().length < 2) {
-          this.sugestoes.set([]);
-          this.dropdownAberto.set(false);
-          this.carregando.set(false);
-          return of([]);
-        }
-        this.carregando.set(true);
-        return this.headerService.buscarSugestoes(termo);
-      }),
-    ).subscribe((resultados) => {
-      this.carregando.set(false);
-      this.sugestoes.set(resultados);
-      this.dropdownAberto.set(
-        resultados.length > 0 || this.termoPesquisa.trim().length >= 2,
-      );
-    });
+
+    this.subscription = this.pesquisaSubject
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        switchMap((termo) => {
+          if (!termo || termo.trim().length < 2) {
+            this.sugestoes.set([]);
+            this.dropdownAberto.set(false);
+            this.carregando.set(false);
+            return of([]);
+          }
+          this.carregando.set(true);
+          return this.headerService.buscarSugestoes(termo);
+        }),
+      )
+      .subscribe((resultados) => {
+        this.carregando.set(false);
+        this.sugestoes.set(resultados);
+        this.dropdownAberto.set(resultados.length > 0 || this.termoPesquisa.trim().length >= 2);
+      });
   }
 
   ngOnDestroy(): void {
@@ -143,14 +139,14 @@ export class Header implements OnInit, OnDestroy {
     this.fecharDropdown();
 
     if (LOTE_REGEX.test(termo)) {
-      const loteExato = this.loteSugestoes().find(s => s.label === termo);
+      const loteExato = this.loteSugestoes().find((s) => s.label === termo);
       if (loteExato?.id) {
         this.router.navigate(['/app/lote', loteExato.id]);
         return;
       }
       // Lote exato no padrão mas não encontrado nas sugestões → faz busca rápida
       this.headerService.buscarSugestoes(termo).subscribe((sugestoes) => {
-        const lote = sugestoes.find(s => s.tipo === 'lote' && s.label === termo);
+        const lote = sugestoes.find((s) => s.tipo === 'lote' && s.label === termo);
         if (lote?.id) {
           this.router.navigate(['/app/lote', lote.id]);
         } else {
@@ -183,7 +179,7 @@ export class Header implements OnInit, OnDestroy {
   }
 
   toggleNotificacoes(): void {
-    this.notificacoesAbertas.update(v => !v);
+    this.notificacoesAbertas.update((v) => !v);
     if (this.notificacoesAbertas()) {
       this.fecharDropdown();
     }
@@ -201,6 +197,13 @@ export class Header implements OnInit, OnDestroy {
   // ── Utilitários de template ─────────────────────────────────────────────
 
   getStatusConfig(status?: LoteStatus) {
-    return STATUS_CONFIG[status!] ?? { label: status ?? '', cor: '#ADAAAA', corBg: 'transparent', corBorda: '#484847' };
+    return (
+      STATUS_CONFIG[status!] ?? {
+        label: status ?? '',
+        cor: '#ADAAAA',
+        corBg: 'transparent',
+        corBorda: '#484847',
+      }
+    );
   }
 }

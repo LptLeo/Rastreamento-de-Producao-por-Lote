@@ -6,7 +6,7 @@ import { ToastComponent } from './shared/components/toast/toast.js';
   selector: 'app-root',
   imports: [RouterOutlet, ToastComponent],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
 export class App {
   protected readonly title = signal('frontend');

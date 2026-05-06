@@ -1,4 +1,14 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectorRef, inject, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnDestroy,
+  ChangeDetectorRef,
+  inject,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LoteDetalhe, STATUS_CONFIG } from '../../models/lote.models.js';
 
@@ -9,8 +19,8 @@ import { LoteDetalhe, STATUS_CONFIG } from '../../models/lote.models.js';
   templateUrl: './lote-card.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'block h-full min-w-0'
-  }
+    class: 'block h-full min-w-0',
+  },
 })
 export class LoteCardComponent implements OnInit, OnDestroy {
   @Input({ required: true }) lote!: LoteDetalhe;
@@ -45,7 +55,14 @@ export class LoteCardComponent implements OnInit, OnDestroy {
   }
 
   get config() {
-    return STATUS_CONFIG[this.lote.status] || { label: 'Status', cor: '#fff', corBg: '#000', corBorda: '#fff' };
+    return (
+      STATUS_CONFIG[this.lote.status] || {
+        label: 'Status',
+        cor: '#fff',
+        corBg: '#000',
+        corBorda: '#fff',
+      }
+    );
   }
 
   atualizarProgresso() {
@@ -53,12 +70,12 @@ export class LoteCardComponent implements OnInit, OnDestroy {
       const inicio = new Date(this.lote.aberto_em).getTime();
       const agora = new Date().getTime();
       const decorrido = agora - inicio;
-      
+
       const p = Math.floor((decorrido / this.duracaoProducaoMs) * 100);
-      
+
       // Limita a barra entre 0 e 99% enquanto o status for 'em_producao'
       const novoProgresso = Math.min(Math.max(p, 0), 99);
-      
+
       if (this.animatedProgresso !== novoProgresso) {
         this.animatedProgresso = novoProgresso;
         this.cdr.markForCheck();

@@ -42,7 +42,8 @@ export class FormConfigService {
   }
 
   setValue(cacheKey: ConfigKeys, value: number): void {
-    const safeValue = Number.isFinite(value) && value > 0 ? Math.floor(value) : DEFAULTS[this.keyMap[cacheKey]];
+    const safeValue =
+      Number.isFinite(value) && value > 0 ? Math.floor(value) : DEFAULTS[this.keyMap[cacheKey]];
     localStorage.setItem(cacheKey, String(safeValue));
     this.refresh();
   }
@@ -64,7 +65,10 @@ export class FormConfigService {
 
   private loadFromCache(): CadastroUsuarioConfig {
     const minLengthNome = this.getNumber('min_length_nome', DEFAULTS.minLengthNome);
-    const minLengthEmailPrefix = this.getNumber('min_length_email_prefix', DEFAULTS.minLengthEmailPrefix);
+    const minLengthEmailPrefix = this.getNumber(
+      'min_length_email_prefix',
+      DEFAULTS.minLengthEmailPrefix,
+    );
     const minLengthSenha = this.getNumber('min_length_senha', DEFAULTS.minLengthSenha);
     const tamanhoSenhaGerada = this.getNumber('tamanho_senha_gerada', DEFAULTS.tamanhoSenhaGerada);
 

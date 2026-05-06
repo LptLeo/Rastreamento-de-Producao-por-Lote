@@ -21,12 +21,12 @@ export const routes: Routes = [
     path: 'login',
     component: Login,
     canActivate: [guestGuard],
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: '',
     redirectTo: 'login',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'app',
@@ -36,7 +36,7 @@ export const routes: Routes = [
       {
         path: '',
         redirectTo: 'dashboard',
-        pathMatch: 'full'
+        pathMatch: 'full',
       },
       {
         path: 'dashboard',
@@ -64,7 +64,10 @@ export const routes: Routes = [
       },
       {
         path: 'produtos/:id',
-        loadComponent: () => import('./features/produtos/pages/produto-detail/produto-detail').then(c => c.ProdutoDetail),
+        loadComponent: () =>
+          import('./features/produtos/pages/produto-detail/produto-detail').then(
+            (c) => c.ProdutoDetail,
+          ),
       },
       {
         path: 'rastreabilidade',
@@ -89,12 +92,12 @@ export const routes: Routes = [
       {
         path: 'perfil',
         component: Perfil,
-      }
-    ]
+      },
+    ],
   },
   {
     path: '**',
     redirectTo: 'login',
-    pathMatch: 'full'
-  }
+    pathMatch: 'full',
+  },
 ];

@@ -1,0 +1,95 @@
+@if (lotes.length > 0) {
+  <div class="mb-8">
+    <div class="flex items-center gap-3 mb-4">
+      <h2 class="text-white text-sm uppercase tracking-wider font-bold">
+        Logística: Lotes a Receber
+      </h2>
+      <span class="bg-[#00E5FF]/20 text-[#00E5FF] px-2 py-0.5 rounded text-[10px] font-bold">{{
+        lotes.length
+      }}</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (lote of lotes; track lote.id) {
+        <div
+          class="relative bg-[#131313] border border-[#484847]/30 rounded-lg p-4 overflow-hidden group"
+        >
+          <!-- Efeito de carregamento contínuo no fundo se estiver a_caminho -->
+          @if (lote.status === 'a_caminho') {
+            <div
+              class="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5FF]/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"
+            ></div>
+          }
+
+          <div class="relative z-10">
+            <!-- Header do Card -->
+            <div class="flex justify-between items-start mb-3">
+              <div class="flex flex-col">
+                <span class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1">{{
+                  lote.materiaPrima.categoria
+                }}</span>
+                <h3 class="text-sm font-bold text-white uppercase">{{ lote.materiaPrima.nome }}</h3>
+              </div>
+
+              <!-- Badge Dinâmico -->
+              @if (lote.status === 'a_caminho') {
+                <span
+                  class="bg-[#2a2a2a] text-[#ADAAAA] border border-[#484847] px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm"
+                >
+                  <div class="w-1.5 h-1.5 bg-[#ADAAAA] rounded-full animate-pulse"></div>
+                  A Caminho
+                </span>
+              } @else if (lote.status === 'pendente') {
+                <span
+                  class="bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/30 px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_10px_rgba(0,229,255,0.1)]"
+                >
+                  <div class="w-1.5 h-1.5 bg-[#00E5FF] rounded-full animate-ping"></div>
+                  Aguardando Recebimento
+                </span>
+              }
+            </div>
+
+            <!-- Infos do Lote -->
+            <div class="flex flex-col gap-1.5 mb-4">
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-[#6B7280]">Fornecedor:</span>
+                <span class="text-white font-medium truncate max-w-[150px]">{{
+                  lote.fornecedor
+                }}</span>
+              </div>
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-[#6B7280]">Lote REF:</span>
+                <span class="text-white font-medium">{{
+                  lote.numero_lote_fornecedor || 'N/A'
+                }}</span>
+              </div>
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-[#6B7280]">Quantidade Esperada:</span>
+                <span class="text-[#00E5FF] font-bold"
+                  >{{ lote.quantidade_inicial }} {{ lote.materiaPrima.unidade_medida }}</span
+                >
+              </div>
+            </div>
+
+            <!-- Botão Ação -->
+            @if (lote.status === 'pendente') {
+              <button
+                (click)="receber.emit(lote.id)"
+                class="w-full bg-[#0E0E0E] border border-[#00E5FF]/50 text-[#00E5FF] hover:bg-[#00E5FF] hover:text-black hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] text-[10px] font-bold uppercase tracking-widest py-2.5 rounded transition-all"
+              >
+                Confirmar Recebimento Físico
+              </button>
+            } @else {
+              <button
+                disabled
+                class="w-full bg-[#0E0E0E] border border-[#484847]/30 text-[#6B7280] text-[10px] font-bold uppercase tracking-widest py-2.5 rounded opacity-50 cursor-not-allowed"
+              >
+                Processando Logística...
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

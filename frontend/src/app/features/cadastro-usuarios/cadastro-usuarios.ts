@@ -1,19 +1,35 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service.js';
 import { FormConfigService } from '../../core/services/form-config.service.js';
 import { ToastService } from '../../core/services/toast.service.js';
-import { CreateUsuarioPayload, UsuarioPerfil, UsuarioService } from '../../core/services/usuario.service.js';
+import {
+  CreateUsuarioPayload,
+  UsuarioPerfil,
+  UsuarioService,
+} from '../../core/services/usuario.service.js';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.js';
 import { CheckboxFieldComponent } from '../../shared/components/form-controls/checkbox-field/checkbox-field.js';
 import { PasswordFieldComponent } from '../../shared/components/form-controls/password-field/password-field.js';
-import { SelectFieldComponent, SelectOption } from '../../shared/components/form-controls/select-field/select-field.js';
+import {
+  SelectFieldComponent,
+  SelectOption,
+} from '../../shared/components/form-controls/select-field/select-field.js';
 import { TextInputFieldComponent } from '../../shared/components/form-controls/text-input-field/text-input-field.js';
 import { cadastroUsuarioPayloadSchema } from './schemas/cadastro-usuario.schema.js';
-import { PaginationComponent, PaginationMeta } from '../../shared/components/pagination/pagination.js';
+import {
+  PaginationComponent,
+  PaginationMeta,
+} from '../../shared/components/pagination/pagination.js';
 
 @Component({
   selector: 'app-cadastro-usuarios',
@@ -26,7 +42,7 @@ import { PaginationComponent, PaginationMeta } from '../../shared/components/pag
     SelectFieldComponent,
     PasswordFieldComponent,
     CheckboxFieldComponent,
-    PaginationComponent
+    PaginationComponent,
   ],
   templateUrl: './cadastro-usuarios.html',
 })
@@ -77,7 +93,14 @@ export class CadastroUsuarios implements OnInit {
   form = this.fb.nonNullable.group(
     {
       nome: ['', [this.minTrimmedLengthValidator(this.config().minLengthNome)]],
-      email: ['', [Validators.required, Validators.email, this.emailPrefixLengthValidator(this.config().minLengthEmailPrefix)]],
+      email: [
+        '',
+        [
+          Validators.required,
+          Validators.email,
+          this.emailPrefixLengthValidator(this.config().minLengthEmailPrefix),
+        ],
+      ],
       perfil: ['operador'],
       senha: ['', [Validators.required, Validators.minLength(this.config().minLengthSenha)]],
       confirmarSenha: ['', [Validators.required]],
@@ -101,7 +124,10 @@ export class CadastroUsuarios implements OnInit {
         Validators.email,
         this.emailPrefixLengthValidator(cfg.minLengthEmailPrefix),
       ]);
-      this.form.controls.senha.setValidators([Validators.required, Validators.minLength(cfg.minLengthSenha)]);
+      this.form.controls.senha.setValidators([
+        Validators.required,
+        Validators.minLength(cfg.minLengthSenha),
+      ]);
 
       this.form.controls.nome.updateValueAndValidity({ emitEvent: false });
       this.form.controls.email.updateValueAndValidity({ emitEvent: false });
@@ -143,7 +169,7 @@ export class CadastroUsuarios implements OnInit {
       limite: 10,
       busca: this.filtroTermo().trim(),
       perfil: this.filtroPerfil(),
-      ativo: this.filtroStatus()
+      ativo: this.filtroStatus(),
     };
 
     this.usuarioService
@@ -155,7 +181,9 @@ export class CadastroUsuarios implements OnInit {
           this.paginationMeta.set(res.meta);
         },
         error: (err) => {
-          this.erroLista.set(err?.error?.message ?? 'Não foi possível carregar a lista de usuários.');
+          this.erroLista.set(
+            err?.error?.message ?? 'Não foi possível carregar a lista de usuários.',
+          );
         },
       });
   }
@@ -282,7 +310,8 @@ export class CadastroUsuarios implements OnInit {
     if (controlName === 'senha' && control.errors['minlength']) {
       return `Senha deve ter no mínimo ${this.config().minLengthSenha} caracteres.`;
     }
-    if (controlName === 'confirmarSenha' && control.errors['required']) return 'Confirmação de senha é obrigatória.';
+    if (controlName === 'confirmarSenha' && control.errors['required'])
+      return 'Confirmação de senha é obrigatória.';
     if (controlName === 'confirmarSenha' && this.form.errors?.['passwordMismatch']) {
       return 'As senhas não coincidem.';
     }
@@ -317,7 +346,7 @@ export class CadastroUsuarios implements OnInit {
           },
         });
       },
-      'Desativar'
+      'Desativar',
     );
   }
 
@@ -335,7 +364,7 @@ export class CadastroUsuarios implements OnInit {
           },
         });
       },
-      'Reativar'
+      'Reativar',
     );
   }
 

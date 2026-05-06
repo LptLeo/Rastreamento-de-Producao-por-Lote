@@ -2,15 +2,19 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AuthService } from './auth.service.js';
 import { environment } from '../../../environments/environment';
+import { Router } from '@angular/router';
 
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
+  let routerSpy: any;
 
   beforeEach(() => {
+    routerSpy = { navigate: jest.fn() };
+
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [AuthService]
+      providers: [AuthService, { provide: Router, useValue: routerSpy }],
     });
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -23,10 +27,10 @@ describe('AuthService', () => {
   it('deve realizar login e salvar o token na memoria', () => {
     const mockResponse = {
       tokenAcesso: 'jwt-123',
-      usuario: { id: 1, nome: 'Teste', perfil: 'gestor' }
+      usuario: { id: 1, nome: 'Teste', perfil: 'gestor' },
     };
 
-    service.login('admin@t.com', '123').subscribe(user => {
+    service.login('admin@t.com', '123').subscribe((user) => {
       expect(user.id).toBe(1);
       expect(service.tokenAcesso()).toBe('jwt-123');
       expect(service.usuario()?.nome).toBe('Teste');

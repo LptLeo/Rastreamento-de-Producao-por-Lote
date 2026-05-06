@@ -1,18 +1,31 @@
 <div class="flex flex-col w-full min-h-screen text-white font-sans max-w-3xl mx-auto space-y-6">
-
   <!-- Header -->
   <header class="flex flex-col gap-6">
     <div class="flex items-center gap-4">
-      <button (click)="voltarParaLista()"
+      <button
+        (click)="voltarParaLista()"
         class="flex items-center justify-center w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#484847]/40 text-[#ADAAAA] hover:text-[#00E5FF] hover:border-[#00E5FF]/50 transition-all group shadow-lg"
-        title="Voltar para a lista">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"
-          class="w-5 h-5 group-hover:-translate-x-1 transition-transform">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+        title="Voltar para a lista"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.5"
+          stroke="currentColor"
+          class="w-5 h-5 group-hover:-translate-x-1 transition-transform"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+          />
         </svg>
       </button>
       <div class="h-6 w-px bg-[#484847]/30"></div>
-      <span class="text-[12px] font-bold text-[#ADAAAA] uppercase tracking-[2px]">Gestão de Lotes / Abrir Lote</span>
+      <span class="text-[12px] font-bold text-[#ADAAAA] uppercase tracking-[2px]"
+        >Gestão de Lotes / Abrir Lote</span
+      >
     </div>
 
     <div>
@@ -27,42 +40,58 @@
 
   <!-- Error Alert -->
   @if (erro()) {
-  <div class="p-4 bg-red-950/20 border border-[#dc2626]/40 rounded-md">
-    <p class="text-[#fca5a5] text-[13px] font-semibold">{{ erro() }}</p>
-  </div>
+    <div class="p-4 bg-red-950/20 border border-[#dc2626]/40 rounded-md">
+      <p class="text-[#fca5a5] text-[13px] font-semibold">{{ erro() }}</p>
+    </div>
   }
 
   <!-- Form -->
   <div class="bg-[#131313] border border-[#484847]/30 rounded-md p-6 sm:p-8">
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
-
       <!-- Linha 1: Numero Gerado / Produto -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div class="flex flex-col gap-2">
-          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Número do Lote</label>
-          <input type="text"
+          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]"
+            >Número do Lote</label
+          >
+          <input
+            type="text"
             class="w-full bg-[#0E0E0E] border border-[#484847]/40 rounded px-4 py-2.5 text-sm text-[#ADAAAA] cursor-not-allowed focus:outline-none"
-            value="Gerado automaticamente ao salvar" disabled>
+            value="Gerado automaticamente ao salvar"
+            disabled
+          />
         </div>
 
         <div class="flex flex-col gap-2">
-          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Produto *</label>
+          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]"
+            >Produto *</label
+          >
           <div class="relative group">
-            <select formControlName="produto_id"
+            <select
+              formControlName="produto_id"
               class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors appearance-none cursor-pointer"
-              [class.border-red-500]="fieldErrors()['produto_id']">
+              [class.border-red-500]="fieldErrors()['produto_id']"
+            >
               <option [value]="0" disabled>Selecione um produto...</option>
               @for (prod of produtos(); track prod.id) {
-              <option [value]="prod.id">{{ prod.nome }} ({{ prod.sku }})</option>
+                <option [value]="prod.id">{{ prod.nome }} ({{ prod.sku }})</option>
               }
             </select>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-              class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADAAAA] pointer-events-none group-focus-within:text-[#00E5FF] transition-colors">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADAAAA] pointer-events-none group-focus-within:text-[#00E5FF] transition-colors"
+            >
               <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
             </svg>
           </div>
           @if (fieldErrors()['produto_id']) {
-            <span class="text-[10px] text-red-400 font-medium">{{ fieldErrors()['produto_id'] }}</span>
+            <span class="text-[10px] text-red-400 font-medium">{{
+              fieldErrors()['produto_id']
+            }}</span>
           }
         </div>
       </div>
@@ -70,38 +99,71 @@
       <!-- Linha 2: Data / Turno -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div class="flex flex-col gap-2">
-          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Data de Produção *</label>
-          <div class="relative date-container cursor-pointer h-[42px]" (click)="datePicker.showPicker()">
-            <div class="w-full h-full bg-[#0E0E0E] border border-[#484847]/80 rounded px-4 flex justify-between items-center transition-colors hover:border-[#00E5FF] group"
-              [class.border-red-500]="fieldErrors()['data_producao']">
+          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]"
+            >Data de Produção *</label
+          >
+          <div
+            class="relative date-container cursor-pointer h-[42px]"
+            (click)="datePicker.showPicker()"
+          >
+            <div
+              class="w-full h-full bg-[#0E0E0E] border border-[#484847]/80 rounded px-4 flex justify-between items-center transition-colors hover:border-[#00E5FF] group"
+              [class.border-red-500]="fieldErrors()['data_producao']"
+            >
               <span class="text-sm font-medium" [class.text-[#ADAAAA]]="!form.value.data_producao">
                 {{ dataFormatada }}
               </span>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-                class="w-5 h-5 text-[#00E5FF] transition-all">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+                class="w-5 h-5 text-[#00E5FF] transition-all"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
+                />
               </svg>
             </div>
-            <input #datePicker type="date" formControlName="data_producao"
-              class="absolute inset-0 opacity-0 cursor-pointer pointer-events-none">
+            <input
+              #datePicker
+              type="date"
+              formControlName="data_producao"
+              class="absolute inset-0 opacity-0 cursor-pointer pointer-events-none"
+            />
           </div>
           @if (fieldErrors()['data_producao']) {
-            <span class="text-[10px] text-red-400 font-medium">{{ fieldErrors()['data_producao'] }}</span>
+            <span class="text-[10px] text-red-400 font-medium">{{
+              fieldErrors()['data_producao']
+            }}</span>
           }
         </div>
 
         <div class="flex flex-col gap-2">
-          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Turno *</label>
+          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]"
+            >Turno *</label
+          >
           <div class="relative group">
-            <select formControlName="turno"
+            <select
+              formControlName="turno"
               class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors appearance-none cursor-pointer"
-              [class.border-red-500]="fieldErrors()['turno']">
+              [class.border-red-500]="fieldErrors()['turno']"
+            >
               <option value="manha">Manhã</option>
               <option value="tarde">Tarde</option>
               <option value="noite">Noite</option>
             </select>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-              class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADAAAA] pointer-events-none group-focus-within:text-[#00E5FF] transition-colors">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#ADAAAA] pointer-events-none group-focus-within:text-[#00E5FF] transition-colors"
+            >
               <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
             </svg>
           </div>
@@ -114,26 +176,48 @@
       <!-- Linha 3: Quantidade / Validade -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div class="flex flex-col gap-2">
-          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Quantidade Planejada *</label>
+          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]"
+            >Quantidade Planejada *</label
+          >
           <div class="relative">
-            <input type="number" min="1" formControlName="quantidade_planejada"
+            <input
+              type="number"
+              min="1"
+              formControlName="quantidade_planejada"
               class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded pl-4 pr-12 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors"
-              [class.border-red-500]="fieldErrors()['quantidade_planejada']">
-            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#ADAAAA]">UN</span>
+              [class.border-red-500]="fieldErrors()['quantidade_planejada']"
+            />
+            <span
+              class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#ADAAAA]"
+              >UN</span
+            >
           </div>
           @if (fieldErrors()['quantidade_planejada']) {
-            <span class="text-[10px] text-red-400 font-medium">{{ fieldErrors()['quantidade_planejada'] }}</span>
+            <span class="text-[10px] text-red-400 font-medium">{{
+              fieldErrors()['quantidade_planejada']
+            }}</span>
           }
         </div>
 
         <div class="flex flex-col gap-2">
-          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Data de Validade</label>
+          <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]"
+            >Data de Validade</label
+          >
           <div class="flex items-center gap-3">
-            <input type="date" formControlName="data_validade" style="color-scheme: dark;"
-              class="flex-1 bg-[#0E0E0E] border border-[#484847]/80 rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-            <label class="flex items-center gap-2 text-[11px] text-[#ADAAAA] cursor-pointer select-none whitespace-nowrap">
-              <input type="checkbox" formControlName="sem_validade"
-                class="accent-[#00E5FF] w-4 h-4 cursor-pointer">
+            <input
+              type="date"
+              formControlName="data_validade"
+              style="color-scheme: dark"
+              class="flex-1 bg-[#0E0E0E] border border-[#484847]/80 rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            />
+            <label
+              class="flex items-center gap-2 text-[11px] text-[#ADAAAA] cursor-pointer select-none whitespace-nowrap"
+            >
+              <input
+                type="checkbox"
+                formControlName="sem_validade"
+                class="accent-[#00E5FF] w-4 h-4 cursor-pointer"
+              />
               N/A
             </label>
           </div>
@@ -142,9 +226,15 @@
 
       <!-- Linha 4: Observações -->
       <div class="flex flex-col gap-2">
-        <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]">Observações</label>
-        <textarea formControlName="observacoes" rows="2" placeholder="Informações adicionais da abertura..."
-          class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors resize-y"></textarea>
+        <label class="text-[10px] font-bold tracking-[1.5px] uppercase text-[#6B7280]"
+          >Observações</label
+        >
+        <textarea
+          formControlName="observacoes"
+          rows="2"
+          placeholder="Informações adicionais da abertura..."
+          class="w-full bg-[#0E0E0E] border border-[#484847]/80 rounded px-4 py-2.5 text-sm text-white focus:outline-none focus:border-[#00E5FF] transition-colors resize-y"
+        ></textarea>
       </div>
 
       <!-- ═══════════════════════════════════════════════════════ -->
@@ -152,53 +242,77 @@
       <!-- ═══════════════════════════════════════════════════════ -->
 
       @if ((produtoSelecionado()?.receita?.length ?? 0) > 0) {
-      <div class="border-t border-[#484847]/30 pt-6 mt-2">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-2 h-2 rounded-full bg-[#00E5FF] animate-pulse"></div>
-          <h3 class="text-[12px] font-bold uppercase tracking-[1.5px] text-[#00E5FF]">
-            Vinculação de Insumos (Receita)
-          </h3>
-        </div>
-
-        @if (fieldErrors()['consumos']) {
-          <div class="mb-4 p-3 bg-red-950/30 border border-red-500/50 rounded flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="#fca5a5" class="w-4 h-4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-            </svg>
-            <span class="text-[11px] text-red-400 font-bold uppercase tracking-wider">{{ fieldErrors()['consumos'] }}</span>
+        <div class="border-t border-[#484847]/30 pt-6 mt-2">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-2 h-2 rounded-full bg-[#00E5FF] animate-pulse"></div>
+            <h3 class="text-[12px] font-bold uppercase tracking-[1.5px] text-[#00E5FF]">
+              Vinculação de Insumos (Receita)
+            </h3>
           </div>
-        }
 
-        <p class="text-[12px] text-[#6B7280] mb-4">
-          Selecione quais lotes de insumo em estoque serão consumidos para fabricar este lote.
-        </p>
-
-        @if (carregandoInsumos()) {
-          <div class="flex items-center gap-3 py-4">
-            <div class="w-4 h-4 border-2 border-[#00E5FF] border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-[12px] text-[#6B7280]">Carregando insumos disponíveis...</span>
-          </div>
-        }
-
-        <div formArrayName="consumos" class="flex flex-col gap-4">
-          @for (consumo of consumosArray.controls; track consumo; let i = $index) {
-            <app-lote-insumo-item 
-              [formGroup]="$any(consumo)"
-              [insumosDisponiveis]="getInsumosParaMP(consumo.get('materia_prima_id')?.value)">
-            </app-lote-insumo-item>
+          @if (fieldErrors()['consumos']) {
+            <div
+              class="mb-4 p-3 bg-red-950/30 border border-red-500/50 rounded flex items-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="#fca5a5"
+                class="w-4 h-4"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+                />
+              </svg>
+              <span class="text-[11px] text-red-400 font-bold uppercase tracking-wider">{{
+                fieldErrors()['consumos']
+              }}</span>
+            </div>
           }
+
+          <p class="text-[12px] text-[#6B7280] mb-4">
+            Selecione quais lotes de insumo em estoque serão consumidos para fabricar este lote.
+          </p>
+
+          @if (carregandoInsumos()) {
+            <div class="flex items-center gap-3 py-4">
+              <div
+                class="w-4 h-4 border-2 border-[#00E5FF] border-t-transparent rounded-full animate-spin"
+              ></div>
+              <span class="text-[12px] text-[#6B7280]">Carregando insumos disponíveis...</span>
+            </div>
+          }
+
+          <div formArrayName="consumos" class="flex flex-col gap-4">
+            @for (consumo of consumosArray.controls; track consumo; let i = $index) {
+              <app-lote-insumo-item
+                [formGroup]="$any(consumo)"
+                [insumosDisponiveis]="getInsumosParaMP(consumo.get('materia_prima_id')?.value)"
+              >
+              </app-lote-insumo-item>
+            }
+          </div>
         </div>
-      </div>
       }
 
       <!-- Ações -->
       <div class="mt-4 pt-6 border-t border-[#484847]/30 flex justify-end gap-4">
-        <button type="button" (click)="voltarParaLista()"
-          class="px-6 py-2.5 border border-[#484847] text-[#ADAAAA] text-xs font-bold uppercase tracking-wider hover:bg-[#1a1a1a] hover:text-white transition-colors rounded">
+        <button
+          type="button"
+          (click)="voltarParaLista()"
+          class="px-6 py-2.5 border border-[#484847] text-[#ADAAAA] text-xs font-bold uppercase tracking-wider hover:bg-[#1a1a1a] hover:text-white transition-colors rounded"
+        >
           Cancelar
         </button>
-        <button type="submit" [disabled]="form.invalid || salvando() || consumosArray.length === 0"
-          class="px-6 py-2.5 bg-[#00E5FF] text-black text-xs font-bold uppercase tracking-wider rounded transition-all hover:bg-[#00E5FF]/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+        <button
+          type="submit"
+          [disabled]="salvando() || consumosArray.length === 0"
+          class="px-6 py-2.5 bg-[#00E5FF] text-black text-xs font-bold uppercase tracking-wider rounded transition-all hover:bg-[#00E5FF]/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(0,229,255,0.2)]"
+        >
           @if (salvando()) {
             Salvando...
           } @else {
@@ -206,7 +320,6 @@
           }
         </button>
       </div>
-
     </form>
   </div>
 </div>

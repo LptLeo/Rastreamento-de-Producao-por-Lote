@@ -1,6 +1,6 @@
 import { Component, inject, computed } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { DashboardService } from "./services/dashboard.service.js";
+import { DashboardService } from './services/dashboard.service.js';
 import { DashboardData } from './models/dashboard.interface.js';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
@@ -31,10 +31,11 @@ export class Dashboard {
   });
 
   dashboardResource = rxResource<DashboardData, any>({
-    stream: () => this.dashboardService.getDashboardData(
-      this.settings().dashboard.lotesComparacao,
-      this.settings().dashboard.unidadesComparacao
-    ),
+    stream: () =>
+      this.dashboardService.getDashboardData(
+        this.settings().dashboard.lotesComparacao,
+        this.settings().dashboard.unidadesComparacao,
+      ),
   });
 
   lotesProduzidos = computed(() => this.dashboardResource.value()?.lotes_mes ?? 0);
@@ -53,7 +54,7 @@ export class Dashboard {
       qualquer_momento: 'LOTES (HISTÓRICO)',
       mes: 'LOTES (MÊS ATUAL)',
       semana: 'LOTES (ESTA SEMANA)',
-      dia: 'LOTES (HOJE)'
+      dia: 'LOTES (HOJE)',
     };
     return map[p] || 'LOTES';
   });
@@ -70,7 +71,7 @@ export class Dashboard {
       qualquer_momento: 'UNIDADES (HISTÓRICO)',
       mes: 'UNIDADES (MÊS ATUAL)',
       semana: 'UNIDADES (ESTA SEMANA)',
-      dia: 'UNIDADES (HOJE)'
+      dia: 'UNIDADES (HOJE)',
     };
     return map[p] || 'UNIDADES';
   });
@@ -100,15 +101,15 @@ export class Dashboard {
     // ── Cabeçalho e Estética Geral ──
     doc.setFillColor(13, 13, 13); // Fundo escuro como o sistema
     doc.rect(0, 0, 210, 40, 'F');
-    
+
     doc.setFontSize(22);
     doc.setTextColor(0, 229, 255); // Ciano primário
     doc.text('LOTE PIM', 14, 22);
-    
+
     doc.setFontSize(10);
     doc.setTextColor(173, 170, 170); // Cor ADAAAA
     doc.text('SISTEMA DE GESTÃO DE PRODUÇÃO E QUALIDADE', 14, 30);
-    
+
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(14);
     // Usando alinhamento à direita para o título lateral para evitar quebra horizontal
@@ -138,7 +139,7 @@ export class Dashboard {
         ['Lotes Produzidos', data.lotes_mes, lotesT.text],
         ['Unidades Produzidas', data.unidades_mes, unidadesT.text],
         ['Taxa de Aprovação', `${data.taxa_aprovacao_mes}%`, '—'],
-        ['Lotes em Aberto (Inspeção)', data.aguardando_inspecao, '—']
+        ['Lotes em Aberto (Inspeção)', data.aguardando_inspecao, '—'],
       ],
       theme: 'striped',
       headStyles: { fillColor: [26, 25, 25], textColor: [255, 255, 255] },
@@ -148,7 +149,7 @@ export class Dashboard {
           if (val.startsWith('+')) dataCell.cell.styles.textColor = [0, 150, 0];
           else if (val.startsWith('-')) dataCell.cell.styles.textColor = [200, 0, 0];
         }
-      }
+      },
     });
 
     let currentY = (doc as any).lastAutoTable.finalY + 15;
@@ -165,30 +166,36 @@ export class Dashboard {
         body: data.top_produtos.map((p: any) => [p.nome, p.quantidade]),
         theme: 'grid',
         headStyles: { fillColor: [0, 77, 87], textColor: [255, 255, 255] },
-        styles: { fontSize: 9 }
+        styles: { fontSize: 9 },
       });
       currentY = (doc as any).lastAutoTable.finalY + 15;
     }
 
     if (data.top_funcionarios && data.top_funcionarios.length > 0) {
-      if (currentY > 240) { doc.addPage(); currentY = 20; }
+      if (currentY > 240) {
+        doc.addPage();
+        currentY = 20;
+      }
       autoTable(doc, {
         startY: currentY,
         head: [['Funcionário Destaque', 'Lotes Operados']],
         body: data.top_funcionarios.map((f: any) => [f.nome, f.quantidade_lotes]),
         theme: 'grid',
         headStyles: { fillColor: [0, 77, 87], textColor: [255, 255, 255] },
-        styles: { fontSize: 9 }
+        styles: { fontSize: 9 },
       });
       currentY = (doc as any).lastAutoTable.finalY + 15;
     }
 
     // ── Últimos 10 Lotes ──
     if (data.ultimos_lotes && data.ultimos_lotes.length > 0) {
-      if (currentY > 220) { doc.addPage(); currentY = 20; }
+      if (currentY > 220) {
+        doc.addPage();
+        currentY = 20;
+      }
       doc.setFontSize(12);
       doc.text('HISTÓRICO RECENTE (ÚLTIMOS 10 LOTES)', 14, currentY);
-      
+
       autoTable(doc, {
         startY: currentY + 5,
         head: [['Lote', 'Produto', 'Operador', 'Status', 'Data']],
@@ -197,11 +204,11 @@ export class Dashboard {
           l.produto.nome,
           l.operador.nome,
           this.formatStatus(l.status),
-          new Date(l.aberto_em).toLocaleDateString('pt-BR')
+          new Date(l.aberto_em).toLocaleDateString('pt-BR'),
         ]),
         theme: 'striped',
         headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255] },
-        styles: { fontSize: 8 }
+        styles: { fontSize: 8 },
       });
     }
 
@@ -218,7 +225,8 @@ export class Dashboard {
   }
 
   getStatusClass(status: string): string {
-    const base = 'ml-auto min-h-[20px] text-center rounded-xs py-1 px-3 font-bold text-[10.4px] tracking-[0.52px] flex items-center justify-center leading-tight ';
+    const base =
+      'ml-auto min-h-[20px] text-center rounded-xs py-1 px-3 font-bold text-[10.4px] tracking-[0.52px] flex items-center justify-center leading-tight ';
 
     switch (status) {
       case 'aprovado':

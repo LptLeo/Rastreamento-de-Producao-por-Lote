@@ -47,7 +47,7 @@ export interface UpdateSenhaPayload {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UsuarioService {
   private http = inject(HttpClient);

@@ -10,6 +10,8 @@ export type LoteStatus =
   | 'aprovado_restricao'
   | 'reprovado';
 
+export type InsumoEstoqueStatus = 'a_caminho' | 'pendente' | 'disponivel';
+
 // ── Entidades Base ──
 
 export interface MateriaPrima {
@@ -56,6 +58,7 @@ export interface InsumoEstoque {
   quantidade_atual: number;
   fornecedor: string;
   turno: string;
+  status: InsumoEstoqueStatus;
   data_validade: string | null;
   recebido_em: string;
   operador?: Operador;

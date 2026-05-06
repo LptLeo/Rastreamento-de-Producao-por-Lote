@@ -13,7 +13,15 @@ import { rxResource } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-produtos',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProdutoFilterButtonComponent, ProdutoCardComponent, StatCardComponent, PageHeaderComponent, PaginationComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ProdutoFilterButtonComponent,
+    ProdutoCardComponent,
+    StatCardComponent,
+    PageHeaderComponent,
+    PaginationComponent,
+  ],
   templateUrl: './produtos.html',
 })
 export class Produtos {
@@ -31,17 +39,17 @@ export class Produtos {
   ultimaAtualizacao = signal(new Date().toLocaleTimeString('pt-BR'));
 
   categoriasResource = rxResource({
-    stream: () => this.produtosService.getCategorias()
+    stream: () => this.produtosService.getCategorias(),
   });
 
   linhasResource = rxResource({
-    stream: () => this.produtosService.getLinhas()
+    stream: () => this.produtosService.getLinhas(),
   });
 
   categoriasExistentes = computed(() => this.categoriasResource.value() || []);
   linhasPadrao = computed(() => this.linhasResource.value() || []);
 
-  /** 
+  /**
    * Resource Reativo: Gerencia automaticamente o ciclo de vida da requisição.
    * Re-executa sempre que termoPesquisa, filtroAtivo ou currentPage mudarem.
    */
@@ -53,34 +61,43 @@ export class Produtos {
       linha: this.linhaFiltro(),
       categoria: this.categoriaFiltro(),
       pagina: this.currentPage(),
-      limite: 10
+      limite: 10,
     }),
-    stream: ({ params }) => this.produtosService.getProdutos(params)
+    stream: ({ params }) => this.produtosService.getProdutos(params),
   });
 
   /** Resource para as contagens globais de filtros */
   contagemResource = rxResource({
-    stream: () => this.produtosService.getContagem()
+    stream: () => this.produtosService.getContagem(),
   });
 
   // Derivações reativas do resource para o template
   produtos = computed(() => this.produtosResource.value()?.itens || []);
   paginationMeta = computed(() => this.produtosResource.value()?.meta || null);
   carregando = computed(() => this.produtosResource.isLoading());
-  erro = computed(() => this.produtosResource.error() ? 'Erro ao carregar produtos do servidor.' : null);
+  erro = computed(() =>
+    this.produtosResource.error() ? 'Erro ao carregar produtos do servidor.' : null,
+  );
 
   totalProdutos = computed(() => this.paginationMeta()?.totalItens || 0);
 
-  contagens = computed(() => this.contagemResource.value() || {
-    total: 0, ativos: 0, inativos: 0, sem_insumos: 0, mais_produzidos: 0
-  });
+  contagens = computed(
+    () =>
+      this.contagemResource.value() || {
+        total: 0,
+        ativos: 0,
+        inativos: 0,
+        sem_insumos: 0,
+        mais_produzidos: 0,
+      },
+  );
 
   metrics = computed(() => ({
     total: this.contagens().total,
     ativos: this.contagens().ativos,
     inativos: this.contagens().inativos,
     sem_insumos: this.contagens().sem_insumos,
-    mais_produzido: this.produtos().length > 0 ? this.produtos()[0].nome : '—'
+    mais_produzido: this.produtos().length > 0 ? this.produtos()[0].nome : '—',
   }));
 
   aplicarFiltroTab(tab: string): void {

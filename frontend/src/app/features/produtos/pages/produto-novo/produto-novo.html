@@ -1,17 +1,30 @@
 <div class="flex flex-col w-full min-h-screen text-white font-sans max-w-3xl mx-auto space-y-6">
-
   <!-- Header -->
   <header class="flex flex-col gap-6">
     <div class="flex items-center gap-4">
-      <button (click)="voltarParaLista()"
-        class="flex items-center justify-center w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#484847]/40 text-[#ADAAAA] hover:text-[#00E5FF] hover:border-[#00E5FF]/50 transition-all group shadow-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"
-          class="w-5 h-5 group-hover:-translate-x-1 transition-transform">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      <button
+        (click)="voltarParaLista()"
+        class="flex items-center justify-center w-10 h-10 rounded-full bg-[#1A1A1A] border border-[#484847]/40 text-[#ADAAAA] hover:text-[#00E5FF] hover:border-[#00E5FF]/50 transition-all group shadow-lg"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.5"
+          stroke="currentColor"
+          class="w-5 h-5 group-hover:-translate-x-1 transition-transform"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+          />
         </svg>
       </button>
       <div class="h-6 w-px bg-[#484847]/30"></div>
-      <span class="text-[12px] font-bold text-[#ADAAAA] uppercase tracking-[2px]">Produtos / Novo Produto</span>
+      <span class="text-[12px] font-bold text-[#ADAAAA] uppercase tracking-[2px]"
+        >Produtos / Novo Produto</span
+      >
     </div>
 
     <div>
@@ -27,25 +40,39 @@
   <!-- Step Indicator -->
   <div class="flex items-center gap-4">
     <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300"
-        [class]="etapaAtual() >= 1 ? 'bg-[#00E5FF] text-black' : 'bg-[#484847]/30 text-[#6B7280]'">1</div>
-      <span class="text-[11px] font-bold uppercase tracking-wider"
-        [class]="etapaAtual() >= 1 ? 'text-white' : 'text-[#6B7280]'">Dados Base</span>
+      <div
+        class="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300"
+        [class]="etapaAtual() >= 1 ? 'bg-[#00E5FF] text-black' : 'bg-[#484847]/30 text-[#6B7280]'"
+      >
+        1
+      </div>
+      <span
+        class="text-[11px] font-bold uppercase tracking-wider"
+        [class]="etapaAtual() >= 1 ? 'text-white' : 'text-[#6B7280]'"
+        >Dados Base</span
+      >
     </div>
     <div class="flex-1 h-px" [class]="etapaAtual() >= 2 ? 'bg-[#00E5FF]' : 'bg-[#484847]/40'"></div>
     <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300"
-        [class]="etapaAtual() >= 2 ? 'bg-[#00E5FF] text-black' : 'bg-[#484847]/30 text-[#6B7280]'">2</div>
-      <span class="text-[11px] font-bold uppercase tracking-wider"
-        [class]="etapaAtual() >= 2 ? 'text-white' : 'text-[#6B7280]'">Receita</span>
+      <div
+        class="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300"
+        [class]="etapaAtual() >= 2 ? 'bg-[#00E5FF] text-black' : 'bg-[#484847]/30 text-[#6B7280]'"
+      >
+        2
+      </div>
+      <span
+        class="text-[11px] font-bold uppercase tracking-wider"
+        [class]="etapaAtual() >= 2 ? 'text-white' : 'text-[#6B7280]'"
+        >Receita</span
+      >
     </div>
   </div>
 
   <!-- Error -->
   @if (erro()) {
-  <div class="p-4 bg-red-950/20 border border-[#dc2626]/40 rounded-md">
-    <p class="text-[#fca5a5] text-[13px] font-semibold">{{ erro() }}</p>
-  </div>
+    <div class="p-4 bg-red-950/20 border border-[#dc2626]/40 rounded-md">
+      <p class="text-[#fca5a5] text-[13px] font-semibold">{{ erro() }}</p>
+    </div>
   }
 
   <!-- ═══════════ ETAPA 1: Dados Base ═══════════ -->
@@ -56,7 +83,8 @@
       [categoriasExistentes]="categoriasExistentes()"
       (cancel)="voltarParaLista()"
       (saveSemReceita)="onSubmit()"
-      (next)="avancarEtapa()">
+      (next)="avancarEtapa()"
+    >
     </app-wizard-base>
   }
 
@@ -72,7 +100,8 @@
       (back)="voltarEtapa()"
       (save)="onSubmit()"
       (addMp)="adicionarItemReceita($event)"
-      (removeMp)="removerItemReceita($event)">
+      (removeMp)="removerItemReceita($event)"
+    >
     </app-wizard-receita>
   }
 </div>

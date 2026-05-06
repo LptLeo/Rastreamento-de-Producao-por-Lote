@@ -12,16 +12,14 @@ describe('Configuracoes', () => {
     mockConfigService = {
       settings: signal({
         lote: { producaoTotalPeriodo: 'mes', atividadeTempoRealBase: 5 },
-        dashboard: { autoRefresh: true }
+        dashboard: { autoRefresh: true },
       }),
-      updateSettings: jest.fn()
+      updateSettings: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
       imports: [Configuracoes],
-      providers: [
-        { provide: ConfiguracoesService, useValue: mockConfigService }
-      ]
+      providers: [{ provide: ConfiguracoesService, useValue: mockConfigService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Configuracoes);
