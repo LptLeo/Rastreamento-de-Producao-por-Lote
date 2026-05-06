@@ -12,11 +12,11 @@ const mockAppDataSource = {
     if (entity.name === 'InsumoEstoque' || entity === 'InsumoEstoque') return mockInsumoRepo;
     if (entity.name === 'ConsumoInsumo' || entity === 'ConsumoInsumo') return mockConsumoRepo;
     return {} as any;
-  })
+  }),
 };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
-  AppDataSource: mockAppDataSource
+  AppDataSource: mockAppDataSource,
 }));
 
 const { RastreabilidadeService } = await import('../rastreabilidade.service.js');
@@ -37,12 +37,12 @@ describe('RastreabilidadeService', () => {
       const mockQB = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue({ id: 1, numero_lote: 'LOT-123' })
+        getOne: jest.fn().mockResolvedValue({ id: 1, numero_lote: 'LOT-123' }),
       };
       mockLoteRepo.createQueryBuilder.mockReturnValue(mockQB as any);
 
       const result = await service.consultar('LOT-123', query, req);
-      
+
       expect(result.tipo).toBe('lote');
       expect(result.resultado.numero_lote).toBe('LOT-123');
     });
@@ -53,7 +53,7 @@ describe('RastreabilidadeService', () => {
         select: jest.fn().mockReturnThis(),
         innerJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([{ lote_id: 1 }])
+        getRawMany: jest.fn().mockResolvedValue([{ lote_id: 1 }]),
       };
       // Mock para busca real
       const mockQBData = {
@@ -61,11 +61,11 @@ describe('RastreabilidadeService', () => {
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([
-          { 
+          {
             lote: { id: 1, numero_lote: 'L-1', produto: { nome: 'P' }, data_producao: new Date() },
-            insumoEstoque: { materiaPrima: { nome: 'MP' }, numero_lote_interno: 'INS-1' }
-          }
-        ])
+            insumoEstoque: { materiaPrima: { nome: 'MP' }, numero_lote_interno: 'INS-1' },
+          },
+        ]),
       };
 
       mockConsumoRepo.createQueryBuilder
@@ -73,7 +73,7 @@ describe('RastreabilidadeService', () => {
         .mockReturnValueOnce(mockQBData as any);
 
       const result = await service.consultar('INS-123', query, req);
-      
+
       expect(result.tipo).toBe('insumo');
       expect(result.resultado.itens.length).toBe(1);
     });
@@ -82,11 +82,13 @@ describe('RastreabilidadeService', () => {
       const mockQB = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null)
+        getOne: jest.fn().mockResolvedValue(null),
       };
       mockLoteRepo.createQueryBuilder.mockReturnValue(mockQB as any);
 
-      await expect(service.consultar('LOT-999', query, req)).rejects.toThrow(/Nenhum lote encontrado/);
+      await expect(service.consultar('LOT-999', query, req)).rejects.toThrow(
+        /Nenhum lote encontrado/,
+      );
     });
   });
 });

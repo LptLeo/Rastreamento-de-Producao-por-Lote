@@ -15,11 +15,11 @@ const mockAppDataSource = {
     if (entity.name === 'Usuario' || entity === 'Usuario') return mockUserRepo;
     return {} as any;
   }),
-  transaction: jest.fn(async (cb: any) => await cb(mockManager))
+  transaction: jest.fn(async (cb: any) => await cb(mockManager)),
 };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
-  AppDataSource: mockAppDataSource
+  AppDataSource: mockAppDataSource,
 }));
 
 const { InspecaoService } = await import('../inspecao.service.js');
@@ -38,16 +38,25 @@ describe('InspecaoService', () => {
 
     it('deve lançar erro se o lote não existir', async () => {
       mockLoteRepo.findOne.mockResolvedValue(null as never);
-      await expect(service.registrar(1, dtoMock, requisitanteMock)).rejects.toThrow('Lote não encontrado.');
+      await expect(service.registrar(1, dtoMock, requisitanteMock)).rejects.toThrow(
+        'Lote não encontrado.',
+      );
     });
 
     it('deve lançar erro se o lote não estiver aguardando inspeção', async () => {
       mockLoteRepo.findOne.mockResolvedValue({ id: 1, status: LoteStatus.EM_PRODUCAO } as never);
-      await expect(service.registrar(1, dtoMock, requisitanteMock)).rejects.toThrow(/Só é possível inspecionar lotes com status/);
+      await expect(service.registrar(1, dtoMock, requisitanteMock)).rejects.toThrow(
+        /Só é possível inspecionar lotes com status/,
+      );
     });
 
     it('deve calcular APROVADO quando zero reprovados', async () => {
-      const loteMock = { id: 1, status: LoteStatus.AGUARDANDO_INSPECAO, quantidade_planejada: 100, produto: { percentual_ressalva: 10 } };
+      const loteMock = {
+        id: 1,
+        status: LoteStatus.AGUARDANDO_INSPECAO,
+        quantidade_planejada: 100,
+        produto: { percentual_ressalva: 10 },
+      };
       mockLoteRepo.findOne.mockResolvedValue(loteMock as never);
       mockInspecaoRepo.findOneBy.mockResolvedValue(null as never);
       mockUserRepo.findOneBy.mockResolvedValue({ id: 1 } as never);
@@ -55,35 +64,54 @@ describe('InspecaoService', () => {
 
       await service.registrar(1, { quantidade_reprovada: 0 }, requisitanteMock);
 
-      expect(mockManager.create).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-        resultado_calculado: 'aprovado'
-      }));
+      expect(mockManager.create).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          resultado_calculado: 'aprovado',
+        }),
+      );
     });
 
     it('deve calcular REPROVADO quando taxa excede ressalva', async () => {
-      const loteMock = { id: 1, status: LoteStatus.AGUARDANDO_INSPECAO, quantidade_planejada: 100, produto: { percentual_ressalva: 10 } };
+      const loteMock = {
+        id: 1,
+        status: LoteStatus.AGUARDANDO_INSPECAO,
+        quantidade_planejada: 100,
+        produto: { percentual_ressalva: 10 },
+      };
       mockLoteRepo.findOne.mockResolvedValue(loteMock as never);
       mockInspecaoRepo.findOneBy.mockResolvedValue(null as never);
       mockUserRepo.findOneBy.mockResolvedValue({ id: 1 } as never);
 
       await service.registrar(1, { quantidade_reprovada: 15 }, requisitanteMock); // 15% > 10%
 
-      expect(mockManager.create).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-        resultado_calculado: 'reprovado'
-      }));
+      expect(mockManager.create).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          resultado_calculado: 'reprovado',
+        }),
+      );
     });
 
     it('deve calcular APROVADO_RESTRICAO quando taxa está dentro da ressalva', async () => {
-      const loteMock = { id: 1, status: LoteStatus.AGUARDANDO_INSPECAO, quantidade_planejada: 100, produto: { percentual_ressalva: 10 } };
+      const loteMock = {
+        id: 1,
+        status: LoteStatus.AGUARDANDO_INSPECAO,
+        quantidade_planejada: 100,
+        produto: { percentual_ressalva: 10 },
+      };
       mockLoteRepo.findOne.mockResolvedValue(loteMock as never);
       mockInspecaoRepo.findOneBy.mockResolvedValue(null as never);
       mockUserRepo.findOneBy.mockResolvedValue({ id: 1 } as never);
 
       await service.registrar(1, { quantidade_reprovada: 5 }, requisitanteMock); // 5% <= 10%
 
-      expect(mockManager.create).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-        resultado_calculado: 'aprovado_restricao'
-      }));
+      expect(mockManager.create).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          resultado_calculado: 'aprovado_restricao',
+        }),
+      );
     });
   });
 });

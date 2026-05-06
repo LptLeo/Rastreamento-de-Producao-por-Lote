@@ -1,9 +1,4 @@
-import {
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Column,
-} from "typeorm";
+import { PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Column } from 'typeorm';
 
 /**
  * Classe base para todas as entidades do sistema.
@@ -13,12 +8,12 @@ export abstract class EntidadeBase {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @CreateDateColumn({ type: "timestamptz" })
+  @CreateDateColumn({ type: 'timestamptz' })
   criado_em!: Date;
 
-  @UpdateDateColumn({ type: "timestamptz" })
+  @UpdateDateColumn({ type: 'timestamptz' })
   atualizado_em!: Date;
 
-  @Column({ type: "boolean", default: true, nullable: false })
+  @Column({ type: 'boolean', default: true, nullable: false })
   ativo!: boolean;
 }

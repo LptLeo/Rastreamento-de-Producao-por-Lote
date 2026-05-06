@@ -1,12 +1,15 @@
-import { AppDataSource } from "../config/AppDataSource.js";
-import type { Repository } from "typeorm";
-import { Lote } from "../entities/Lote.js";
-import { InsumoEstoque } from "../entities/InsumoEstoque.js";
-import { ConsumoInsumo } from "../entities/ConsumoInsumo.js";
-import { AppError } from "../errors/AppError.js";
-import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
-import { PerfilUsuario } from "../entities/Usuario.js";
-import { PaginacaoQueryDto, formatarRespostaPaginada, type RespostaPaginada } from "../dto/paginacao.dto.js";
+import { AppDataSource } from '../config/AppDataSource.js';
+import type { Repository } from 'typeorm';
+import { Lote } from '../entities/Lote.js';
+import { InsumoEstoque } from '../entities/InsumoEstoque.js';
+import { ConsumoInsumo } from '../entities/ConsumoInsumo.js';
+import { AppError } from '../errors/AppError.js';
+import { verificaPermissao, type Requisitante } from '../utils/auth.utils.js';
+import { PerfilUsuario } from '../entities/Usuario.js';
+import {
+  PaginacaoQueryDto,
+  formatarRespostaPaginada,
+} from "../dto/paginacao.dto.js";
 
 export class RastreabilidadeService {
   private loteRepo: Repository<Lote>;
@@ -21,22 +24,26 @@ export class RastreabilidadeService {
 
   /** Autocomplete: busca simultânea em Lote e InsumoEstoque */
   autocomplete = async (q: string, requisitante: Requisitante) => {
-    verificaPermissao(requisitante, [PerfilUsuario.GESTOR, PerfilUsuario.INSPETOR, PerfilUsuario.OPERADOR]);
+    verificaPermissao(requisitante, [
+      PerfilUsuario.GESTOR,
+      PerfilUsuario.INSPETOR,
+      PerfilUsuario.OPERADOR,
+    ]);
 
     const termo = `%${q}%`;
 
     const [lotes, insumos] = await Promise.all([
       this.loteRepo
-        .createQueryBuilder("l")
-        .leftJoinAndSelect("l.produto", "p")
-        .where("l.numero_lote ILIKE :termo", { termo })
+        .createQueryBuilder('l')
+        .leftJoinAndSelect('l.produto', 'p')
+        .where('l.numero_lote ILIKE :termo', { termo })
         .limit(6)
         .getMany(),
       this.insumoRepo
-        .createQueryBuilder("ie")
-        .leftJoinAndSelect("ie.materiaPrima", "mp")
-        .where("ie.numero_lote_interno ILIKE :termo", { termo })
-        .orWhere("ie.numero_lote_fornecedor ILIKE :termo", { termo })
+        .createQueryBuilder('ie')
+        .leftJoinAndSelect('ie.materiaPrima', 'mp')
+        .where('ie.numero_lote_interno ILIKE :termo', { termo })
+        .orWhere('ie.numero_lote_fornecedor ILIKE :termo', { termo })
         .limit(6)
         .getMany(),
     ]);
@@ -45,15 +52,15 @@ export class RastreabilidadeService {
       ...lotes.map((l) => ({
         id: l.id,
         texto_exibicao: l.numero_lote,
-        subtexto: l.produto?.nome ?? "—",
-        tipo: "LOTE_PRODUTO" as const,
+        subtexto: l.produto?.nome ?? '—',
+        tipo: 'LOTE_PRODUTO' as const,
         status: l.status,
       })),
       ...insumos.map((ie) => ({
         id: ie.id,
         texto_exibicao: ie.numero_lote_interno,
-        subtexto: `${ie.materiaPrima?.nome ?? "—"} · Forn: ${ie.numero_lote_fornecedor}`,
-        tipo: "LOTE_INSUMO" as const,
+        subtexto: `${ie.materiaPrima?.nome ?? '—'} · Forn: ${ie.numero_lote_fornecedor}`,
+        tipo: 'LOTE_INSUMO' as const,
         status: null,
       })),
     ];
@@ -62,16 +69,16 @@ export class RastreabilidadeService {
   /** Consulta por número de lote de produção */
   private consultarPorLote = async (termo: string) => {
     const lote = await this.loteRepo
-      .createQueryBuilder("l")
-      .leftJoinAndSelect("l.produto", "produto")
-      .leftJoinAndSelect("l.operador", "operador")
-      .leftJoinAndSelect("l.consumos", "consumos")
-      .leftJoinAndSelect("consumos.insumoEstoque", "insumoEstoque")
-      .leftJoinAndSelect("insumoEstoque.materiaPrima", "materiaPrima")
-      .leftJoinAndSelect("insumoEstoque.operador", "operadorInsumo")
-      .leftJoinAndSelect("l.inspecao", "inspecao")
-      .leftJoinAndSelect("inspecao.inspetor", "inspetor")
-      .where("l.numero_lote ILIKE :termo", { termo })
+      .createQueryBuilder('l')
+      .leftJoinAndSelect('l.produto', 'produto')
+      .leftJoinAndSelect('l.operador', 'operador')
+      .leftJoinAndSelect('l.consumos', 'consumos')
+      .leftJoinAndSelect('consumos.insumoEstoque', 'insumoEstoque')
+      .leftJoinAndSelect('insumoEstoque.materiaPrima', 'materiaPrima')
+      .leftJoinAndSelect('insumoEstoque.operador', 'operadorInsumo')
+      .leftJoinAndSelect('l.inspecao', 'inspecao')
+      .leftJoinAndSelect('inspecao.inspetor', 'inspetor')
+      .where('l.numero_lote ILIKE :termo', { termo })
       .getOne();
 
     if (!lote) throw new AppError(`Nenhum lote encontrado com o número '${termo}'.`, 404);
@@ -85,10 +92,12 @@ export class RastreabilidadeService {
 
     // Primeiro buscamos os lotes distintos que usam este insumo para contar o total
     const subQueryLotesAfetados = this.consumoRepo
-      .createQueryBuilder("ci")
-      .select("DISTINCT ci.lote_id", "lote_id")
-      .innerJoin("ci.insumoEstoque", "ie")
-      .where("ie.numero_lote_interno ILIKE :termo OR ie.numero_lote_fornecedor ILIKE :termo", { termo });
+      .createQueryBuilder('ci')
+      .select('DISTINCT ci.lote_id', 'lote_id')
+      .innerJoin('ci.insumoEstoque', 'ie')
+      .where('ie.numero_lote_interno ILIKE :termo OR ie.numero_lote_fornecedor ILIKE :termo', {
+        termo,
+      });
 
     const totalCountRaw = await subQueryLotesAfetados.getRawMany();
     const total = totalCountRaw.length;
@@ -98,28 +107,31 @@ export class RastreabilidadeService {
     }
 
     // Agora buscamos os lotes paginados
-    const idsAfetadosPaginados = totalCountRaw.slice(skip, skip + limite).map(r => r.lote_id);
+    const idsAfetadosPaginados = totalCountRaw.slice(skip, skip + limite).map((r) => r.lote_id);
 
     const consumos = await this.consumoRepo
-      .createQueryBuilder("ci")
-      .leftJoinAndSelect("ci.insumoEstoque", "ie")
-      .leftJoinAndSelect("ie.materiaPrima", "mp")
-      .leftJoinAndSelect("ie.operador", "opInsumo")
-      .leftJoinAndSelect("ci.lote", "lote")
-      .leftJoinAndSelect("lote.produto", "produto")
-      .leftJoinAndSelect("lote.operador", "operador")
-      .where("lote.id IN (:...idsAfetadosPaginados)", { idsAfetadosPaginados })
-      .orderBy("lote.data_producao", "DESC")
+      .createQueryBuilder('ci')
+      .leftJoinAndSelect('ci.insumoEstoque', 'ie')
+      .leftJoinAndSelect('ie.materiaPrima', 'mp')
+      .leftJoinAndSelect('ie.operador', 'opInsumo')
+      .leftJoinAndSelect('ci.lote', 'lote')
+      .leftJoinAndSelect('lote.produto', 'produto')
+      .leftJoinAndSelect('lote.operador', 'operador')
+      .where('lote.id IN (:...idsAfetadosPaginados)', { idsAfetadosPaginados })
+      .orderBy('lote.data_producao', 'DESC')
       .getMany();
 
-    const lotesMap = new Map<number, {
-      numero_lote: string;
-      produto: string;
-      data_producao: Date;
-      status: string;
-      operador_nome: string;
-      insumos_correspondentes: { nome: string; lote_interno: string; quantidade: number }[];
-    }>();
+    const lotesMap = new Map<
+      number,
+      {
+        numero_lote: string;
+        produto: string;
+        data_producao: Date;
+        status: string;
+        operador_nome: string;
+        insumos_correspondentes: { nome: string; lote_interno: string; quantidade: number }[];
+      }
+    >();
 
     for (const consumo of consumos) {
       const lote = consumo.lote;
@@ -138,7 +150,7 @@ export class RastreabilidadeService {
           produto: lote.produto.nome,
           data_producao: lote.data_producao,
           status: lote.status,
-          operador_nome: lote.operador?.nome ?? "—",
+          operador_nome: lote.operador?.nome ?? '—',
           insumos_correspondentes: [insumoInfo],
         });
       }
@@ -149,19 +161,23 @@ export class RastreabilidadeService {
   };
 
   consultar = async (termo: string, q: PaginacaoQueryDto, requisitante: Requisitante) => {
-    verificaPermissao(requisitante, [PerfilUsuario.GESTOR, PerfilUsuario.INSPETOR, PerfilUsuario.OPERADOR]);
+    verificaPermissao(requisitante, [
+      PerfilUsuario.GESTOR,
+      PerfilUsuario.INSPETOR,
+      PerfilUsuario.OPERADOR,
+    ]);
 
-    const ehLoteProduto = termo.toUpperCase().startsWith("LOT-");
+    const ehLoteProduto = termo.toUpperCase().startsWith('LOT-');
 
     if (ehLoteProduto) {
       return {
-        tipo: "lote" as const,
+        tipo: 'lote' as const,
         resultado: await this.consultarPorLote(termo),
       };
     }
 
     return {
-      tipo: "insumo" as const,
+      tipo: 'insumo' as const,
       resultado: await this.consultarPorInsumo(termo, q),
     };
   };

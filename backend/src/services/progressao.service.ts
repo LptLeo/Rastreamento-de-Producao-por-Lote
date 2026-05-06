@@ -1,9 +1,9 @@
-import { LessThanOrEqual } from "typeorm";
-import { AppDataSource } from "../config/AppDataSource.js";
-import { Lote, LoteStatus } from "../entities/Lote.js";
-import { NotificacaoService } from "./notificacao.service.js";
-import { TipoNotificacao } from "../entities/Notificacao.js";
-import { PerfilUsuario } from "../entities/Usuario.js";
+import { LessThanOrEqual } from 'typeorm';
+import { AppDataSource } from '../config/AppDataSource.js';
+import { Lote, LoteStatus } from '../entities/Lote.js';
+import { NotificacaoService } from './notificacao.service.js';
+import { TipoNotificacao } from '../entities/Notificacao.js';
+import { PerfilUsuario } from '../entities/Usuario.js';
 
 /**
  * Job de progressão automática de lotes.
@@ -29,7 +29,7 @@ export class ProgressaoService {
   /** Inicia o job de verificação periódica */
   iniciar(): void {
     console.log(
-      `[progressão] Job iniciado — tempo de produção: ${this.tempoProducaoMs / 60000} min`
+      `[progressão] Job iniciado — tempo de produção: ${this.tempoProducaoMs / 60000} min`,
     );
 
     this.executar();
@@ -64,18 +64,16 @@ export class ProgressaoService {
 
         await loteRepo.save(lote);
 
-        console.log(
-          `[progressão] Lote ${lote.numero_lote} avançado para AGUARDANDO_INSPECAO`
-        );
+        console.log(`[progressão] Lote ${lote.numero_lote} avançado para AGUARDANDO_INSPECAO`);
 
         await this.notificacaoService.criarNotificacaoParaPerfis(
           `Novo lote aguardando inspeção: ${lote.numero_lote}`,
           TipoNotificacao.INSPECAO,
-          [PerfilUsuario.INSPETOR]
+          [PerfilUsuario.INSPETOR],
         );
       }
     } catch (error) {
-      console.error("[progressão] Erro ao executar job:", error);
+      console.error('[progressão] Erro ao executar job:', error);
     }
   }
 }

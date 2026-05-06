@@ -2,7 +2,10 @@ import { z } from 'zod';
 import { PerfilUsuario } from '../entities/Usuario.js';
 import { PaginacaoQueryDto } from './paginacao.dto.js';
 
-const perfilUsuario = z.enum([PerfilUsuario.GESTOR, PerfilUsuario.INSPETOR, PerfilUsuario.OPERADOR], "Perfil inválido");
+const perfilUsuario = z.enum(
+  [PerfilUsuario.GESTOR, PerfilUsuario.INSPETOR, PerfilUsuario.OPERADOR],
+  'Perfil inválido',
+);
 
 export const CreateUsuarioDto = z.object({
   email: z.email('E-mail inválido'),

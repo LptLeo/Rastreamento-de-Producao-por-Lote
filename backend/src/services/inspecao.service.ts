@@ -1,12 +1,11 @@
-import type { Repository } from "typeorm";
-import { AppDataSource } from "../config/AppDataSource.js";
-import { Inspecao, ResultadoInspecao } from "../entities/Inspecao.js";
-import { Lote, LoteStatus } from "../entities/Lote.js";
-import { Produto } from "../entities/Produto.js";
-import { PerfilUsuario, Usuario } from "../entities/Usuario.js";
-import { AppError } from "../errors/AppError.js";
-import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
-import type { RegistrarInspecaoDTO } from "../dto/inspecao.dto.js";
+import type { Repository } from 'typeorm';
+import { AppDataSource } from '../config/AppDataSource.js';
+import { Inspecao, ResultadoInspecao } from '../entities/Inspecao.js';
+import { Lote, LoteStatus } from '../entities/Lote.js';
+import { PerfilUsuario, Usuario } from '../entities/Usuario.js';
+import { AppError } from '../errors/AppError.js';
+import { verificaPermissao, type Requisitante } from '../utils/auth.utils.js';
+import type { RegistrarInspecaoDTO } from '../dto/inspecao.dto.js';
 
 /** Mapeia resultado da inspeção para o status final do lote */
 const resultadoParaStatus: Record<ResultadoInspecao, LoteStatus> = {
@@ -37,7 +36,7 @@ export class InspecaoService {
   private calcularResultado(
     qtdReprovada: number,
     qtdPlanejada: number,
-    percentualRessalva: number
+    percentualRessalva: number,
   ): ResultadoInspecao {
     if (qtdReprovada === 0) return ResultadoInspecao.APROVADO;
 
@@ -50,38 +49,38 @@ export class InspecaoService {
   registrar = async (
     loteId: number,
     dto: RegistrarInspecaoDTO,
-    requisitante: Requisitante
+    requisitante: Requisitante,
   ): Promise<Inspecao> => {
     verificaPermissao(requisitante, [PerfilUsuario.INSPETOR]);
 
     const lote = await this.loteRepo.findOne({
       where: { id: loteId },
-      relations: ["produto"],
+      relations: ['produto'],
     });
 
-    if (!lote) throw new AppError("Lote não encontrado.", 404);
+    if (!lote) throw new AppError('Lote não encontrado.', 404);
 
     if (lote.status !== LoteStatus.AGUARDANDO_INSPECAO) {
       throw new AppError("Só é possível inspecionar lotes com status 'aguardando_inspecao'.", 400);
     }
 
     const jaInspecionado = await this.inspecaoRepo.findOneBy({ lote: { id: loteId } });
-    if (jaInspecionado) throw new AppError("Este lote já foi inspecionado.", 409);
+    if (jaInspecionado) throw new AppError('Este lote já foi inspecionado.', 409);
 
     if (dto.quantidade_reprovada > lote.quantidade_planejada) {
       throw new AppError(
         `Quantidade reprovada (${dto.quantidade_reprovada}) não pode exceder a planejada (${lote.quantidade_planejada}).`,
-        400
+        400,
       );
     }
 
     const inspetor = await this.usuarioRepo.findOneBy({ id: requisitante.id });
-    if (!inspetor) throw new AppError("Inspetor não encontrado.", 404);
+    if (!inspetor) throw new AppError('Inspetor não encontrado.', 404);
 
     const resultado = this.calcularResultado(
       dto.quantidade_reprovada,
       lote.quantidade_planejada,
-      Number(lote.produto.percentual_ressalva)
+      Number(lote.produto.percentual_ressalva),
     );
 
     return AppDataSource.transaction(async (manager) => {
@@ -90,7 +89,7 @@ export class InspecaoService {
         inspetor,
         quantidade_reprovada: dto.quantidade_reprovada,
         resultado_calculado: resultado,
-        descricao_desvio: dto.descricao_desvio || "",
+        descricao_desvio: dto.descricao_desvio || '',
       });
 
       const inspecaoSalva = await manager.save(inspecao);
@@ -112,10 +111,10 @@ export class InspecaoService {
 
     const inspecao = await this.inspecaoRepo.findOne({
       where: { lote: { id: loteId } },
-      relations: ["inspetor", "lote"],
+      relations: ['inspetor', 'lote'],
     });
 
-    if (!inspecao) throw new AppError("Inspeção não encontrada para este lote.", 404);
+    if (!inspecao) throw new AppError('Inspeção não encontrada para este lote.', 404);
     return inspecao;
   };
 }

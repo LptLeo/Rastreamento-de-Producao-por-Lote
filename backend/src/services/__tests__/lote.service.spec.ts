@@ -6,8 +6,17 @@ import { PerfilUsuario } from '../../entities/Usuario.js';
 const mockProdutoRepo = { findOneBy: jest.fn() };
 const mockEstoqueRepo = { findOneBy: jest.fn(), save: jest.fn() };
 const mockUserRepo = { findOneBy: jest.fn().mockResolvedValue({ id: 1 }) };
-const mockLoteRepo = { count: jest.fn().mockResolvedValue(0), findOne: jest.fn(), createQueryBuilder: jest.fn() };
-const mockManager = { create: jest.fn(), save: jest.fn(), findOne: jest.fn(), find: jest.fn().mockResolvedValue([]) };
+const mockLoteRepo = {
+  count: jest.fn().mockResolvedValue(0),
+  findOne: jest.fn(),
+  createQueryBuilder: jest.fn(),
+};
+const mockManager = {
+  create: jest.fn(),
+  save: jest.fn(),
+  findOne: jest.fn(),
+  find: jest.fn().mockResolvedValue([]),
+};
 
 // Create the mock for AppDataSource
 const mockAppDataSource = {
@@ -18,12 +27,12 @@ const mockAppDataSource = {
     if (entity.name === 'Lote' || entity === 'Lote') return mockLoteRepo;
     return {} as any;
   }),
-  transaction: jest.fn(async (cb: any) => await cb(mockManager))
+  transaction: jest.fn(async (cb: any) => await cb(mockManager)),
 };
 
 // Use unstable_mockModule for ESM mocking before importing the service
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
-  AppDataSource: mockAppDataSource
+  AppDataSource: mockAppDataSource,
 }));
 
 // We must import the module dynamically AFTER setting up the mock
@@ -51,31 +60,33 @@ describe('LoteService', () => {
       quantidade_planejada: 10,
       turno: 'manha',
       data_producao: new Date().toISOString(),
-      consumos: [
-        { insumo_estoque_id: 100, quantidade_consumida: 5 }
-      ]
+      consumos: [{ insumo_estoque_id: 100, quantidade_consumida: 5 }],
     };
 
     it('deve lançar erro se o produto não for encontrado', async () => {
       mockProdutoRepo.findOneBy.mockResolvedValue(null as never);
 
       await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(AppError);
-      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow('Produto não encontrado.');
+      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(
+        'Produto não encontrado.',
+      );
     });
 
     it('deve lançar erro se o insumo não for encontrado no estoque', async () => {
       mockProdutoRepo.findOneBy.mockResolvedValue({ id: 1, nome: 'Produto Teste' } as never);
       mockManager.findOne.mockResolvedValue(null as never);
 
-      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow('Lote de insumo ID 100 não encontrado.');
+      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(
+        'Lote de insumo ID 100 não encontrado.',
+      );
     });
 
     it('deve lançar erro se o insumo estiver inativo', async () => {
       mockProdutoRepo.findOneBy.mockResolvedValue({ id: 1, nome: 'Produto Teste' } as never);
-      mockManager.findOne.mockResolvedValue({ 
-        id: 100, 
+      mockManager.findOne.mockResolvedValue({
+        id: 100,
         ativo: false,
-        materiaPrima: { nome: 'Insumo Inativo' } 
+        materiaPrima: { nome: 'Insumo Inativo' },
       } as never);
 
       await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(/está inativo/);
@@ -83,39 +94,58 @@ describe('LoteService', () => {
 
     it('deve lançar erro se tentar consumo fracionado para unidade UN', async () => {
       mockProdutoRepo.findOneBy.mockResolvedValue({ id: 1, nome: 'Produto Teste' } as never);
-      mockManager.findOne.mockResolvedValue({ 
-        id: 100, 
+      mockManager.findOne.mockResolvedValue({
+        id: 100,
         ativo: true,
-        materiaPrima: { nome: 'Item UN', unidade_medida: 'UN' } 
+        materiaPrima: { nome: 'Item UN', unidade_medida: 'UN' },
       } as never);
-      
-      const dtoInvalido = { ...dtoMock, consumos: [{ insumo_estoque_id: 100, quantidade_consumida: 1.5 }] };
 
-      await expect(service.criar(dtoInvalido as any, requisitanteMock)).rejects.toThrow(/não aceita consumo de lote fracionado/);
+      const dtoInvalido = {
+        ...dtoMock,
+        consumos: [{ insumo_estoque_id: 100, quantidade_consumida: 1.5 }],
+      };
+
+      await expect(service.criar(dtoInvalido as any, requisitanteMock)).rejects.toThrow(
+        /não aceita consumo de lote fracionado/,
+      );
     });
 
     it('deve lançar erro se tentar consumir mais insumo do que o disponível', async () => {
       mockProdutoRepo.findOneBy.mockResolvedValue({ id: 1, nome: 'Produto Teste' } as never);
-      mockManager.findOne.mockResolvedValue({ 
-        id: 100, 
+      mockManager.findOne.mockResolvedValue({
+        id: 100,
         quantidade_atual: 3,
         ativo: true,
-        materiaPrima: { unidade_medida: 'UN' }
+        materiaPrima: { unidade_medida: 'UN' },
       } as never);
 
-      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(/Saldo insuficiente no lote/);
+      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(
+        /Saldo insuficiente no lote/,
+      );
     });
 
     it('deve criar o lote e abater o estoque corretamente', async () => {
-      mockProdutoRepo.findOneBy.mockResolvedValue({ id: 1, nome: 'Produto Teste', percentual_ressalva: 10 } as never);
-      
-      const estoqueMock = { id: 100, quantidade_atual: 20, quantidade_inicial: 20, ativo: true, materiaPrima: { nome: 'MP', unidade_medida: 'UN' } };
-      
+      mockProdutoRepo.findOneBy.mockResolvedValue({
+        id: 1,
+        nome: 'Produto Teste',
+        percentual_ressalva: 10,
+      } as never);
+
+      const estoqueMock = {
+        id: 100,
+        quantidade_atual: 20,
+        quantidade_inicial: 20,
+        ativo: true,
+        materiaPrima: { nome: 'MP', unidade_medida: 'UN' },
+      };
+
       const loteSalvoMock = { id: 50, numero_lote: 'LOT-01012026-1' };
-      mockManager.create.mockReturnValue(loteSalvoMock as never); 
+      mockManager.create.mockReturnValue(loteSalvoMock as never);
       mockManager.save.mockResolvedValue(loteSalvoMock as never);
-      
-      mockManager.findOne.mockResolvedValueOnce(estoqueMock as never).mockResolvedValueOnce(loteSalvoMock as never);
+
+      mockManager.findOne
+        .mockResolvedValueOnce(estoqueMock as never)
+        .mockResolvedValueOnce(loteSalvoMock as never);
       mockLoteRepo.count.mockResolvedValue(0 as never);
 
       const resultado = await service.criar(dtoMock as any, requisitanteMock);
@@ -137,7 +167,9 @@ describe('LoteService', () => {
 
     it('deve lançar erro 404 se o lote não existir', async () => {
       mockLoteRepo.findOne.mockResolvedValue(null as never);
-      await expect(service.buscarPorId(999, { perfil: PerfilUsuario.GESTOR })).rejects.toThrow('Lote não encontrado.');
+      await expect(service.buscarPorId(999, { perfil: PerfilUsuario.GESTOR })).rejects.toThrow(
+        'Lote não encontrado.',
+      );
     });
   });
 
@@ -145,14 +177,14 @@ describe('LoteService', () => {
     it('deve agrupar e retornar as contagens corretamente', async () => {
       const mockRaw = [
         { status: 'em_producao', count: '5' },
-        { status: 'aprovado', count: '10' }
+        { status: 'aprovado', count: '10' },
       ];
-      
+
       const mockQueryBuilder = {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue(mockRaw)
+        getRawMany: jest.fn().mockResolvedValue(mockRaw),
       };
 
       mockLoteRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);

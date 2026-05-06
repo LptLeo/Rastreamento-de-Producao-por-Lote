@@ -72,7 +72,7 @@ export async function criarUsuarioTeste(perfil: PerfilUsuario = PerfilUsuario.GE
   const token = jwt.sign(
     { id: salvo.id, perfil: salvo.perfil, nome: salvo.nome },
     process.env.JWT_SECRET || 'secret_test',
-    { expiresIn: '1h' }
+    { expiresIn: '1h' },
   );
 
   return { usuario: salvo, token };

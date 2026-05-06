@@ -1,6 +1,6 @@
-import type { Request } from "express";
-import { PerfilUsuario } from "../entities/Usuario.js";
-import { AppError } from "../errors/AppError.js";
+import type { Request } from 'express';
+import { PerfilUsuario } from '../entities/Usuario.js';
+import { AppError } from '../errors/AppError.js';
 
 export interface Requisitante {
   id: number;
@@ -16,9 +16,13 @@ export const getRequisitante = (req: Request): Requisitante => {
     id: Number(auth.id),
     perfil: auth.perfil as PerfilUsuario,
   };
-}
+};
 
-export const verificaPermissao = (requisitante: Requisitante, permitidos: PerfilUsuario[], alvoId?: number) => {
+export const verificaPermissao = (
+  requisitante: Requisitante,
+  permitidos: PerfilUsuario[],
+  alvoId?: number,
+) => {
   const { id, perfil } = requisitante;
 
   if (perfil === PerfilUsuario.GESTOR) return;
@@ -33,5 +37,6 @@ export const verificaPermissao = (requisitante: Requisitante, permitidos: Perfil
     return;
   }
 
-  if (!perfilPermitido) throw new AppError('Acesso negado: requer perfil: ' + permitidos.join(', '), 403);
-}
+  if (!perfilPermitido)
+    throw new AppError('Acesso negado: requer perfil: ' + permitidos.join(', '), 403);
+};

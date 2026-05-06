@@ -1,12 +1,9 @@
 import request from 'supertest';
 import { app } from '../../server.js';
 import { startTestContainer, stopTestContainer, limparBanco, criarUsuarioTeste } from './integration.setup.js';
-import { AppDataSource } from '../../config/AppDataSource.js';
-import { MateriaPrima } from '../../entities/MateriaPrima.js';
 
 describe('Fluxo de Produção (Integração)', () => {
   let tokenOperador: string;
-  let tokenInspetor: string;
 
   beforeAll(async () => {
     await startTestContainer();
@@ -19,9 +16,7 @@ describe('Fluxo de Produção (Integração)', () => {
   beforeEach(async () => {
     await limparBanco();
     const op = await criarUsuarioTeste('operador' as any);
-    const ins = await criarUsuarioTeste('inspetor' as any);
     tokenOperador = op.token;
-    tokenInspetor = ins.token;
   });
 
   it('deve realizar o fluxo completo: criar produto -> registrar entrada -> abrir lote', async () => {

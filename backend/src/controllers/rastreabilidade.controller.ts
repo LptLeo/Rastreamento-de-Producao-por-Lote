@@ -1,8 +1,8 @@
-import type { Request, Response, NextFunction } from "express";
-import { RastreabilidadeService } from "../services/rastreabilidade.service.js";
-import { queryRastreabilidadeSchema } from "../dto/rastreabilidade.dto.js";
-import { getRequisitante } from "../utils/auth.utils.js";
-import { z } from "zod";
+import type { Request, Response, NextFunction } from 'express';
+import { RastreabilidadeService } from '../services/rastreabilidade.service.js';
+import { queryRastreabilidadeSchema } from '../dto/rastreabilidade.dto.js';
+import { getRequisitante } from '../utils/auth.utils.js';
+import { z } from 'zod';
 
 export class RastreabilidadeController {
   private rastreabilidadeService: RastreabilidadeService;
@@ -24,7 +24,11 @@ export class RastreabilidadeController {
   consultar = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { termo } = queryRastreabilidadeSchema.parse(req.query);
-      const resultado = await this.rastreabilidadeService.consultar(termo, req.query as any, getRequisitante(req));
+      const resultado = await this.rastreabilidadeService.consultar(
+        termo,
+        req.query as any,
+        getRequisitante(req),
+      );
       return res.json(resultado);
     } catch (error) {
       next(error);

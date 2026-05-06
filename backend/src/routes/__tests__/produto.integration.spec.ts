@@ -1,6 +1,11 @@
 import request from 'supertest';
 import { app } from '../../server.js';
-import { startTestContainer, stopTestContainer, limparBanco, criarUsuarioTeste } from './integration.setup.js';
+import {
+  startTestContainer,
+  stopTestContainer,
+  limparBanco,
+  criarUsuarioTeste,
+} from './integration.setup.js';
 import { AppDataSource } from '../../config/AppDataSource.js';
 import { Produto } from '../../entities/Produto.js';
 
@@ -23,9 +28,7 @@ describe('Produtos (Integração)', () => {
 
   describe('POST /api/produtos', () => {
     it('deve retornar 401 se nenhum token for enviado', async () => {
-      const response = await request(app)
-        .post('/api/produtos')
-        .send({ nome: 'Produto Sem Auth' });
+      const response = await request(app).post('/api/produtos').send({ nome: 'Produto Sem Auth' });
 
       expect(response.status).toBe(401);
       expect(response.body.message).toMatch(/Token ausente/);
@@ -48,7 +51,7 @@ describe('Produtos (Integração)', () => {
         linha_padrao: 'Linha A',
         percentual_ressalva: 15,
         ativo: true,
-        receita: []
+        receita: [],
       };
 
       const response = await request(app)
@@ -62,7 +65,7 @@ describe('Produtos (Integração)', () => {
       // Verificação de persistência real no banco do Docker
       const produtoRepo = AppDataSource.getRepository(Produto);
       const produtoNoBanco = await produtoRepo.findOneBy({ nome: payload.nome });
-      
+
       expect(produtoNoBanco).toBeDefined();
       expect(produtoNoBanco?.categoria).toBe(payload.categoria);
     });

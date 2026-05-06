@@ -16,17 +16,17 @@ const mockAppDataSource = {
     if (entity.name === 'Usuario' || entity === 'Usuario') return mockUserRepo;
     return {} as any;
   }),
-  transaction: jest.fn(async (cb: any) => await cb(mockManager))
+  transaction: jest.fn(async (cb: any) => await cb(mockManager)),
 };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
-  AppDataSource: mockAppDataSource
+  AppDataSource: mockAppDataSource,
 }));
 
 jest.unstable_mockModule('../notificacao.service.js', () => ({
   NotificacaoService: jest.fn().mockImplementation(() => ({
-    criarNotificacaoParaPerfis: jest.fn()
-  }))
+    criarNotificacaoParaPerfis: jest.fn(),
+  })),
 }));
 
 const { ProdutoService } = await import('../produto.service.js');
@@ -48,34 +48,41 @@ describe('ProdutoService', () => {
       linha_padrao: 'Linha A',
       percentual_ressalva: 10,
       ativo: true,
-      receita: [
-        { materia_prima_id: 100, quantidade: 2, unidade: 'UN' }
-      ]
+      receita: [{ materia_prima_id: 100, quantidade: 2, unidade: 'UN' }],
     };
 
     it('deve lançar erro se o criador não for encontrado', async () => {
       mockUserRepo.findOneBy.mockResolvedValue(null as never);
 
       await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(AppError);
-      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow('Criador não encontrado.');
+      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(
+        'Criador não encontrado.',
+      );
     });
 
     it('deve lançar erro se a matéria prima não for encontrada', async () => {
       mockMpRepo.findOneBy.mockResolvedValue(null as never);
       mockManager.save.mockResolvedValueOnce({ id: 10 } as never); // mock save do produto
-      
+
       await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(AppError);
-      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow('Matéria-prima ID 100 não encontrada.');
+      await expect(service.criar(dtoMock as any, requisitanteMock)).rejects.toThrow(
+        'Matéria-prima ID 100 não encontrada.',
+      );
     });
 
     it('deve criar o produto e receita com sucesso', async () => {
       mockMpRepo.findOneBy.mockResolvedValue({ id: 100, nome: 'MP 1' } as never);
-      
+
       const produtoSalvoMock = { id: 10, nome: 'Produto Teste' };
       mockManager.create.mockReturnValue(produtoSalvoMock as never);
       mockManager.save.mockResolvedValue(produtoSalvoMock as never);
-      
-      const produtoCompletoMock = { id: 10, nome: 'Produto Teste', sku: 'PRD-PRODUTOTESTE', receita: [] };
+
+      const produtoCompletoMock = {
+        id: 10,
+        nome: 'Produto Teste',
+        sku: 'PRD-PRODUTOTESTE',
+        receita: [],
+      };
       mockManager.findOne.mockResolvedValue(produtoCompletoMock as never);
 
       const result = await service.criar(dtoMock as any, requisitanteMock);
@@ -92,13 +99,15 @@ describe('ProdutoService', () => {
     it('deve lançar erro se o produto não for encontrado', async () => {
       mockProdutoRepo.findOneBy.mockResolvedValue(null as never);
       await expect(service.alternarStatus(1, false, requisitanteMock)).rejects.toThrow(AppError);
-      await expect(service.alternarStatus(1, false, requisitanteMock)).rejects.toThrow('Produto não encontrado.');
+      await expect(service.alternarStatus(1, false, requisitanteMock)).rejects.toThrow(
+        'Produto não encontrado.',
+      );
     });
 
     it('deve alterar o status e retornar o produto atualizado', async () => {
       const produtoMock = { id: 1, ativo: true };
       mockProdutoRepo.findOneBy.mockResolvedValue(produtoMock as never);
-      
+
       const produtoAtualizadoMock = { id: 1, ativo: false };
       mockProdutoRepo.findOne.mockResolvedValue(produtoAtualizadoMock as never);
 
