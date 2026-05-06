@@ -1,0 +1,27 @@
+{
+  "name": "lotepim",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">",
+  "main": "index.js",
+  "scripts": {
+    "format": "prettier --write .",
+    "lint:back": "npm run lint --prefix backend",
+    "lint:front": "npm run lint --prefix frontend",
+    "lint": "npm run lint:back && npm run lint:front"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LptLeo/LotePIM.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/LptLeo/LotePIM/issues"
+  },
+  "homepage": "https://github.com/LptLeo/LotePIM#readme",
+  "devDependencies": {
+    "prettier": "^3.8.3"
+  }
+}
