@@ -1,82 +1,67 @@
-import { Component, inject, ChangeDetectorRef, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service.js';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class Login implements OnInit {
-  private cdr = inject(ChangeDetectorRef);
+
+export class Login {
   private authService = inject(AuthService);
   private router = inject(Router);
-  private route = inject(ActivatedRoute);
+  private fb = inject(FormBuilder);
 
-  email: string = '';
-  password: string = '';
-  errorMessage: string = '';
-  isLoading: boolean = false;
+  errorMessage = signal('');
+  isLoading = signal(false);
 
-  ngOnInit() {
-    // Verifica se há um motivo de logout forçado (ex: conta desativada)
-    this.route.queryParams.subscribe(params => {
-      if (params['motivo'] === 'desativado') {
-        this.errorMessage = 'Sua conta foi desativada pelo administrador. Acesso negado.';
-        this.cdr.detectChanges();
-      }
-    });
+  loginForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+    senha: ['', [Validators.required, Validators.minLength(8)]]
+  })
+
+  constructor() {
+    this.loginForm.valueChanges
+      .pipe(takeUntilDestroyed()) // Evita vazamento de memmória, cancelando a inscrição quando o componente for destruído.
+      .subscribe(() => this.errorMessage.set('')); // Limpa a mensagem de erro sempre que o usuário digitar algo no formulário.
   }
 
-  login() {
-    this.errorMessage = '';
-    this.isLoading = true;
-    this.authService.login({ email: this.email, senha: this.password }).subscribe({
+  login(): void {
+    if (this.loginForm.invalid) return; // Para o usuário não apertar Enter e tentar logar mesmo com o botão desabilitado.
+
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+
+    const { email, senha } = this.loginForm.getRawValue();
+    const credentials = { email, senha };
+
+    this.authService.login(credentials).subscribe({
       next: (res: any) => {
-        this.isLoading = false;
-        
-        // Cobre o caso do backend retornar status 200, mas com objeto de erro
-        if (res && (res.error || res.message)) {
-          this.errorMessage = res.error || res.message;
-          if (this.errorMessage.toLowerCase().includes('not found') || this.errorMessage.toLowerCase().includes('inválid')) {
-             this.errorMessage = 'Email ou senha não cadastrados no sistema.';
-          }
-          this.cdr.detectChanges();
+        this.isLoading.set(false);
+        this.loginForm.reset();
+        this.router.navigate(['/app/dashboard']);
+      },
+
+      error: (err) => {
+        this.isLoading.set(false);
+
+        if (err.status === 0) {
+          this.errorMessage.set('Erro de conexão. Verifique sua internet ou se o servidor está online.');
           return;
         }
 
-        this.email = '';
-        this.password = '';
-        this.router.navigate(['/app/dashboard']);
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        this.isLoading = false;
-        console.error('Erro ao realizar login:', error);
+        const mensagemDoBackend = err.error?.message;
 
-        // Tenta pegar a mensagem específica enviada pelo backend
-        let msg = error?.error?.message || error?.error?.error || error?.error;
-        if (typeof msg === 'object') {
-           msg = null; // evita objetos vazando
-        }
-
-        if (msg) {
-          // Se o back mandar a string direto com a validação exata (ex: 'Email Incorreto' ou 'Senha Inválida')
-          this.errorMessage = msg;
-        } else if (error.status === 404) {
-          this.errorMessage = 'Email não cadastrado no sistema.';
-        } else if (error.status === 401 || error.status === 403) {
-          this.errorMessage = 'A senha informada está incorreta.';
-        } else if (error.status === 0) {
-          this.errorMessage = 'Erro de conexão com o servidor. Verifique sua internet.';
+        if (mensagemDoBackend) {
+          this.errorMessage.set(mensagemDoBackend);
         } else {
-          this.errorMessage = 'Email ou senha não constam em nossos registros.';
+          this.errorMessage.set('Ocorreu um erro inesperado ao fazer login.');
         }
-        
-        this.cdr.detectChanges(); // Garante que o loading irá parar se a detecção falhar
       }
-    })
+    });
   }
 }
