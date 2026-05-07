@@ -7,7 +7,10 @@
     "format": "prettier --write .",
     "lint:back": "npm run lint --prefix backend",
     "lint:front": "npm run lint --prefix frontend",
-    "lint": "npm run lint:back && npm run lint:front"
+    "lint": "npm run lint:back && npm run lint:front",
+    "test:cov:back": "npm run test --prefix backend -- --coverage",
+    "test:cov:front": "npm run test --prefix frontend -- --coverage",
+    "test:coverage": "npm run test:cov:back && npm run test:cov:front"
   },
   "repository": {
     "type": "git",
