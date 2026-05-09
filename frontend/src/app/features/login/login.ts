@@ -26,7 +26,7 @@ export class Login {
 
   constructor() {
     this.loginForm.valueChanges
-      .pipe(takeUntilDestroyed()) // Evita vazamento de memmória, cancelando a inscrição quando o componente for destruído.
+      .pipe(takeUntilDestroyed()) // Evita vazamento de memória, cancelando a inscrição quando o componente for destruído.
       .subscribe(() => this.errorMessage.set('')); // Limpa a mensagem de erro sempre que o usuário digitar algo no formulário.
   }
 
@@ -40,7 +40,7 @@ export class Login {
     const credentials = { email, senha };
 
     this.authService.login(credentials).subscribe({
-      next: (res: any) => {
+      next: () => {
         this.isLoading.set(false);
         this.loginForm.reset();
         this.router.navigate(['/app/dashboard']);
