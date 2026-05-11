@@ -6,7 +6,7 @@ import { AuthService } from '../../services/auth.service.js';
 /**
  * Guard para rotas de convidados (ex: Login).
  * Se o usuário já estiver logado, redireciona para o Dashboard.
- * 
+ *
  * Assim como o authGuard, aguarda a inicialização da sessão para evitar
  * redirecionamentos errados durante o recarregamento (F5).
  */
@@ -21,6 +21,6 @@ export const guestGuard: CanActivateFn = () => {
         return router.parseUrl('/app/dashboard');
       }
       return true;
-    })
+    }),
   );
 };

@@ -1,4 +1,4 @@
-<button 
+<button
   (click)="action.emit(value)"
   [class.border-[#00E5FF]]="active && !isWarning"
   [class.text-[#00E5FF]]="active && !isWarning"
@@ -9,9 +9,8 @@
   [class.opacity-80]="isWarning"
   [class.hover:opacity-100]="isWarning"
   [class.hover:text-white]="!isWarning"
-  class="pb-3 text-[10px] font-bold uppercase tracking-[1.5px] border-b-2 cursor-pointer transition-all flex items-center gap-1">
-  
+  class="pb-3 text-[10px] font-bold uppercase tracking-[1.5px] border-b-2 cursor-pointer transition-all flex items-center gap-1"
+>
   <ng-content></ng-content>
   {{ label }} ({{ count }})
-  
 </button>

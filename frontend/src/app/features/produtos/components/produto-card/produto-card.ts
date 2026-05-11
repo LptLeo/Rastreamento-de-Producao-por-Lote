@@ -7,8 +7,8 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   templateUrl: './produto-card.html',
   host: {
-    class: 'block h-full min-w-0'
-  }
+    class: 'block h-full min-w-0',
+  },
 })
 export class ProdutoCardComponent {
   @Input({ required: true }) prod!: any;

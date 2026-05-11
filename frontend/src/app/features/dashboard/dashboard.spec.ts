@@ -14,13 +14,13 @@ describe('Dashboard', () => {
 
   beforeEach(async () => {
     mockAuthService = {
-      usuario: signal({ id: 1, nome: 'Teste' })
+      usuario: signal({ id: 1, nome: 'Teste' }),
     };
 
     mockConfigService = {
       settings: signal({
-        dashboard: { lotesComparacao: 'mes', unidadesComparacao: 'mes', taxaAprovacaoAlvo: 95 }
-      })
+        dashboard: { lotesComparacao: 'mes', unidadesComparacao: 'mes', taxaAprovacaoAlvo: 95 },
+      }),
     };
 
     await TestBed.configureTestingModule({
@@ -28,8 +28,8 @@ describe('Dashboard', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: mockAuthService },
-        { provide: ConfiguracoesService, useValue: mockConfigService }
-      ]
+        { provide: ConfiguracoesService, useValue: mockConfigService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Dashboard);

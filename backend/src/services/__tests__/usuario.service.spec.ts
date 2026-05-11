@@ -2,12 +2,12 @@ import { jest } from '@jest/globals';
 import { AppError } from '../../errors/AppError.js';
 import { PerfilUsuario } from '../../entities/Usuario.js';
 
-const mockUserRepo = { 
-  findOne: jest.fn(), 
-  findOneBy: jest.fn(), 
-  create: jest.fn(), 
-  save: jest.fn(), 
-  createQueryBuilder: jest.fn() 
+const mockUserRepo = {
+  findOne: jest.fn(),
+  findOneBy: jest.fn(),
+  create: jest.fn(),
+  save: jest.fn(),
+  createQueryBuilder: jest.fn(),
 };
 const mockLoteRepo = { count: jest.fn() };
 const mockInspecaoRepo = { count: jest.fn() };
@@ -20,20 +20,20 @@ const mockAppDataSource = {
     if (entity.name === 'Inspecao' || entity === 'Inspecao') return mockInspecaoRepo;
     if (entity.name === 'Produto' || entity === 'Produto') return mockProdutoRepo;
     return {} as any;
-  })
+  }),
 };
 
 const mockBcrypt = {
   hash: jest.fn().mockResolvedValue('hashed_pass' as never),
-  compare: jest.fn()
+  compare: jest.fn(),
 };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
-  AppDataSource: mockAppDataSource
+  AppDataSource: mockAppDataSource,
 }));
 
 jest.unstable_mockModule('bcrypt', () => ({
-  default: mockBcrypt
+  default: mockBcrypt,
 }));
 
 const { UsuarioService } = await import('../usuario.service.js');
@@ -49,7 +49,9 @@ describe('UsuarioService', () => {
   describe('findById', () => {
     it('deve lançar erro se o usuário não for encontrado', async () => {
       mockUserRepo.findOne.mockResolvedValue(null as never);
-      await expect(service.findById(1, { id: 1, perfil: PerfilUsuario.GESTOR })).rejects.toThrow('Usuário não encontrado');
+      await expect(service.findById(1, { id: 1, perfil: PerfilUsuario.GESTOR })).rejects.toThrow(
+        'Usuário não encontrado',
+      );
     });
 
     it('deve retornar o usuário se encontrado e tiver permissão', async () => {
@@ -61,7 +63,13 @@ describe('UsuarioService', () => {
   });
 
   describe('create', () => {
-    const dto = { nome: 'Novo', email: 'novo@t.com', senha: '123', perfil: PerfilUsuario.OPERADOR, ativo: true };
+    const dto = {
+      nome: 'Novo',
+      email: 'novo@t.com',
+      senha: '123',
+      perfil: PerfilUsuario.OPERADOR,
+      ativo: true,
+    };
     const req = { id: 1, perfil: PerfilUsuario.GESTOR };
 
     it('deve lançar erro se o e-mail já estiver em uso', async () => {
@@ -90,7 +98,7 @@ describe('UsuarioService', () => {
       const mockQueryBuilder = {
         where: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue({ id: 1, senha_hash: 'hash' })
+        getOne: jest.fn().mockResolvedValue({ id: 1, senha_hash: 'hash' }),
       };
       mockUserRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockBcrypt.compare.mockResolvedValue(false as never);
@@ -103,7 +111,7 @@ describe('UsuarioService', () => {
       const mockQueryBuilder = {
         where: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(userMock)
+        getOne: jest.fn().mockResolvedValue(userMock),
       };
       mockUserRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockBcrypt.compare.mockResolvedValue(true as never);

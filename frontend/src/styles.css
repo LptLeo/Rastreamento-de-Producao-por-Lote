@@ -25,18 +25,18 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0E0E0E;
+  background: #0e0e0e;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #484847;
   border-radius: 20px;
-  border: 2px solid #0E0E0E;
+  border: 2px solid #0e0e0e;
   transition: all 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00E5FF;
+  background: #00e5ff;
 }
 
 /* Para elementos com scroll interno (como as tabs) */
@@ -121,7 +121,6 @@ html {
 }
 
 @keyframes pulseGlow {
-
   0%,
   100% {
     box-shadow: 0 0 0px rgba(0, 229, 255, 0);

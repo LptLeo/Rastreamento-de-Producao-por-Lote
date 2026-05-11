@@ -1,9 +1,10 @@
-import { LessThanOrEqual } from "typeorm";
-import { AppDataSource } from "../config/AppDataSource.js";
-import { Lote, LoteStatus } from "../entities/Lote.js";
-import { NotificacaoService } from "./notificacao.service.js";
-import { TipoNotificacao } from "../entities/Notificacao.js";
-import { PerfilUsuario } from "../entities/Usuario.js";
+import { LessThanOrEqual } from 'typeorm';
+import { AppDataSource } from '../config/AppDataSource.js';
+import { Lote, LoteStatus } from '../entities/Lote.js';
+import { NotificacaoService } from './notificacao.service.js';
+import { TipoNotificacao } from '../entities/Notificacao.js';
+import { PerfilUsuario } from '../entities/Usuario.js';
+import { SseService } from './sse.service.js';
 
 /**
  * Job de progressão automática de lotes.
@@ -29,7 +30,7 @@ export class ProgressaoService {
   /** Inicia o job de verificação periódica */
   iniciar(): void {
     console.log(
-      `[progressão] Job iniciado — tempo de produção: ${this.tempoProducaoMs / 60000} min`
+      `[progressão] Job iniciado — tempo de produção: ${this.tempoProducaoMs / 60000} min`,
     );
 
     this.executar();
@@ -64,18 +65,24 @@ export class ProgressaoService {
 
         await loteRepo.save(lote);
 
-        console.log(
-          `[progressão] Lote ${lote.numero_lote} avançado para AGUARDANDO_INSPECAO`
+        console.log(`[progressão] Lote ${lote.numero_lote} avançado para AGUARDANDO_INSPECAO`);
+
+        // Notifica inspetores (única notificação com link clicável)
+        await this.notificacaoService.criarNotificacaoParaPerfis(
+          `Produção Concluída: O lote ${lote.numero_lote} está aguardando inspeção.`,
+          TipoNotificacao.INSPECAO,
+          [PerfilUsuario.INSPETOR],
+          { link: `/app/lote/${lote.id}` },
         );
 
-        await this.notificacaoService.criarNotificacaoParaPerfis(
-          `Novo lote aguardando inspeção: ${lote.numero_lote}`,
-          TipoNotificacao.INSPECAO,
-          [PerfilUsuario.INSPETOR]
-        );
+        // Notifica clientes SSE em tempo real
+        SseService.instancia.emitir('lote:status_alterado', {
+          id: lote.id,
+          status: LoteStatus.AGUARDANDO_INSPECAO,
+        });
       }
     } catch (error) {
-      console.error("[progressão] Erro ao executar job:", error);
+      console.error('[progressão] Erro ao executar job:', error);
     }
   }
 }

@@ -20,7 +20,7 @@ export class DashboardService {
       catchError((error) => {
         console.error('Erro ao buscar dados do dashboard:', error);
         return throwError(() => new Error('Falha ao carregar dados do dashboard'));
-      })
+      }),
     );
   }
 }

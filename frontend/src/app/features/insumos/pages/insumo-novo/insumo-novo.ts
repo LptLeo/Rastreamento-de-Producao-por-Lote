@@ -44,7 +44,7 @@ export class InsumoNovo implements OnInit {
     // Carregar catálogo
     this.insumosService.getMateriasPrimas().subscribe({
       next: (mp: MateriaPrima[]) => this.materiasPrimasExistentes.set(mp),
-      error: (e: any) => console.error("Falha ao carregar catálogo:", e)
+      error: (e: any) => console.error('Falha ao carregar catálogo:', e),
     });
   }
 
@@ -71,14 +71,15 @@ export class InsumoNovo implements OnInit {
       data_validade: raw.data_validade,
     };
 
-    this.insumosService.create(payload as any)
+    this.insumosService
+      .create(payload as any)
       .pipe(finalize(() => this.salvando.set(false)))
       .subscribe({
         next: () => this.router.navigate(['/app/insumos']),
         error: (err) => {
-           console.error(err);
-           this.erro.set(err.error?.message || "Erro ao salvar insumo.");
-        }
+          console.error(err);
+          this.erro.set(err.error?.message || 'Erro ao salvar insumo.');
+        },
       });
   }
 }

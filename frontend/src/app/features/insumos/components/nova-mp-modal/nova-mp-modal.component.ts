@@ -22,7 +22,7 @@ export class NovaMpModalComponent implements OnInit {
   formMp = this.fb.nonNullable.group({
     nome: ['', [Validators.required, Validators.minLength(2)]],
     categoria: ['', Validators.required],
-    unidade_medida: ['UN', Validators.required]
+    unidade_medida: ['UN', Validators.required],
   });
 
   ngOnInit() {

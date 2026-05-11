@@ -28,11 +28,11 @@ export class ProdutoNovo {
   erro = signal<string | null>(null);
 
   categoriasResource = rxResource({
-    stream: () => this.produtosService.getCategorias()
+    stream: () => this.produtosService.getCategorias(),
   });
 
   mpsResource = rxResource({
-    stream: () => this.produtosService.getMateriasPrimas()
+    stream: () => this.produtosService.getMateriasPrimas(),
   });
 
   categoriasExistentes = computed(() => this.categoriasResource.value() || []);
@@ -67,9 +67,7 @@ export class ProdutoNovo {
 
   /** Matérias-primas já adicionadas à receita (IDs) */
   mpIdsNaReceita = computed(() => {
-    return this.receitaArray.controls.map(
-      (fg) => fg.get('materia_prima_id')?.value as number
-    );
+    return this.receitaArray.controls.map((fg) => fg.get('materia_prima_id')?.value as number);
   });
 
   /** Matérias-primas disponíveis para adicionar (filtradas) */
@@ -100,7 +98,7 @@ export class ProdutoNovo {
 
     // Verifica se já existe na receita
     const indexExistente = this.receitaArray.controls.findIndex(
-      (c) => c.get('materia_prima_id')?.value === mpId
+      (c) => c.get('materia_prima_id')?.value === mpId,
     );
 
     if (indexExistente !== -1) {
@@ -122,7 +120,7 @@ export class ProdutoNovo {
         unidade_medida: [mp.unidade_medida],
         quantidade: [1, [Validators.required, Validators.min(0.01)]],
         unidade: [mp.unidade_medida, [Validators.required]],
-      })
+      }),
     );
   }
 
@@ -165,8 +163,7 @@ export class ProdutoNovo {
       .pipe(finalize(() => this.salvando.set(false)))
       .subscribe({
         next: () => this.router.navigate(['/app/produtos']),
-        error: (err) =>
-          this.erro.set(err.error?.message || 'Não foi possível salvar o produto.'),
+        error: (err) => this.erro.set(err.error?.message || 'Não foi possível salvar o produto.'),
       });
   }
 }

@@ -10,7 +10,7 @@ describe('Lote', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Lote, HttpClientTestingModule],
-      providers: [provideRouter([])]
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Lote);

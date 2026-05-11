@@ -1,16 +1,20 @@
-import { ILike, type Repository } from "typeorm";
-import { AppDataSource } from "../config/AppDataSource.js";
-import { Lote, LoteStatus } from "../entities/Lote.js";
-import { ConsumoInsumo } from "../entities/ConsumoInsumo.js";
-import { InsumoEstoque } from "../entities/InsumoEstoque.js";
-import { Produto } from "../entities/Produto.js";
-import { PerfilUsuario, Usuario } from "../entities/Usuario.js";
-import { AppError } from "../errors/AppError.js";
-import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
-import type { CriarLoteDTO } from "../dto/lote.dto.js";
-import { NotificacaoService } from "./notificacao.service.js";
-import { TipoNotificacao } from "../entities/Notificacao.js";
-import { PaginacaoQueryDto, formatarRespostaPaginada, type RespostaPaginada } from "../dto/paginacao.dto.js";
+import { ILike, type Repository } from 'typeorm';
+import { AppDataSource } from '../config/AppDataSource.js';
+import { Lote, LoteStatus } from '../entities/Lote.js';
+import { ConsumoInsumo } from '../entities/ConsumoInsumo.js';
+import { InsumoEstoque } from '../entities/InsumoEstoque.js';
+import { Produto } from '../entities/Produto.js';
+import { PerfilUsuario, Usuario } from '../entities/Usuario.js';
+import { AppError } from '../errors/AppError.js';
+import { verificaPermissao, type Requisitante } from '../utils/auth.utils.js';
+import type { CriarLoteDTO } from '../dto/lote.dto.js';
+import { NotificacaoService } from './notificacao.service.js';
+import { TipoNotificacao } from '../entities/Notificacao.js';
+import {
+  PaginacaoQueryDto,
+  formatarRespostaPaginada,
+  type RespostaPaginada,
+} from '../dto/paginacao.dto.js';
 
 export class LoteService {
   private loteRepo: Repository<Lote>;
@@ -25,11 +29,11 @@ export class LoteService {
 
   /** Gera número de lote sequencial no padrão LOT-DDMMAAAA-N (N = item do dia) */
   private async gerarNumeroLote(data: Date | string): Promise<string> {
-    const d = typeof data === "string" ? new Date(data) : data;
-    const dia = d.getUTCDate().toString().padStart(2, "0");
-    const mes = (d.getUTCMonth() + 1).toString().padStart(2, "0");
+    const d = typeof data === 'string' ? new Date(data) : data;
+    const dia = d.getUTCDate().toString().padStart(2, '0');
+    const mes = (d.getUTCMonth() + 1).toString().padStart(2, '0');
     const ano = d.getUTCFullYear();
-    
+
     const prefixo = `LOT-${dia}${mes}${ano}-`;
 
     const contagem = await this.loteRepo.count({
@@ -42,7 +46,7 @@ export class LoteService {
     // Validação de segurança (Regex): LOT-8dígitos-número
     const regex = /^LOT-\d{8}-\d+$/;
     if (!regex.test(numeroLote)) {
-      throw new AppError("Erro ao gerar número de lote no padrão esperado.", 500);
+      throw new AppError('Erro ao gerar número de lote no padrão esperado.', 500);
     }
 
     return numeroLote;
@@ -56,10 +60,10 @@ export class LoteService {
     verificaPermissao(requisitante, [PerfilUsuario.OPERADOR]);
 
     const produto = await this.produtoRepo.findOneBy({ id: dto.produto_id });
-    if (!produto) throw new AppError("Produto não encontrado.", 404);
+    if (!produto) throw new AppError('Produto não encontrado.', 404);
 
     const operador = await this.usuarioRepo.findOneBy({ id: requisitante.id });
-    if (!operador) throw new AppError("Operador não encontrado.", 404);
+    if (!operador) throw new AppError('Operador não encontrado.', 404);
 
     const numeroLote = await this.gerarNumeroLote(dto.data_producao);
     const notificacaoService = new NotificacaoService();
@@ -74,34 +78,39 @@ export class LoteService {
         operador,
         data_producao: dto.data_producao,
         data_validade: dto.data_validade ?? null,
-        observacoes: dto.observacoes || "",
+        observacoes: dto.observacoes || '',
       });
 
       const loteSalvo = await manager.save(lote);
-      const gestores = await manager.find(Usuario, { where: { perfil: PerfilUsuario.GESTOR, ativo: true } });
+      const gestores = await manager.find(Usuario, {
+        where: { perfil: PerfilUsuario.GESTOR, ativo: true },
+      });
 
       /** Processa cada consumo: valida estoque, abate e registra */
       for (const consumo of dto.consumos) {
         const insumo = await manager.findOne(InsumoEstoque, {
           where: { id: consumo.insumo_estoque_id },
-          relations: ["materiaPrima"],
+          relations: ['materiaPrima'],
         });
 
         if (!insumo) {
           throw new AppError(`Lote de insumo ID ${consumo.insumo_estoque_id} não encontrado.`, 404);
         }
 
-        if (insumo.materiaPrima.unidade_medida === "UN" && !Number.isInteger(consumo.quantidade_consumida)) {
+        if (
+          insumo.materiaPrima.unidade_medida === 'UN' &&
+          !Number.isInteger(consumo.quantidade_consumida)
+        ) {
           throw new AppError(
             `A matéria-prima '${insumo.materiaPrima.nome}' não aceita consumo de lote fracionado.`,
-            400
+            400,
           );
         }
 
         if (!insumo.ativo) {
           throw new AppError(
             `Lote ${insumo.numero_lote_interno} (${insumo.materiaPrima.nome}) está inativo.`,
-            400
+            400,
           );
         }
 
@@ -110,7 +119,7 @@ export class LoteService {
           throw new AppError(
             `Saldo insuficiente no lote ${insumo.numero_lote_interno}. ` +
               `Disponível: ${saldoAtual}, Solicitado: ${consumo.quantidade_consumida}.`,
-            400
+            400,
           );
         }
 
@@ -133,11 +142,16 @@ export class LoteService {
 
         for (const gestor of gestores) {
           // Alerta 1: Cruzou a linha da porcentagem configurada (ex: 20%), mas ainda não é zero
-          if (percentualAnterior > gestor.alerta_estoque_porcentagem && percentualNovo <= gestor.alerta_estoque_porcentagem && percentualNovo > 0) {
+          if (
+            percentualAnterior > gestor.alerta_estoque_porcentagem &&
+            percentualNovo <= gestor.alerta_estoque_porcentagem &&
+            percentualNovo > 0
+          ) {
             await notificacaoService.criarNotificacaoParaUsuario(
               `Estoque Baixo: O insumo ${insumo.numero_lote_interno} (${insumo.materiaPrima.nome}) atingiu ${percentualNovo.toFixed(1)}% do seu volume inicial.`,
               TipoNotificacao.ESTOQUE,
-              gestor
+              gestor,
+              { link: '/app/insumos', filtro: insumo.materiaPrima.nome }
             );
           }
 
@@ -146,7 +160,8 @@ export class LoteService {
             await notificacaoService.criarNotificacaoParaUsuario(
               `URGENTE: O lote de insumo ${insumo.numero_lote_interno} (${insumo.materiaPrima.nome}) ACABOU completamente.`,
               TipoNotificacao.ESTOQUE,
-              gestor
+              gestor,
+              { link: '/app/insumos', filtro: insumo.materiaPrima.nome }
             );
           }
         }
@@ -155,25 +170,28 @@ export class LoteService {
       const loteCompleto = await manager.findOne(Lote, {
         where: { id: loteSalvo.id },
         relations: [
-          "operador",
-          "produto",
-          "produto.receita",
-          "produto.receita.materiaPrima",
-          "consumos",
-          "consumos.insumoEstoque",
-          "consumos.insumoEstoque.materiaPrima",
-          "inspecao",
-          "inspecao.inspetor",
+          'operador',
+          'produto',
+          'produto.receita',
+          'produto.receita.materiaPrima',
+          'consumos',
+          'consumos.insumoEstoque',
+          'consumos.insumoEstoque.materiaPrima',
+          'inspecao',
+          'inspecao.inspetor',
         ],
       });
 
-      if (!loteCompleto) throw new AppError("Erro na transação ao criar lote.", 500);
+      if (!loteCompleto) throw new AppError('Erro na transação ao criar lote.', 500);
 
       return loteCompleto;
     });
   };
 
-  listar = async (query: PaginacaoQueryDto & { status?: string }, requisitante: Requisitante): Promise<RespostaPaginada<Lote>> => {
+  listar = async (
+    query: PaginacaoQueryDto & { status?: string },
+    requisitante: Requisitante,
+  ): Promise<RespostaPaginada<Lote>> => {
     verificaPermissao(requisitante, [
       PerfilUsuario.OPERADOR,
       PerfilUsuario.INSPETOR,
@@ -183,21 +201,24 @@ export class LoteService {
     const { pagina, limite, busca, status } = query;
     const skip = (pagina - 1) * limite;
 
-    const queryBuilder = this.loteRepo.createQueryBuilder("lote")
-      .leftJoinAndSelect("lote.produto", "produto")
-      .leftJoinAndSelect("lote.operador", "operador")
-      .leftJoinAndSelect("lote.inspecao", "inspecao")
-      .leftJoinAndSelect("lote.consumos", "consumos")
+    const queryBuilder = this.loteRepo
+      .createQueryBuilder('lote')
+      .leftJoinAndSelect('lote.produto', 'produto')
+      .leftJoinAndSelect('lote.operador', 'operador')
+      .leftJoinAndSelect('lote.inspecao', 'inspecao')
+      .leftJoinAndSelect('lote.consumos', 'consumos')
       .skip(skip)
       .take(limite)
-      .orderBy("lote.aberto_em", "DESC");
+      .orderBy('lote.aberto_em', 'DESC');
 
     if (busca) {
-      queryBuilder.andWhere("(lote.numero_lote ILIKE :busca OR produto.nome ILIKE :busca)", { busca: `%${busca}%` });
+      queryBuilder.andWhere('(lote.numero_lote ILIKE :busca OR produto.nome ILIKE :busca)', {
+        busca: `%${busca}%`,
+      });
     }
 
     if (status && status !== 'todos') {
-      queryBuilder.andWhere("lote.status = :status", { status });
+      queryBuilder.andWhere('lote.status = :status', { status });
     }
 
     const [lotes, total] = await queryBuilder.getManyAndCount();
@@ -206,13 +227,17 @@ export class LoteService {
   };
 
   getContagemPorStatus = async (requisitante: Requisitante): Promise<Record<string, number>> => {
-    verificaPermissao(requisitante, [PerfilUsuario.GESTOR, PerfilUsuario.OPERADOR, PerfilUsuario.INSPETOR]);
+    verificaPermissao(requisitante, [
+      PerfilUsuario.GESTOR,
+      PerfilUsuario.OPERADOR,
+      PerfilUsuario.INSPETOR,
+    ]);
 
     const counts = await this.loteRepo
-      .createQueryBuilder("lote")
-      .select("lote.status", "status")
-      .addSelect("COUNT(*)", "count")
-      .groupBy("lote.status")
+      .createQueryBuilder('lote')
+      .select('lote.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('lote.status')
       .getRawMany<{ status: string; count: string }>();
 
     const result: Record<string, number> = {
@@ -235,6 +260,45 @@ export class LoteService {
     return result;
   };
 
+  buscarSugestoes = async (q: string, requisitante: Requisitante) => {
+    verificaPermissao(requisitante, [
+      PerfilUsuario.GESTOR,
+      PerfilUsuario.INSPETOR,
+      PerfilUsuario.OPERADOR,
+    ]);
+
+    const termo = `%${q}%`;
+
+    const [lotes, produtos] = await Promise.all([
+      this.loteRepo
+        .createQueryBuilder('l')
+        .where('l.numero_lote ILIKE :termo', { termo })
+        .limit(5)
+        .getMany(),
+      this.produtoRepo
+        .createQueryBuilder('p')
+        .where('p.nome ILIKE :termo OR p.sku ILIKE :termo', { termo })
+        .limit(5)
+        .getMany(),
+    ]);
+
+    return [
+      ...lotes.map((l) => ({
+        id: l.id,
+        label: l.numero_lote,
+        subtext: 'Lote de Produção',
+        tipo: 'lote' as const,
+        status: l.status,
+      })),
+      ...produtos.map((p) => ({
+        id: p.id,
+        label: p.nome,
+        subtext: p.sku,
+        tipo: 'produto' as const,
+      })),
+    ];
+  };
+
   buscarPorId = async (id: number, requisitante: Requisitante): Promise<Lote> => {
     verificaPermissao(requisitante, [
       PerfilUsuario.OPERADOR,
@@ -245,19 +309,19 @@ export class LoteService {
     const lote = await this.loteRepo.findOne({
       where: { id },
       relations: [
-        "operador",
-        "produto",
-        "produto.receita",
-        "produto.receita.materiaPrima",
-        "consumos",
-        "consumos.insumoEstoque",
-        "consumos.insumoEstoque.materiaPrima",
-        "inspecao",
-        "inspecao.inspetor",
+        'operador',
+        'produto',
+        'produto.receita',
+        'produto.receita.materiaPrima',
+        'consumos',
+        'consumos.insumoEstoque',
+        'consumos.insumoEstoque.materiaPrima',
+        'inspecao',
+        'inspecao.inspetor',
       ],
     });
 
-    if (!lote) throw new AppError("Lote não encontrado.", 404);
+    if (!lote) throw new AppError('Lote não encontrado.', 404);
     return lote;
   };
 

@@ -2,7 +2,11 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { NgIf, DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.js';
-import { UsuarioService, UsuarioPerfil, UsuarioStats } from '../../core/services/usuario.service.js';
+import {
+  UsuarioService,
+  UsuarioPerfil,
+  UsuarioStats,
+} from '../../core/services/usuario.service.js';
 import { AuthService } from '../../core/services/auth.service.js';
 import { forkJoin, finalize } from 'rxjs';
 
@@ -11,7 +15,7 @@ import { forkJoin, finalize } from 'rxjs';
   standalone: true,
   imports: [NgIf, DatePipe, PageHeaderComponent, ReactiveFormsModule],
   templateUrl: './perfil.html',
-  styleUrl: './perfil.css'
+  styleUrl: './perfil.css',
 })
 export class Perfil implements OnInit {
   private usuarioService = inject(UsuarioService);
@@ -57,23 +61,23 @@ export class Perfil implements OnInit {
     if (user?.id) {
       forkJoin({
         perfil: this.usuarioService.getPerfil(user.id),
-        stats: this.usuarioService.getStats(user.id)
+        stats: this.usuarioService.getStats(user.id),
       }).subscribe({
         next: (res) => {
           this.perfil.set(res.perfil);
           this.stats.set(res.stats);
-          
+
           this.formPerfil.patchValue({
             nome: res.perfil.nome,
-            email: res.perfil.email
+            email: res.perfil.email,
           });
-          
+
           this.loading.set(false);
         },
         error: (err) => {
           console.error('Erro ao carregar perfil', err);
           this.loading.set(false);
-        }
+        },
       });
     }
   }
@@ -116,23 +120,24 @@ export class Perfil implements OnInit {
 
     const payload = this.formPerfil.getRawValue();
 
-    this.usuarioService.updatePerfil(currentUserId, payload)
+    this.usuarioService
+      .updatePerfil(currentUserId, payload)
       .pipe(finalize(() => this.salvandoPerfil.set(false)))
       .subscribe({
         next: (atualizado) => {
           this.perfil.set(atualizado);
           this.isEditingPerfil.set(false);
           this.sucessoPerfil.set('Perfil atualizado com sucesso.');
-          
+
           // Atualiza a visualização do header atualizando o sinal local no authService se aplicável
           // Como o authService apenas tem o payload básico decodificado do JWT, uma alteração de nome/email
-          // não refletirá no Header até o próximo login (pois o JWT precisaria ser renovado). 
+          // não refletirá no Header até o próximo login (pois o JWT precisaria ser renovado).
           // Para forçar a renovação local (se a API suportar) precisaria chamar o refresh ou relogar,
           // mas vamos apenas exibir o sucesso para o usuário.
         },
         error: (err) => {
           this.erroPerfil.set(err.error?.message || 'Falha ao atualizar o perfil.');
-        }
+        },
       });
   }
 
@@ -147,7 +152,8 @@ export class Perfil implements OnInit {
 
     const payload = this.formSenha.getRawValue();
 
-    this.usuarioService.updateSenha(currentUserId, payload)
+    this.usuarioService
+      .updateSenha(currentUserId, payload)
       .pipe(finalize(() => this.salvandoSenha.set(false)))
       .subscribe({
         next: () => {
@@ -157,7 +163,7 @@ export class Perfil implements OnInit {
         },
         error: (err) => {
           this.erroSenha.set(err.error?.message || 'Falha ao alterar a senha.');
-        }
+        },
       });
   }
 }

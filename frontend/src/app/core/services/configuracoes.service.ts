@@ -23,20 +23,20 @@ const DEFAULT_SETTINGS: AppSettings = {
   dashboard: {
     lotesComparacao: 'mes',
     unidadesComparacao: 'mes',
-    taxaAprovacaoAlvo: 90
+    taxaAprovacaoAlvo: 90,
   },
   lote: {
     producaoTotalPeriodo: 'qualquer_momento',
-    atividadeTempoRealBase: 5
-  }
+    atividadeTempoRealBase: 5,
+  },
 };
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ConfiguracoesService {
   private readonly STORAGE_KEY = 'lote_pim_settings';
-  
+
   settings = signal<AppSettings>(this.loadSettings());
 
   private loadSettings(): AppSettings {
@@ -58,7 +58,7 @@ export class ConfiguracoesService {
     const current = this.settings();
     const updated = {
       ...current,
-      dashboard: { ...current.dashboard, ...dashboard }
+      dashboard: { ...current.dashboard, ...dashboard },
     };
     this.saveSettings(updated);
   }
@@ -67,7 +67,7 @@ export class ConfiguracoesService {
     const current = this.settings();
     const updated = {
       ...current,
-      lote: { ...current.lote, ...lote }
+      lote: { ...current.lote, ...lote },
     };
     this.saveSettings(updated);
   }

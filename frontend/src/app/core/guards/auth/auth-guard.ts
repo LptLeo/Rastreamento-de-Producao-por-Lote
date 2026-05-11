@@ -20,7 +20,17 @@ export const authGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   return authService.sessaoCarregada$.pipe(
-    take(1),
-    map(() => authService.isLoggedIn() ? true : router.parseUrl('/login'))
+    take(1), // Pega apenas a primeira chamada e depois corta a conexão
+    map(() => {
+      if (authService.isLoggedIn()) return true;
+
+      /**
+       * Usamos parseUrl em vez de navigate().
+       * O parseUrl retorna uma UrlTree (um objeto/bilhete), sendo a forma declarativa do Angular
+       * lidar com redirecionamentos em Guards. Isso evita efeitos colaterais de navegação
+       * simultânea (race conditions) que o navigate() poderia causar aqui.
+       */
+      return router.parseUrl('/login');
+    }),
   );
 };

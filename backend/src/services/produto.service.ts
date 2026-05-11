@@ -1,15 +1,19 @@
-import type { Repository } from "typeorm";
-import { AppDataSource } from "../config/AppDataSource.js";
-import { Produto } from "../entities/Produto.js";
-import { ReceitaItem } from "../entities/ReceitaItem.js";
-import { MateriaPrima } from "../entities/MateriaPrima.js";
-import { PerfilUsuario } from "../entities/Usuario.js";
-import { AppError } from "../errors/AppError.js";
-import { verificaPermissao, type Requisitante } from "../utils/auth.utils.js";
-import type { CriarProdutoDTO, AtualizarReceitaDTO } from "../dto/produto.dto.js";
-import { NotificacaoService } from "./notificacao.service.js";
-import { TipoNotificacao } from "../entities/Notificacao.js";
-import { PaginacaoQueryDto, formatarRespostaPaginada, type RespostaPaginada } from "../dto/paginacao.dto.js";
+import type { Repository } from 'typeorm';
+import { AppDataSource } from '../config/AppDataSource.js';
+import { Produto } from '../entities/Produto.js';
+import { ReceitaItem } from '../entities/ReceitaItem.js';
+import { MateriaPrima } from '../entities/MateriaPrima.js';
+import { PerfilUsuario } from '../entities/Usuario.js';
+import { AppError } from '../errors/AppError.js';
+import { verificaPermissao, type Requisitante } from '../utils/auth.utils.js';
+import type { CriarProdutoDTO, AtualizarReceitaDTO } from '../dto/produto.dto.js';
+import { NotificacaoService } from './notificacao.service.js';
+import { TipoNotificacao } from '../entities/Notificacao.js';
+import {
+  PaginacaoQueryDto,
+  formatarRespostaPaginada,
+  type RespostaPaginada,
+} from '../dto/paginacao.dto.js';
 
 export class ProdutoService {
   private produtoRepo: Repository<Produto>;
@@ -25,9 +29,9 @@ export class ProdutoService {
   /** Gera SKU a partir do nome (ex: "Monitor 14 LED" → "PRD-MONITOR14LED") */
   private gerarSku(nome: string): string {
     const base = nome
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-zA-Z0-9]/g, "")
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '')
       .toUpperCase()
       .slice(0, 12);
 
@@ -49,9 +53,9 @@ export class ProdutoService {
   criar = async (dto: CriarProdutoDTO, requisitante: Requisitante): Promise<Produto> => {
     verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
 
-    const userRepo = AppDataSource.getRepository("Usuario");
+    const userRepo = AppDataSource.getRepository('Usuario');
     const criador = await userRepo.findOneBy({ id: requisitante.id });
-    if (!criador) throw new AppError("Criador não encontrado.", 404);
+    if (!criador) throw new AppError('Criador não encontrado.', 404);
 
     const skuBase = this.gerarSku(dto.nome);
     const skuUnico = await this.garantirSkuUnico(skuBase);
@@ -84,31 +88,40 @@ export class ProdutoService {
               quantidade: item.quantidade,
               unidade: item.unidade,
             });
-          })
+          }),
         );
         await manager.save(itensReceita);
       }
 
       const produtoCompleto = await manager.findOne(Produto, {
         where: { id: produtoSalvo.id },
-        relations: ["receita", "receita.materiaPrima"],
+        relations: ['receita', 'receita.materiaPrima'],
       });
 
-      if (!produtoCompleto) throw new AppError("Erro na transação ao criar produto.", 500);
+      if (!produtoCompleto) throw new AppError('Erro na transação ao criar produto.', 500);
 
       // Dispara a notificação para todos os operadores
       const notificacaoService = new NotificacaoService();
       await notificacaoService.criarNotificacaoParaPerfis(
         `Novo produto disponível para produção: ${produtoCompleto.nome} (${produtoCompleto.sku})`,
         TipoNotificacao.PRODUTO,
-        [PerfilUsuario.OPERADOR]
+        [PerfilUsuario.OPERADOR],
+        { link: '/app/lote/novo', idRef: produtoCompleto.id },
       );
 
       return produtoCompleto;
     });
   };
 
-  listar = async (query: PaginacaoQueryDto & { categoria?: string, status?: string, ordenacao?: string, linha?: string }, requisitante: Requisitante): Promise<RespostaPaginada<Produto>> => {
+  listar = async (
+    query: PaginacaoQueryDto & {
+      categoria?: string;
+      status?: string;
+      ordenacao?: string;
+      linha?: string;
+    },
+    requisitante: Requisitante,
+  ): Promise<RespostaPaginada<Produto>> => {
     verificaPermissao(requisitante, [
       PerfilUsuario.OPERADOR,
       PerfilUsuario.INSPETOR,
@@ -118,37 +131,51 @@ export class ProdutoService {
     const { pagina, limite, busca, categoria, status, ordenacao, linha } = query;
     const skip = (pagina - 1) * limite;
 
-    const queryBuilder = this.produtoRepo.createQueryBuilder("produto")
-      .leftJoinAndSelect("produto.receita", "receita")
-      .leftJoinAndSelect("receita.materiaPrima", "materiaPrima")
-      .leftJoinAndSelect("produto.criadoPor", "criadoPor")
-      .leftJoinAndSelect("produto.lotes", "lotes")
+    const queryBuilder = this.produtoRepo
+      .createQueryBuilder('produto')
+      .leftJoinAndSelect('produto.receita', 'receita')
+      .leftJoinAndSelect('receita.materiaPrima', 'materiaPrima')
+      .leftJoinAndSelect('produto.criadoPor', 'criadoPor')
+      .leftJoinAndSelect('produto.lotes', 'lotes')
       .skip(skip)
       .take(limite);
 
     if (busca) {
-      queryBuilder.andWhere("(produto.nome ILIKE :busca OR produto.sku ILIKE :busca)", { busca: `%${busca}%` });
+      queryBuilder.andWhere('(produto.nome ILIKE :busca OR produto.sku ILIKE :busca)', {
+        busca: `%${busca}%`,
+      });
     }
 
     if (linha && linha !== 'todas') {
-      queryBuilder.andWhere("produto.linha_padrao = :linha", { linha });
+      queryBuilder.andWhere('produto.linha_padrao = :linha', { linha });
     }
 
     if (categoria && categoria !== 'todas') {
-      queryBuilder.andWhere("produto.categoria = :categoria", { categoria });
+      queryBuilder.andWhere('produto.categoria = :categoria', { categoria });
     }
 
     if (status && status !== 'todos') {
       if (status === 'ativos') {
-        queryBuilder.andWhere("produto.ativo = true");
+        queryBuilder.andWhere('produto.ativo = true');
       } else if (status === 'inativos') {
-        queryBuilder.andWhere("produto.ativo = false");
+        queryBuilder.andWhere('produto.ativo = false');
+      } else if (status === 'com_insumos') {
+        queryBuilder.andWhere((qb) => {
+          const subQuery = qb
+            .subQuery()
+            .select('r.id')
+            .from(ReceitaItem, 'r')
+            .where('r.produto_id = produto.id')
+            .getQuery();
+          return `EXISTS ${subQuery}`;
+        });
       } else if (status === 'sem_insumos') {
         queryBuilder.andWhere((qb) => {
-          const subQuery = qb.subQuery()
-            .select("r.id")
-            .from(ReceitaItem, "r")
-            .where("r.produto_id = produto.id")
+          const subQuery = qb
+            .subQuery()
+            .select('r.id')
+            .from(ReceitaItem, 'r')
+            .where('r.produto_id = produto.id')
             .getQuery();
           return `NOT EXISTS ${subQuery}`;
         });
@@ -157,49 +184,67 @@ export class ProdutoService {
 
     switch (ordenacao) {
       case 'mais_recentes':
-        queryBuilder.orderBy("produto.criado_em", "DESC");
+        queryBuilder.orderBy('produto.criado_em', 'DESC');
         break;
       case 'menos_recentes':
-        queryBuilder.orderBy("produto.criado_em", "ASC");
+        queryBuilder.orderBy('produto.criado_em', 'ASC');
         break;
       case 'mais_produzidos':
         queryBuilder.addSelect((subQuery) => {
-            return subQuery.select("COALESCE(SUM(l.quantidade_planejada), 0)").from("lote", "l").where("l.produto_id = produto.id");
-        }, "qtd_produzida");
-        queryBuilder.orderBy("qtd_produzida", "DESC");
+          return subQuery
+            .select('COALESCE(SUM(l.quantidade_planejada), 0)')
+            .from('lote', 'l')
+            .where('l.produto_id = produto.id');
+        }, 'qtd_produzida');
+        queryBuilder.orderBy('qtd_produzida', 'DESC');
         break;
       case 'menos_produzidos':
         queryBuilder.addSelect((subQuery) => {
-            return subQuery.select("COALESCE(SUM(l.quantidade_planejada), 0)").from("lote", "l").where("l.produto_id = produto.id");
-        }, "qtd_produzida");
-        queryBuilder.orderBy("qtd_produzida", "ASC");
+          return subQuery
+            .select('COALESCE(SUM(l.quantidade_planejada), 0)')
+            .from('lote', 'l')
+            .where('l.produto_id = produto.id');
+        }, 'qtd_produzida');
+        queryBuilder.orderBy('qtd_produzida', 'ASC');
         break;
       case 'mais_lotes':
         queryBuilder.addSelect((subQuery) => {
-            return subQuery.select("COUNT(l.id)").from("lote", "l").where("l.produto_id = produto.id");
-        }, "qtd_lotes");
-        queryBuilder.orderBy("qtd_lotes", "DESC");
+          return subQuery
+            .select('COUNT(l.id)')
+            .from('lote', 'l')
+            .where('l.produto_id = produto.id');
+        }, 'qtd_lotes');
+        queryBuilder.orderBy('qtd_lotes', 'DESC');
         break;
       case 'menos_lotes':
         queryBuilder.addSelect((subQuery) => {
-            return subQuery.select("COUNT(l.id)").from("lote", "l").where("l.produto_id = produto.id");
-        }, "qtd_lotes");
-        queryBuilder.orderBy("qtd_lotes", "ASC");
+          return subQuery
+            .select('COUNT(l.id)')
+            .from('lote', 'l')
+            .where('l.produto_id = produto.id');
+        }, 'qtd_lotes');
+        queryBuilder.orderBy('qtd_lotes', 'ASC');
         break;
       case 'mais_insumos':
         queryBuilder.addSelect((subQuery) => {
-            return subQuery.select("COUNT(r.id)").from("receita_item", "r").where("r.produto_id = produto.id");
-        }, "qtd_insumos");
-        queryBuilder.orderBy("qtd_insumos", "DESC");
+          return subQuery
+            .select('COUNT(r.id)')
+            .from('receita_item', 'r')
+            .where('r.produto_id = produto.id');
+        }, 'qtd_insumos');
+        queryBuilder.orderBy('qtd_insumos', 'DESC');
         break;
       case 'menos_insumos':
         queryBuilder.addSelect((subQuery) => {
-            return subQuery.select("COUNT(r.id)").from("receita_item", "r").where("r.produto_id = produto.id");
-        }, "qtd_insumos");
-        queryBuilder.orderBy("qtd_insumos", "ASC");
+          return subQuery
+            .select('COUNT(r.id)')
+            .from('receita_item', 'r')
+            .where('r.produto_id = produto.id');
+        }, 'qtd_insumos');
+        queryBuilder.orderBy('qtd_insumos', 'ASC');
         break;
       default:
-        queryBuilder.orderBy("produto.nome", "ASC");
+        queryBuilder.orderBy('produto.nome', 'ASC');
         break;
     }
 
@@ -217,10 +262,10 @@ export class ProdutoService {
 
     const produto = await this.produtoRepo.findOne({
       where: { id },
-      relations: ["receita", "receita.materiaPrima", "criadoPor"],
+      relations: ['receita', 'receita.materiaPrima', 'criadoPor'],
     });
 
-    if (!produto) throw new AppError("Produto não encontrado.", 404);
+    if (!produto) throw new AppError('Produto não encontrado.', 404);
     return produto;
   };
 
@@ -229,9 +274,9 @@ export class ProdutoService {
     verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
 
     const resultados = await this.produtoRepo
-      .createQueryBuilder("p")
-      .select("DISTINCT p.categoria", "categoria")
-      .orderBy("p.categoria", "ASC")
+      .createQueryBuilder('p')
+      .select('DISTINCT p.categoria', 'categoria')
+      .orderBy('p.categoria', 'ASC')
       .getRawMany<{ categoria: string }>();
 
     return resultados.map((r) => r.categoria);
@@ -241,9 +286,9 @@ export class ProdutoService {
     verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
 
     const resultados = await this.produtoRepo
-      .createQueryBuilder("p")
-      .select("DISTINCT p.linha_padrao", "linha")
-      .orderBy("p.linha_padrao", "ASC")
+      .createQueryBuilder('p')
+      .select('DISTINCT p.linha_padrao', 'linha')
+      .orderBy('p.linha_padrao', 'ASC')
       .getRawMany<{ linha: string }>();
 
     return resultados.map((r) => r.linha);
@@ -252,13 +297,13 @@ export class ProdutoService {
   atualizarReceita = async (
     produtoId: number,
     dto: AtualizarReceitaDTO,
-    requisitante: Requisitante
+    requisitante: Requisitante,
   ): Promise<Produto> => {
     verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
 
     const produto = await this.produtoRepo.findOneBy({ id: produtoId });
     if (!produto) {
-      throw new AppError("Produto não encontrado.", 404);
+      throw new AppError('Produto não encontrado.', 404);
     }
 
     return AppDataSource.transaction(async (manager) => {
@@ -280,28 +325,32 @@ export class ProdutoService {
               quantidade: item.quantidade,
               unidade: item.unidade,
             });
-          })
+          }),
         );
         await manager.save(itensReceita);
       }
 
       const produtoAtualizado = await manager.findOne(Produto, {
         where: { id: produtoId },
-        relations: ["receita", "receita.materiaPrima"],
+        relations: ['receita', 'receita.materiaPrima'],
       });
 
-      if (!produtoAtualizado) throw new AppError("Erro ao recarregar produto atualizado.", 500);
+      if (!produtoAtualizado) throw new AppError('Erro ao recarregar produto atualizado.', 500);
 
       return produtoAtualizado;
     });
   };
 
-  alternarStatus = async (id: number, ativo: boolean, requisitante: Requisitante): Promise<Produto> => {
+  alternarStatus = async (
+    id: number,
+    ativo: boolean,
+    requisitante: Requisitante,
+  ): Promise<Produto> => {
     verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
 
     const produto = await this.produtoRepo.findOneBy({ id });
     if (!produto) {
-      throw new AppError("Produto não encontrado.", 404);
+      throw new AppError('Produto não encontrado.', 404);
     }
 
     produto.ativo = ativo;
@@ -309,7 +358,7 @@ export class ProdutoService {
 
     const produtoAtualizado = await this.produtoRepo.findOne({
       where: { id },
-      relations: ["receita", "receita.materiaPrima", "criadoPor"],
+      relations: ['receita', 'receita.materiaPrima', 'criadoPor'],
     });
 
     return produtoAtualizado!;
@@ -327,9 +376,9 @@ export class ProdutoService {
     const inativos = await this.produtoRepo.count({ where: { ativo: false } });
 
     const sem_insumos = await this.produtoRepo
-      .createQueryBuilder("p")
-      .leftJoin("p.receita", "receita")
-      .where("receita.id IS NULL")
+      .createQueryBuilder('p')
+      .leftJoin('p.receita', 'receita')
+      .where('receita.id IS NULL')
       .getCount();
 
     return {
@@ -337,7 +386,7 @@ export class ProdutoService {
       ativos,
       inativos,
       sem_insumos,
-      mais_produzidos: 0 // Placeholder
+      mais_produzidos: 0, // Placeholder
     };
   };
 }

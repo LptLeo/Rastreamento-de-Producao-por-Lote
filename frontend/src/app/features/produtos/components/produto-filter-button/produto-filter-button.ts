@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-produto-filter-button',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './produto-filter-button.html'
+  templateUrl: './produto-filter-button.html',
 })
 export class ProdutoFilterButtonComponent {
   @Input({ required: true }) value!: string;

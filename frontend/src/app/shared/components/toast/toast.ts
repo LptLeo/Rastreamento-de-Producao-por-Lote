@@ -16,11 +16,11 @@ export class ToastComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Fecha o toast automaticamente ao mudar de rota
-    this.routerSub = this.router.events.pipe(
-      filter(event => event instanceof NavigationStart)
-    ).subscribe(() => {
-      this.toastService.close();
-    });
+    this.routerSub = this.router.events
+      .pipe(filter((event) => event instanceof NavigationStart))
+      .subscribe(() => {
+        this.toastService.close();
+      });
   }
 
   ngOnDestroy(): void {
@@ -34,7 +34,7 @@ export class ToastComponent implements OnInit, OnDestroy {
   onClickOutside(event: MouseEvent): void {
     if (!this.toastService.toast()) return;
 
-    // Ignora o clique se ele foi o que disparou a abertura do toast 
+    // Ignora o clique se ele foi o que disparou a abertura do toast
     // (o elemento elementRef.nativeElement ainda não estaria renderizado ou visível se fosse síncrono)
     const toastContainer = this.elementRef.nativeElement.querySelector('div');
     if (!toastContainer) return;

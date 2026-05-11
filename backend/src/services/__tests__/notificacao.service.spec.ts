@@ -10,11 +10,11 @@ const mockAppDataSource = {
     if (entity.name === 'Notificacao' || entity === 'Notificacao') return mockNotifRepo;
     if (entity.name === 'Usuario' || entity === 'Usuario') return mockUserRepo;
     return {} as any;
-  })
+  }),
 };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
-  AppDataSource: mockAppDataSource
+  AppDataSource: mockAppDataSource,
 }));
 
 const { NotificacaoService } = await import('../notificacao.service.js');
@@ -49,16 +49,18 @@ describe('NotificacaoService', () => {
       const mockUsers = [{ id: 1 }, { id: 2 }];
       const mockQB = {
         where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue(mockUsers)
+        getMany: jest.fn().mockResolvedValue(mockUsers),
       };
       mockUserRepo.createQueryBuilder.mockReturnValue(mockQB as any);
 
       await service.criarNotificacaoParaPerfis('Mensagem', TipoNotificacao.SISTEMA, ['gestor']);
 
-      expect(mockNotifRepo.save).toHaveBeenCalledWith(expect.arrayContaining([
-        expect.objectContaining({ mensagem: 'Mensagem', usuario: { id: 1 } }),
-        expect.objectContaining({ mensagem: 'Mensagem', usuario: { id: 2 } })
-      ]));
+      expect(mockNotifRepo.save).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ mensagem: 'Mensagem', usuario: { id: 1 } }),
+          expect.objectContaining({ mensagem: 'Mensagem', usuario: { id: 2 } }),
+        ]),
+      );
     });
   });
 });

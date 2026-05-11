@@ -13,7 +13,7 @@ export class WizardReceitaComponent {
   @Input() produtoNome: string = '';
   @Input() produtoSku: string = '';
   @Input() produtoRessalva: number = 0;
-  
+
   @Input() receitaArray!: FormArray;
   @Input() mpDisponiveis: MateriaPrima[] = [];
   @Input() salvando: boolean = false;

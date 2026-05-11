@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { STATUS_CONFIG, type LoteStatus } from '../../shared/models/lote.models.js';
-import { PaginationComponent, PaginationMeta } from '../../shared/components/pagination/pagination.js';
+import {
+  PaginationComponent,
+  PaginationMeta,
+} from '../../shared/components/pagination/pagination.js';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
 
@@ -78,7 +81,7 @@ import { RastreabilidadeArvoreRecallComponent } from './components/rastreabilida
     RastreabilidadeBuscaComponent,
     RastreabilidadeArvoreLoteComponent,
     RastreabilidadeArvoreRecallComponent,
-    PaginationComponent
+    PaginationComponent,
   ],
   templateUrl: './rastreabilidade.html',
   styleUrl: './rastreabilidade.css',
@@ -94,7 +97,7 @@ export class Rastreabilidade {
 
   readonly STATUS_CONFIG = STATUS_CONFIG;
 
-  /** 
+  /**
    * Resource para Autocomplete.
    * Reage a mudanças no termo de busca digitado.
    */
@@ -103,9 +106,9 @@ export class Rastreabilidade {
     stream: ({ params: resourceParams }) => {
       if (resourceParams.q.length < 2) return of([]);
       return this.http.get<AutocompleteSugestao[]>(
-        `${environment.apiUrl}/rastreabilidade/autocomplete?q=${encodeURIComponent(resourceParams.q)}`
+        `${environment.apiUrl}/rastreabilidade/autocomplete?q=${encodeURIComponent(resourceParams.q)}`,
       );
-    }
+    },
   });
 
   /**
@@ -113,9 +116,9 @@ export class Rastreabilidade {
    * Reage quando termoBuscaEfetuada ou currentPage mudam.
    */
   rastreioResource = rxResource({
-    params: () => ({ 
+    params: () => ({
       termo: this.termoBuscaEfetuada(),
-      pagina: this.currentPage()
+      pagina: this.currentPage(),
     }),
     stream: ({ params: resourceParams }) => {
       if (!resourceParams.termo) return of(null);
@@ -124,20 +127,28 @@ export class Rastreabilidade {
         .set('pagina', String(resourceParams.pagina))
         .set('limite', '10');
 
-      return this.http.get<ResultadoRastreabilidade>(
-        `${environment.apiUrl}/rastreabilidade`,
-        { params }
-      );
-    }
+      return this.http.get<ResultadoRastreabilidade>(`${environment.apiUrl}/rastreabilidade`, {
+        params,
+      });
+    },
   });
 
   // Derivações reativas
   sugestoes = computed(() => this.sugestoesResource.value() || []);
   buscandoSugestoes = computed(() => this.sugestoesResource.isLoading());
-  
-  resultado = computed(() => this.rastreioResource.value());
+
+  resultado = computed(() => {
+    if (this.rastreioResource.error()) return null;
+    return this.rastreioResource.value();
+  });
+
   buscando = computed(() => this.rastreioResource.isLoading());
-  erro = computed(() => this.rastreioResource.error() ? 'Nenhum resultado encontrado ou falha no servidor.' : null);
+  
+  erro = computed(() => {
+    const error = this.rastreioResource.error() as any;
+    if (!error) return null;
+    return error.error?.message || 'Nenhum resultado encontrado ou falha no servidor.';
+  });
   modoResultado = computed(() => !!this.termoBuscaEfetuada());
 
   onInput(event: Event): void {
@@ -161,7 +172,7 @@ export class Rastreabilidade {
   buscar(termo?: string): void {
     const q = (termo ?? this.termoBusca()).trim();
     if (!q) return;
-    
+
     this.currentPage.set(1);
     this.termoBuscaEfetuada.set(q);
   }

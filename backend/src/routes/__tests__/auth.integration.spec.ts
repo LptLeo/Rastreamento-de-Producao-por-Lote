@@ -1,6 +1,11 @@
 import request from 'supertest';
 import { app } from '../../server.js';
-import { startTestContainer, stopTestContainer, limparBanco, criarUsuarioTeste } from './integration.setup.js';
+import {
+  startTestContainer,
+  stopTestContainer,
+  limparBanco,
+  criarUsuarioTeste,
+} from './integration.setup.js';
 import bcrypt from 'bcrypt';
 import { AppDataSource } from '../../config/AppDataSource.js';
 import { Usuario, PerfilUsuario } from '../../entities/Usuario.js';
@@ -21,13 +26,15 @@ describe('Autenticação (Integração)', () => {
   it('deve permitir login com credenciais válidas', async () => {
     const userRepo = AppDataSource.getRepository(Usuario);
     const pass = await bcrypt.hash('senha123', 10);
-    await userRepo.save(userRepo.create({
-      nome: 'User Login',
-      email: 'login@teste.com',
-      senha_hash: pass,
-      perfil: PerfilUsuario.OPERADOR,
-      ativo: true
-    }));
+    await userRepo.save(
+      userRepo.create({
+        nome: 'User Login',
+        email: 'login@teste.com',
+        senha_hash: pass,
+        perfil: PerfilUsuario.OPERADOR,
+        ativo: true,
+      }),
+    );
 
     const response = await request(app)
       .post('/api/auth/login')
@@ -41,18 +48,21 @@ describe('Autenticação (Integração)', () => {
   it('deve rejeitar login com senha errada', async () => {
     const userRepo = AppDataSource.getRepository(Usuario);
     const pass = await bcrypt.hash('senha123', 10);
-    await userRepo.save(userRepo.create({
-      nome: 'User Login 2',
-      email: 'login2@teste.com',
-      senha_hash: pass,
-      perfil: PerfilUsuario.OPERADOR,
-      ativo: true
-    }));
+    await userRepo.save(
+      userRepo.create({
+        nome: 'User Login 2',
+        email: 'login2@teste.com',
+        senha_hash: pass,
+        perfil: PerfilUsuario.OPERADOR,
+        ativo: true,
+      }),
+    );
 
     const response = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'login2@teste.com', senha: 'errada' });
+      .send({ email: 'login2@teste.com', senha: 'senha_incorreta_longa' });
 
     expect(response.status).toBe(401);
   });
 });
+

@@ -6,12 +6,12 @@ const mockNotificacaoService = { criarNotificacaoParaPerfis: jest.fn() };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
   AppDataSource: {
-    getRepository: jest.fn(() => mockLoteRepo)
-  }
+    getRepository: jest.fn(() => mockLoteRepo),
+  },
 }));
 
 jest.unstable_mockModule('../notificacao.service.js', () => ({
-  NotificacaoService: jest.fn(() => mockNotificacaoService)
+  NotificacaoService: jest.fn(() => mockNotificacaoService),
 }));
 
 const { ProgressaoService } = await import('../progressao.service.js');
@@ -37,7 +37,8 @@ describe('ProgressaoService', () => {
     expect(mockNotificacaoService.criarNotificacaoParaPerfis).toHaveBeenCalledWith(
       expect.stringContaining('L-01'),
       'inspecao',
-      ['inspetor']
+      ['inspetor'],
+      { link: '/app/lote/1' },
     );
   });
 

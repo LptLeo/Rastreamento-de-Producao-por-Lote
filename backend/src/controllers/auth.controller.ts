@@ -1,11 +1,11 @@
-import type { Request, Response } from "express";
-import { AuthService } from "../services/auth.service.js";
-import jwt from "jsonwebtoken";
+import type { Request, Response } from 'express';
+import { AuthService } from '../services/auth.service.js';
+import jwt from 'jsonwebtoken';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" as const : "lax" as const,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? ('none' as const) : ('lax' as const),
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
 };
 
@@ -17,19 +17,19 @@ export class AuthController {
   }
 
   login = async (req: Request, res: Response): Promise<void> => {
-    const { usuario, tokenAcesso, tokenAtualizacao } = await this.authService.login(req.body);
+    const { tokenAcesso, tokenAtualizacao } = await this.authService.login(req.body);
 
-    res.cookie("tokenAtualizacao", tokenAtualizacao, COOKIE_OPTIONS);
-    res.status(200).json({ usuario, tokenAcesso });
-  }
+    res.cookie('tokenAtualizacao', tokenAtualizacao, COOKIE_OPTIONS);
+    res.status(200).json({ tokenAcesso });
+  };
 
   refresh = async (req: Request, res: Response): Promise<void> => {
     const tokenAtualizacao = req.cookies.tokenAtualizacao;
     const tokens = await this.authService.refresh(tokenAtualizacao);
 
-    res.cookie("tokenAtualizacao", tokens.tokenAtualizacao, COOKIE_OPTIONS);
+    res.cookie('tokenAtualizacao', tokens.tokenAtualizacao, COOKIE_OPTIONS);
     res.status(200).json({ tokenAcesso: tokens.tokenAcesso });
-  }
+  };
 
   logout = async (req: Request, res: Response): Promise<void> => {
     const tokenAtualizacao = req.cookies.tokenAtualizacao;
@@ -42,10 +42,12 @@ export class AuthController {
         if (decoded?.id) {
           await this.authService.logout(decoded.id);
         }
-      } catch { /* ignora erros de decodificação; limpa o cookie de qualquer forma */ }
+      } catch {
+        /* ignora erros de decodificação; limpa o cookie de qualquer forma */
+      }
     }
 
-    res.clearCookie("tokenAtualizacao", { ...COOKIE_OPTIONS, maxAge: 0 });
-    res.status(200).json({ message: "Logout realizado com sucesso." });
-  }
+    res.clearCookie('tokenAtualizacao', { ...COOKIE_OPTIONS, maxAge: 0 });
+    res.status(200).json({ message: 'Logout realizado com sucesso.' });
+  };
 }

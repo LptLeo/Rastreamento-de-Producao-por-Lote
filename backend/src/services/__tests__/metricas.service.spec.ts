@@ -1,18 +1,18 @@
 import { jest } from '@jest/globals';
 import { PerfilUsuario } from '../../entities/Usuario.js';
 
-const mockLoteRepo = { 
+const mockLoteRepo = {
   count: jest.fn(),
   find: jest.fn(),
-  createQueryBuilder: jest.fn()
+  createQueryBuilder: jest.fn(),
 };
 
 const mockAppDataSource = {
-  getRepository: jest.fn(() => mockLoteRepo)
+  getRepository: jest.fn(() => mockLoteRepo),
 };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
-  AppDataSource: mockAppDataSource
+  AppDataSource: mockAppDataSource,
 }));
 
 const { MetricasService } = await import('../metricas.service.js');
@@ -31,7 +31,7 @@ describe('MetricasService', () => {
     it('deve calcular a tendência de unidades produzidas corretamente', async () => {
       // Mock de contagem de lotes
       mockLoteRepo.count.mockResolvedValue(10 as never);
-      
+
       // Mock de unidades
       const mockQB = {
         select: jest.fn().mockReturnThis(),
@@ -42,12 +42,13 @@ describe('MetricasService', () => {
         addGroupBy: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn()
-          .mockResolvedValueOnce({ total: "100" }) // Atual
-          .mockResolvedValueOnce({ total: "50" }), // Passado
-        getRawMany: jest.fn().mockResolvedValue([])
+        getRawOne: jest
+          .fn()
+          .mockResolvedValueOnce({ total: '100' }) // Atual
+          .mockResolvedValueOnce({ total: '50' }), // Passado
+        getRawMany: jest.fn().mockResolvedValue([]),
       };
-      
+
       mockLoteRepo.createQueryBuilder.mockReturnValue(mockQB as any);
       mockLoteRepo.find.mockResolvedValue([]);
 
@@ -68,8 +69,8 @@ describe('MetricasService', () => {
         addGroupBy: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ total: "0" }),
-        getRawMany: jest.fn().mockResolvedValue([])
+        getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
+        getRawMany: jest.fn().mockResolvedValue([]),
       };
       mockLoteRepo.createQueryBuilder.mockReturnValue(mockQB as any);
       mockLoteRepo.find.mockResolvedValue([]);

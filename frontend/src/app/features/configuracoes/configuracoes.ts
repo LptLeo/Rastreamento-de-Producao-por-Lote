@@ -2,7 +2,11 @@ import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.js';
-import { ConfiguracoesService, ComparacaoPeriodo, ProducaoPeriodo } from '../../core/services/configuracoes.service.js';
+import {
+  ConfiguracoesService,
+  ComparacaoPeriodo,
+  ProducaoPeriodo,
+} from '../../core/services/configuracoes.service.js';
 
 @Component({
   selector: 'app-configuracoes',
@@ -22,7 +26,7 @@ export class Configuracoes {
     { value: 'qualquer_momento', label: 'Qualquer Momento' },
     { value: 'mes', label: 'Mês' },
     { value: 'semana', label: 'Semana' },
-    { value: 'dia', label: 'Dia' }
+    { value: 'dia', label: 'Dia' },
   ];
 
   // Lote Options
@@ -30,7 +34,7 @@ export class Configuracoes {
     { value: 'qualquer_momento', label: 'Qualquer Momento' },
     { value: 'mes', label: 'Mês' },
     { value: 'semana', label: 'Semana' },
-    { value: 'dia', label: 'Dia' }
+    { value: 'dia', label: 'Dia' },
   ];
 
   updateDashboard(key: string, value: any) {

@@ -34,8 +34,15 @@ export class ToastService {
       type: 'warning',
       autoClose: false,
       actions: [
-        { label: confirmLabel, primary: true, callback: () => { onConfirm(); this.close(); } }
-      ]
+        {
+          label: confirmLabel,
+          primary: true,
+          callback: () => {
+            onConfirm();
+            this.close();
+          },
+        },
+      ],
     });
   }
 

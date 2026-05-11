@@ -9,4 +9,4 @@ import { Footer } from '../../../shared/components/footer/footer.js';
   imports: [RouterOutlet, Sidebar, Header, Footer],
   templateUrl: './main-layout.html',
 })
-export class MainLayout { }
+export class MainLayout {}

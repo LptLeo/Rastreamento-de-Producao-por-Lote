@@ -9,6 +9,11 @@ export interface Notificacao {
   tipo: 'sistema' | 'estoque' | 'inspecao' | 'produto';
   lida: boolean;
   criado_em: string;
+  metadata?: {
+    link?: string;
+    idRef?: number;
+    filtro?: string;
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -30,26 +35,25 @@ export class NotificacaoService implements OnDestroy {
   }
 
   private buscarDoServidor() {
-    this.http.get<Notificacao[]>(this.API_URL).subscribe(data => {
+    this.http.get<Notificacao[]>(this.API_URL).subscribe((data) => {
       this.notificacoes.set(data);
       this.atualizarContagem(data);
     });
   }
 
   marcarComoLida(id: number) {
-    this.http.patch<Notificacao>(`${this.API_URL}/${id}/lida`, {}).subscribe(atualizada => {
-      const atualizadas = this.notificacoes().map(n => n.id === id ? atualizada : n);
+    this.http.patch<Notificacao>(`${this.API_URL}/${id}/lida`, {}).subscribe((atualizada) => {
+      const atualizadas = this.notificacoes().map((n) => (n.id === id ? atualizada : n));
       this.notificacoes.set(atualizadas);
       this.atualizarContagem(atualizadas);
     });
   }
 
   private atualizarContagem(lista: Notificacao[]) {
-    this.naoLidasCount.set(lista.filter(n => !n.lida).length);
+    this.naoLidasCount.set(lista.filter((n) => !n.lida).length);
   }
 
   ngOnDestroy() {
     this.pollingSub?.unsubscribe();
   }
 }
-

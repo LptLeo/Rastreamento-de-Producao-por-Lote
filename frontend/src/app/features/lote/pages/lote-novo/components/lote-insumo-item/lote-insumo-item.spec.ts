@@ -7,7 +7,7 @@ import { Component } from '@angular/core';
 @Component({
   standalone: true,
   imports: [LoteInsumoItemComponent, ReactiveFormsModule],
-  template: `<app-lote-insumo-item [formGroup]="form"></app-lote-insumo-item>`
+  template: `<app-lote-insumo-item [formGroup]="form"></app-lote-insumo-item>`,
 })
 class TestWrapperComponent {
   form!: FormGroup;
@@ -21,7 +21,7 @@ describe('LoteInsumoItemComponent (via Wrapper)', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestWrapperComponent, LoteInsumoItemComponent, ReactiveFormsModule, CommonModule],
-      providers: [FormBuilder, DecimalPipe]
+      providers: [FormBuilder, DecimalPipe],
     }).compileComponents();
 
     fb = TestBed.inject(FormBuilder);

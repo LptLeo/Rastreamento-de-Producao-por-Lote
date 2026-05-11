@@ -13,7 +13,9 @@ import {
   STATUS_CONFIG,
   StatusConfig,
 } from '../../../../shared/models/lote.models.js';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
+import { SseClientService } from '../../../../core/services/sse-client.service.js';
 
 const TURNO_LABEL: Record<string, string> = {
   manha: 'Manhã',
@@ -32,6 +34,7 @@ export class LoteDetail {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private loteService = inject(LoteFeatureService);
+  private sseService = inject(SseClientService);
   authService = inject(AuthService);
   private fb = inject(FormBuilder);
 
@@ -39,19 +42,21 @@ export class LoteDetail {
   params = toSignal(this.route.paramMap);
   loteId = computed(() => Number(this.params()?.get('id')));
 
-  /** 
+  /**
    * Resource Reativo: Busca o lote sempre que o ID mudar.
    */
   loteResource = rxResource({
     params: () => ({ id: this.loteId() }),
-    stream: ({ params }) => this.loteService.getLoteById(params.id)
+    stream: ({ params }) => this.loteService.getLoteById(params.id),
   });
 
   // Derivações reativas
   lote = computed(() => this.loteResource.value() || null);
   carregando = computed(() => this.loteResource.isLoading());
-  erro = computed(() => this.loteResource.error() ? 'Não foi possível carregar os dados do lote.' : null);
-  
+  erro = computed(() =>
+    this.loteResource.error() ? 'Não foi possível carregar os dados do lote.' : null,
+  );
+
   processando = signal(false);
 
   /** Formulário de inspeção */
@@ -63,8 +68,8 @@ export class LoteDetail {
   qtdReprovadaInput = signal(0);
 
   constructor() {
-    /** 
-     * Sincroniza a validação do formulário com a quantidade planejada do lote 
+    /**
+     * Sincroniza a validação do formulário com a quantidade planejada do lote
      * assim que o lote é carregado ou alterado.
      */
     effect(() => {
@@ -84,6 +89,20 @@ export class LoteDetail {
     this.formInspecao.get('quantidade_reprovada')?.valueChanges.subscribe((val) => {
       this.qtdReprovadaInput.set(Number(val) || 0);
     });
+
+    /**
+     * Recarrega o lote em tempo real quando o status mudar (ex: inspeção concluída
+     * por outro usuário, ou o job de progressão avançando o lote).
+     * O filtro garante que apenas eventos deste lote específico disparem o reload.
+     */
+    this.sseService.eventos$
+      .pipe(
+        takeUntilDestroyed(),
+        filter(
+          (e) => e.tipo === 'lote:status_alterado' && e.dados.id === this.loteId(),
+        ),
+      )
+      .subscribe(() => this.loteResource.reload());
   }
 
   /**
@@ -132,8 +151,7 @@ export class LoteDetail {
       .pipe(finalize(() => this.processando.set(false)))
       .subscribe({
         next: () => this.loteResource.reload(),
-        error: (err) =>
-          alert('Erro: ' + (err.error?.message || 'Erro desconhecido.')),
+        error: (err) => alert('Erro: ' + (err.error?.message || 'Erro desconhecido.')),
       });
   }
 

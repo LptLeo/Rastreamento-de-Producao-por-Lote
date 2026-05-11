@@ -26,8 +26,6 @@ export class HeaderService {
       .get<SugestaoItem[]>(`${API_URL}/lotes/busca`, {
         params: { q: q.trim() },
       })
-      .pipe(
-        catchError(() => of([]))
-      );
+      .pipe(catchError(() => of([])));
   }
 }
