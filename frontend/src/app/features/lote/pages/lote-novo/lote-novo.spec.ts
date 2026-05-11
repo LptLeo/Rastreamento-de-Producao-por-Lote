@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { LoteNovo } from './lote-novo.js';
 import { ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute, convertToParamMap } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service.js';
 import { LoteFeatureService } from '../../services/lote.service.js';
 import { of, throwError } from 'rxjs';
@@ -13,6 +13,7 @@ describe('LoteNovo Component', () => {
   let mockRouter: any;
   let mockAuthService: any;
   let mockLoteService: any;
+  let mockActivatedRoute: any;
 
   beforeEach(async () => {
     mockRouter = { navigate: jest.fn() };
@@ -22,6 +23,11 @@ describe('LoteNovo Component', () => {
       getInsumosDisponiveis: jest.fn().mockReturnValue(of([])),
       createLote: jest.fn(),
     };
+    mockActivatedRoute = {
+      snapshot: {
+        queryParamMap: convertToParamMap({})
+      }
+    };
 
     await TestBed.configureTestingModule({
       imports: [LoteNovo, ReactiveFormsModule],
@@ -29,6 +35,7 @@ describe('LoteNovo Component', () => {
         { provide: Router, useValue: mockRouter },
         { provide: AuthService, useValue: mockAuthService },
         { provide: LoteFeatureService, useValue: mockLoteService },
+        { provide: ActivatedRoute, useValue: mockActivatedRoute },
       ],
     }).compileComponents();
 
@@ -39,6 +46,16 @@ describe('LoteNovo Component', () => {
 
   it('deve criar o componente', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('deve pré-selecionar o produto se produtoId vier nos query params', async () => {
+    // Recria o componente com o mock configurado com ID
+    mockActivatedRoute.snapshot.queryParamMap = convertToParamMap({ produtoId: '42' });
+    
+    // Precisamos reinicializar para o ngOnInit ler o novo valor do mock
+    component.ngOnInit();
+    
+    expect(component.form.controls.produto_id.value).toBe(42);
   });
 
   describe('Validação com Zod', () => {
