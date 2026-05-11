@@ -22,6 +22,9 @@ export async function startTestContainer() {
     process.env.NODE_ENV = 'test';
     process.env.JWT_SECRET = 'secret_test';
     process.env.JWT_REFRESH_SECRET = 'refresh_secret_test';
+    process.env.JWT_EXPIRATION = '15m';
+    process.env.JWT_REFRESH_EXPIRATION = '7d';
+    process.env.JWT_SALT = '10';
 
     console.log(`[test] ✅ Container pronto em ${process.env.DB_HOST}:${process.env.DB_PORT}`);
   }

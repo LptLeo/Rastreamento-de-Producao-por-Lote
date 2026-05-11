@@ -30,18 +30,20 @@ export const criarBulk = async (req: Request, res: Response, next: NextFunction)
 
     // Simulação de Logística (Backend): Após 10s, os itens chegam na doca (status pendente)
     // Usamos o próprio requisitante original para manter a trilha de auditoria
-    const requisitante = getRequisitante(req);
-    
-    setTimeout(async () => {
-      for (const item of resultados) {
-        try {
-          const atualizado = await service.atualizarStatus(item.id, InsumoEstoqueStatus.PENDENTE, requisitante);
-          SseService.instancia.emitir('insumo:status_alterado', { id: atualizado.id, status: atualizado.status });
-        } catch (err) {
-          console.error(`[Logistica] Erro ao atualizar chegada do lote ${item.id}:`, err);
+    if (process.env.NODE_ENV !== 'test') {
+      const requisitante = getRequisitante(req);
+      
+      setTimeout(async () => {
+        for (const item of resultados) {
+          try {
+            const atualizado = await service.atualizarStatus(item.id, InsumoEstoqueStatus.PENDENTE, requisitante);
+            SseService.instancia.emitir('insumo:status_alterado', { id: atualizado.id, status: atualizado.status });
+          } catch (err) {
+            console.error(`[Logistica] Erro ao atualizar chegada do lote ${item.id}:`, err);
+          }
         }
-      }
-    }, 10000);
+      }, 10000);
+    }
 
   } catch (e) {
     next(e);
