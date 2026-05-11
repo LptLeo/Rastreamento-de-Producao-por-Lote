@@ -24,6 +24,9 @@ export class SseService {
 
   private constructor() {
     this.heartbeatInterval = setInterval(() => this.executarHeartbeat(), 30_000);
+    // Padrão Ouro: .unref() impede que este timer mantenha o processo do Node vivo 
+    // se não houver mais nada para fazer (essencial para o Jest fechar os testes).
+    this.heartbeatInterval.unref();
   }
 
   /** Acesso ao singleton global */
