@@ -31,6 +31,7 @@ export interface FiltrosEstoque {
   fornecedor?: string;
   ordenarPor?: OrdenacaoEstoque | '';
   status?: string;
+  cache_buster?: string;
 }
 
 export interface FiltrosCatalogo {
@@ -83,6 +84,11 @@ export class InsumosService {
   /** Registra entrada de novo lote de insumo no estoque */
   create(payload: any): Observable<InsumoEstoque> {
     return this.http.post<InsumoEstoque>(`${API_URL}/insumos-estoque`, payload);
+  }
+
+  /** Registra entrada de múltiplos lotes de insumo de uma vez */
+  createBulk(itens: CriarInsumoEstoquePayload[]): Observable<InsumoEstoque[]> {
+    return this.http.post<InsumoEstoque[]>(`${API_URL}/insumos-estoque/bulk`, { itens });
   }
 
   atualizarStatus(id: number, status: string): Observable<InsumoEstoque> {

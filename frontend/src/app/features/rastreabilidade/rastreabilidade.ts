@@ -137,11 +137,18 @@ export class Rastreabilidade {
   sugestoes = computed(() => this.sugestoesResource.value() || []);
   buscandoSugestoes = computed(() => this.sugestoesResource.isLoading());
 
-  resultado = computed(() => this.rastreioResource.value());
+  resultado = computed(() => {
+    if (this.rastreioResource.error()) return null;
+    return this.rastreioResource.value();
+  });
+
   buscando = computed(() => this.rastreioResource.isLoading());
-  erro = computed(() =>
-    this.rastreioResource.error() ? 'Nenhum resultado encontrado ou falha no servidor.' : null,
-  );
+  
+  erro = computed(() => {
+    const error = this.rastreioResource.error() as any;
+    if (!error) return null;
+    return error.error?.message || 'Nenhum resultado encontrado ou falha no servidor.';
+  });
   modoResultado = computed(() => !!this.termoBuscaEfetuada());
 
   onInput(event: Event): void {

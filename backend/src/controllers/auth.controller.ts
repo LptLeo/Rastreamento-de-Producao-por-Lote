@@ -17,10 +17,10 @@ export class AuthController {
   }
 
   login = async (req: Request, res: Response): Promise<void> => {
-    const { usuario, tokenAcesso, tokenAtualizacao } = await this.authService.login(req.body);
+    const { tokenAcesso, tokenAtualizacao } = await this.authService.login(req.body);
 
     res.cookie('tokenAtualizacao', tokenAtualizacao, COOKIE_OPTIONS);
-    res.status(200).json({ usuario, tokenAcesso });
+    res.status(200).json({ tokenAcesso });
   };
 
   refresh = async (req: Request, res: Response): Promise<void> => {

@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LoteFeatureService } from './services/lote.service.js';
@@ -13,6 +13,9 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { DashboardService } from '../dashboard/services/dashboard.service.js';
 import { DashboardData } from '../dashboard/models/dashboard.interface.js';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
+import { SseClientService } from '../../core/services/sse-client.service.js';
 
 /** Fallback caso o backend não responda — 2 minutos como padrão de demo */
 const FALLBACK_DURACAO_MS = 2 * 60 * 1000;
@@ -32,10 +35,10 @@ const FALLBACK_DURACAO_MS = 2 * 60 * 1000;
   templateUrl: './lote.html',
   styleUrl: './lote.css',
 })
-export class Lote implements OnDestroy {
-  private tickIntervalId: ReturnType<typeof setInterval> | null = null;
+export class Lote {
   private loteService = inject(LoteFeatureService);
   private dashboardService = inject(DashboardService);
+  private sseService = inject(SseClientService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private configuracoesService = inject(ConfiguracoesService);
@@ -56,8 +59,8 @@ export class Lote implements OnDestroy {
   termoPesquisa = computed(() => this.queryParams()?.['busca'] || '');
   currentPage = computed(() => Number(this.queryParams()?.['pagina']) || 1);
 
-  /** Trigger para o Polling reativo */
-  private pollingTrigger = signal<number>(0);
+  /** Trigger para o Polling reativo — removido, SSE assume */
+  // private pollingTrigger = signal<number>(0);
 
   /** Resource para a listagem principal de lotes */
   lotesResource = rxResource({
@@ -66,14 +69,12 @@ export class Lote implements OnDestroy {
       limite: 9,
       status: this.filtroAtivo(),
       busca: this.termoPesquisa(),
-      _poll: this.pollingTrigger(), // Força recarregamento no polling
     }),
     stream: ({ params }) => this.loteService.getLotes(params),
   });
 
   /** Resource para a contagem de status */
   contagemResource = rxResource({
-    params: () => ({ _poll: this.pollingTrigger() }),
     stream: () => this.loteService.getContagem(),
   });
 
@@ -135,22 +136,20 @@ export class Lote implements OnDestroy {
   });
 
   constructor() {
-    /** Inicia o mecanismo de Polling Inteligente */
-    let tickCount = 0;
-    this.tickIntervalId = setInterval(() => {
-      tickCount++;
-      // A cada 5 segundos, se houver lote em produção, dispara o trigger
-      if (tickCount % 5 === 0) {
-        const temLoteProduzindo = this.lotes().some((l) => l.status === 'em_producao');
-        if (temLoteProduzindo) {
-          this.pollingTrigger.update((v) => v + 1);
-        }
-      }
-    }, 1000);
-  }
-
-  ngOnDestroy(): void {
-    if (this.tickIntervalId !== null) clearInterval(this.tickIntervalId);
+    /**
+     * Assina o stream SSE e recarrega lista e contagem ao receber
+     * qualquer evento do domínio de lotes.
+     * takeUntilDestroyed() cancela automáticamente ao sair da tela.
+     */
+    this.sseService.eventos$
+      .pipe(
+        takeUntilDestroyed(),
+        filter((e) => e.tipo === 'lote:criado' || e.tipo === 'lote:status_alterado'),
+      )
+      .subscribe(() => {
+        this.lotesResource.reload();
+        this.contagemResource.reload();
+      });
   }
 
   onPageChange(pagina: number): void {

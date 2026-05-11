@@ -1,95 +1,213 @@
-@if (lotes.length > 0) {
-  <div class="mb-8">
-    <div class="flex items-center gap-3 mb-4">
-      <h2 class="text-white text-sm uppercase tracking-wider font-bold">
-        Logística: Lotes a Receber
-      </h2>
-      <span class="bg-[#00E5FF]/20 text-[#00E5FF] px-2 py-0.5 rounded text-[10px] font-bold">{{
-        lotes.length
-      }}</span>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      @for (lote of lotes; track lote.id) {
+@if (isGestor) {
+  <!-- Visão de Gestor: Barra Colapsável -->
+  <div class="mb-6">
+    <button
+      (click)="toggle()"
+      class="w-full flex items-center justify-between bg-[#131313]/80 border border-[#484847]/30 hover:border-[#00E5FF]/40 p-4 rounded-lg transition-all group"
+    >
+      <div class="flex items-center gap-3">
         <div
-          class="relative bg-[#131313] border border-[#484847]/30 rounded-lg p-4 overflow-hidden group"
+          class="p-2 rounded-md bg-[#1a1a1a] border border-[#484847]/30 group-hover:border-[#00E5FF]/30 transition-all"
         >
-          <!-- Efeito de carregamento contínuo no fundo se estiver a_caminho -->
-          @if (lote.status === 'a_caminho') {
-            <div
-              class="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5FF]/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"
-            ></div>
-          }
-
-          <div class="relative z-10">
-            <!-- Header do Card -->
-            <div class="flex justify-between items-start mb-3">
-              <div class="flex flex-col">
-                <span class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1">{{
-                  lote.materiaPrima.categoria
-                }}</span>
-                <h3 class="text-sm font-bold text-white uppercase">{{ lote.materiaPrima.nome }}</h3>
-              </div>
-
-              <!-- Badge Dinâmico -->
-              @if (lote.status === 'a_caminho') {
-                <span
-                  class="bg-[#2a2a2a] text-[#ADAAAA] border border-[#484847] px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm"
-                >
-                  <div class="w-1.5 h-1.5 bg-[#ADAAAA] rounded-full animate-pulse"></div>
-                  A Caminho
-                </span>
-              } @else if (lote.status === 'pendente') {
-                <span
-                  class="bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/30 px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_10px_rgba(0,229,255,0.1)]"
-                >
-                  <div class="w-1.5 h-1.5 bg-[#00E5FF] rounded-full animate-ping"></div>
-                  Aguardando Recebimento
-                </span>
-              }
-            </div>
-
-            <!-- Infos do Lote -->
-            <div class="flex flex-col gap-1.5 mb-4">
-              <div class="flex justify-between items-center text-[11px]">
-                <span class="text-[#6B7280]">Fornecedor:</span>
-                <span class="text-white font-medium truncate max-w-[150px]">{{
-                  lote.fornecedor
-                }}</span>
-              </div>
-              <div class="flex justify-between items-center text-[11px]">
-                <span class="text-[#6B7280]">Lote REF:</span>
-                <span class="text-white font-medium">{{
-                  lote.numero_lote_fornecedor || 'N/A'
-                }}</span>
-              </div>
-              <div class="flex justify-between items-center text-[11px]">
-                <span class="text-[#6B7280]">Quantidade Esperada:</span>
-                <span class="text-[#00E5FF] font-bold"
-                  >{{ lote.quantidade_inicial }} {{ lote.materiaPrima.unidade_medida }}</span
-                >
-              </div>
-            </div>
-
-            <!-- Botão Ação -->
-            @if (lote.status === 'pendente') {
-              <button
-                (click)="receber.emit(lote.id)"
-                class="w-full bg-[#0E0E0E] border border-[#00E5FF]/50 text-[#00E5FF] hover:bg-[#00E5FF] hover:text-black hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] text-[10px] font-bold uppercase tracking-widest py-2.5 rounded transition-all"
-              >
-                Confirmar Recebimento Físico
-              </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-5 text-[#6B7280] group-hover:text-[#00E5FF] transition-colors"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.099-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.806H8.002c-.592 0-1.117.3-1.454.772L4.125 13.125m15.375 5.625V14.25m-17.25 0h17.25v-1.125c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.125Z"
+            />
+          </svg>
+        </div>
+        <div class="flex flex-col items-start">
+          <span class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider"
+            >Monitoramento de Carga</span
+          >
+          <h2 class="text-xs font-bold text-white uppercase tracking-[0.5px]">
+            @if (lotes.length > 0) {
+              Existem <span class="text-[#00E5FF]">{{ lotes.length }}</span> lotes pendentes de
+              recebimento
             } @else {
-              <button
-                disabled
-                class="w-full bg-[#0E0E0E] border border-[#484847]/30 text-[#6B7280] text-[10px] font-bold uppercase tracking-widest py-2.5 rounded opacity-50 cursor-not-allowed"
+              Logística em dia: Nenhum lote para receber
+            }
+          </h2>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        @if (lotes.length > 0 && !isExpanded()) {
+          <div class="flex -space-x-2">
+            @for (lote of lotes.slice(0, 3); track lote.id) {
+              <div
+                class="w-6 h-6 rounded-full border border-[#0A0A0A] bg-[#2A2A2A] flex items-center justify-center text-[8px] font-bold text-[#ADAAAA] uppercase"
+                [title]="lote.materiaPrima.nome"
               >
-                Processando Logística...
-              </button>
+                {{ lote.materiaPrima.nome.substring(0, 1) }}
+              </div>
             }
           </div>
+        }
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.5"
+          stroke="currentColor"
+          class="size-4 text-[#6B7280] transition-transform duration-300"
+          [class.rotate-180]="isExpanded()"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </div>
+    </button>
+
+    @if (isExpanded()) {
+      <div class="mt-4 animate-fade-in">
+        @if (lotes.length > 0) {
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" [@listAnimation]="lotes.length">
+            @for (lote of lotes; track lote.id) {
+              <ng-container *ngTemplateOutlet="cardLote; context: { $implicit: lote }"></ng-container>
+            }
+          </div>
+        } @else {
+          <ng-container *ngTemplateOutlet="emptyState"></ng-container>
+        }
+      </div>
+    }
+  </div>
+} @else {
+  <!-- Visão de Operador: Lista Aberta ou Empty State -->
+  @if (lotes.length > 0) {
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-4">
+        <h2 class="text-white text-sm uppercase tracking-wider font-bold">
+          Logística: Lotes a Receber
+        </h2>
+        <span class="bg-[#00E5FF]/20 text-[#00E5FF] px-2 py-0.5 rounded text-[10px] font-bold">{{
+          lotes.length
+        }}</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" [@listAnimation]="lotes.length">
+        @for (lote of lotes; track lote.id) {
+          <ng-container *ngTemplateOutlet="cardLote; context: { $implicit: lote }"></ng-container>
+        }
+      </div>
+    </div>
+  } @else {
+    <ng-container *ngTemplateOutlet="emptyState"></ng-container>
+  }
+}
+
+<!-- Template Reutilizável: Estado Vazio -->
+<ng-template #emptyState>
+  <div
+    class="p-12 flex flex-col items-center justify-center border-2 border-dashed border-[#484847]/20 rounded-xl bg-[#131313]/20 animate-fade-in"
+  >
+    <div class="bg-[#1a1a1a] p-4 rounded-full mb-4 shadow-inner">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="#6B7280"
+        class="size-8"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+        />
+      </svg>
+    </div>
+    <h3 class="text-[#ADAAAA] text-sm font-bold uppercase tracking-[1px] mb-1">Logística em dia</h3>
+    <p class="text-[#6B7280] text-[11px] text-center max-w-[280px]">
+      Nenhum lote de insumo aguardando recebimento ou em trânsito no momento.
+    </p>
+  </div>
+</ng-template>
+
+<!-- Template Reutilizável para o Card -->
+<ng-template #cardLote let-lote>
+  <div
+    class="relative bg-[#131313] border border-[#484847]/30 rounded-lg p-4 overflow-hidden group transition-all duration-500"
+    [class.new-item-glow]="isUnseen(lote.id)"
+    [attr.data-lote-id]="lote.id"
+  >
+    <!-- Efeito de carregamento contínuo no fundo se estiver a_caminho -->
+    @if (lote.status === 'a_caminho') {
+      <div
+        class="absolute inset-0 bg-gradient-to-r from-transparent via-[#00E5FF]/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"
+      ></div>
+    }
+
+    <div class="relative z-10">
+      <!-- Header do Card -->
+      <div class="flex justify-between items-start mb-3">
+        <div class="flex flex-col">
+          <span class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1">{{
+            lote.materiaPrima.categoria
+          }}</span>
+          <h3 class="text-sm font-bold text-white uppercase">{{ lote.materiaPrima.nome }}</h3>
         </div>
+
+        <!-- Badge Dinâmico -->
+        @if (lote.status === 'a_caminho') {
+          <span
+            class="bg-[#2a2a2a] text-[#ADAAAA] border border-[#484847] px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm"
+          >
+            <div class="w-1.5 h-1.5 bg-[#ADAAAA] rounded-full animate-pulse"></div>
+            A Caminho
+          </span>
+        } @else if (lote.status === 'pendente') {
+          <span
+            class="bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/30 px-2.5 py-1 rounded text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_10px_rgba(0,229,255,0.1)]"
+          >
+            <div class="w-1.5 h-1.5 bg-[#00E5FF] rounded-full animate-ping"></div>
+            Aguardando Recebimento
+          </span>
+        }
+      </div>
+
+      <!-- Infos do Lote -->
+      <div class="flex flex-col gap-1.5 mb-4">
+        <div class="flex justify-between items-center text-[11px]">
+          <span class="text-[#6B7280]">Fornecedor:</span>
+          <span class="text-white font-medium truncate max-w-[150px]">{{ lote.fornecedor }}</span>
+        </div>
+        <div class="flex justify-between items-center text-[11px]">
+          <span class="text-[#6B7280]">Lote REF:</span>
+          <span class="text-white font-medium">{{ lote.numero_lote_fornecedor || 'N/A' }}</span>
+        </div>
+        <div class="flex justify-between items-center text-[11px]">
+          <span class="text-[#6B7280]">Quantidade Esperada:</span>
+          <span class="text-[#00E5FF] font-bold"
+            >{{ lote.quantidade_inicial }} {{ lote.materiaPrima.unidade_medida }}</span
+          >
+        </div>
+      </div>
+
+      <!-- Botão Ação -->
+      @if (lote.status === 'pendente') {
+        <button
+          (click)="receber.emit(lote.id)"
+          class="w-full bg-[#0E0E0E] border border-[#00E5FF]/50 text-[#00E5FF] hover:bg-[#00E5FF] hover:text-black hover:shadow-[0_0_15px_rgba(0,229,255,0.4)] text-[10px] font-bold uppercase tracking-widest py-2.5 rounded transition-all"
+        >
+          Confirmar Recebimento Físico
+        </button>
+      } @else {
+        <button
+          disabled
+          class="w-full bg-[#0E0E0E] border border-[#484847]/30 text-[#6B7280] text-[10px] font-bold uppercase tracking-widest py-2.5 rounded opacity-50 cursor-not-allowed"
+        >
+          Processando Logística...
+        </button>
       }
     </div>
   </div>
-}
+</ng-template>

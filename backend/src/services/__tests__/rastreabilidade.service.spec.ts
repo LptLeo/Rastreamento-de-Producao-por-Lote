@@ -3,7 +3,7 @@ import { AppError } from '../../errors/AppError.js';
 import { PerfilUsuario } from '../../entities/Usuario.js';
 
 const mockLoteRepo = { createQueryBuilder: jest.fn() };
-const mockInsumoRepo = { createQueryBuilder: jest.fn() };
+const mockInsumoRepo = { createQueryBuilder: jest.fn(), findOne: jest.fn() };
 const mockConsumoRepo = { createQueryBuilder: jest.fn() };
 
 const mockAppDataSource = {
@@ -48,6 +48,9 @@ describe('RastreabilidadeService', () => {
     });
 
     it('deve chamar consultarPorInsumo quando o termo NÃO inicia com LOT-', async () => {
+      // Mock para verificar se insumo existe
+      mockInsumoRepo.findOne.mockResolvedValue({ id: 10, numero_lote_interno: 'INS-123' });
+
       // Mock para contagem (subquery)
       const mockQBCount = {
         select: jest.fn().mockReturnThis(),

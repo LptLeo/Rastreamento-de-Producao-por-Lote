@@ -13,7 +13,9 @@ import {
   STATUS_CONFIG,
   StatusConfig,
 } from '../../../../shared/models/lote.models.js';
-import { rxResource } from '@angular/core/rxjs-interop';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
+import { SseClientService } from '../../../../core/services/sse-client.service.js';
 
 const TURNO_LABEL: Record<string, string> = {
   manha: 'Manhã',
@@ -32,6 +34,7 @@ export class LoteDetail {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private loteService = inject(LoteFeatureService);
+  private sseService = inject(SseClientService);
   authService = inject(AuthService);
   private fb = inject(FormBuilder);
 
@@ -86,6 +89,20 @@ export class LoteDetail {
     this.formInspecao.get('quantidade_reprovada')?.valueChanges.subscribe((val) => {
       this.qtdReprovadaInput.set(Number(val) || 0);
     });
+
+    /**
+     * Recarrega o lote em tempo real quando o status mudar (ex: inspeção concluída
+     * por outro usuário, ou o job de progressão avançando o lote).
+     * O filtro garante que apenas eventos deste lote específico disparem o reload.
+     */
+    this.sseService.eventos$
+      .pipe(
+        takeUntilDestroyed(),
+        filter(
+          (e) => e.tipo === 'lote:status_alterado' && e.dados.id === this.loteId(),
+        ),
+      )
+      .subscribe(() => this.loteResource.reload());
   }
 
   /**

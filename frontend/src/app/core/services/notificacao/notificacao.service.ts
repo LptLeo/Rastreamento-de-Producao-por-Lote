@@ -9,6 +9,11 @@ export interface Notificacao {
   tipo: 'sistema' | 'estoque' | 'inspecao' | 'produto';
   lida: boolean;
   criado_em: string;
+  metadata?: {
+    link?: string;
+    idRef?: number;
+    filtro?: string;
+  };
 }
 
 @Injectable({ providedIn: 'root' })

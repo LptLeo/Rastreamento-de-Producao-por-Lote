@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth.service.js';
 import { LoteFeatureService } from '../../services/lote.service.js';
 import type { Produto, InsumoEstoque } from '../../../../shared/models/lote.models.js';
@@ -55,6 +55,7 @@ export class LoteNovo implements OnInit {
   private authService = inject(AuthService);
   private loteService = inject(LoteFeatureService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   private getHojeLocal(): string {
     const hoje = new Date();
@@ -179,6 +180,12 @@ export class LoteNovo implements OnInit {
   }
 
   ngOnInit(): void {
+    /** Pré-preenche o produto se vier via Query Param (ex: vindo de uma notificação) */
+    const produtoIdParam = this.route.snapshot.queryParamMap.get('produtoId');
+    if (produtoIdParam) {
+      this.form.controls.produto_id.setValue(Number(produtoIdParam));
+    }
+
     /** Reação automática para a validade */
     this.form.controls.sem_validade.valueChanges.subscribe((sem) => {
       if (sem) {

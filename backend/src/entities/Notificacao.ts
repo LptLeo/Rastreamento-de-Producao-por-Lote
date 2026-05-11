@@ -25,6 +25,13 @@ export class Notificacao extends EntidadeBase {
   @Column({ type: 'boolean', default: false, nullable: false })
   lida!: boolean;
 
+  @Column({ type: 'jsonb', nullable: true })
+  metadata!: {
+    link?: string;
+    idRef?: number;
+    filtro?: string;
+  } | null;
+
   @ManyToOne('Usuario', 'notificacoes')
   @JoinColumn({ name: 'usuario_id' })
   usuario!: Relation<Usuario>;

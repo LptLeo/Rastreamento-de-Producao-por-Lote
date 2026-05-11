@@ -9,12 +9,20 @@ import inspecaoRoutes from './inspecao.routes.js';
 import metricasRoutes from './metricas.routes.js';
 import rastreabilidadeRoutes from './rastreabilidade.routes.js';
 import notificacaoRoutes from './notificacao.routes.js';
+import eventsRoutes from './events.routes.js';
 import { authGuard } from '../middlewares/authGuard.js';
 
 const routes = Router();
 
 /** Rota pública de autenticação */
 routes.use('/auth', authRoutes);
+
+/**
+ * Rotas SSE: registradas ANTES do authGuard global.
+ * - GET /events/stream → autenticado via ticket (sem JWT na URL)
+ * - POST /events/ticket → possui authGuard inline próprio
+ */
+routes.use('/events', eventsRoutes);
 
 /** Guard: rotas abaixo exigem token JWT válido */
 routes.use(authGuard);

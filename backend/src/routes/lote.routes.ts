@@ -11,6 +11,7 @@ const router = Router();
 router.get('/', validateQuery(ListLotesQueryDto), ctrl.listar);
 router.get('/config', ctrl.getConfig);
 router.get('/stats/contagem', ctrl.getContagem);
+router.get('/busca', ctrl.buscarSugestoes);
 router.get('/:id', ctrl.buscarPorId);
 // Apenas OPERADOR pode abrir lotes (regra de negócio #2)
 router.post('/', roleGuard(PerfilUsuario.OPERADOR), validateBody(criarLoteSchema), ctrl.criar);

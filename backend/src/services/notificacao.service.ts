@@ -37,6 +37,7 @@ export class NotificacaoService {
     mensagem: string,
     tipo: TipoNotificacao,
     perfis: PerfilUsuario[],
+    metadata?: Notificacao['metadata'],
   ) {
     const usuarios = await this.usuarioRepo
       .createQueryBuilder('usuario')
@@ -50,17 +51,24 @@ export class NotificacaoService {
       notificacao.mensagem = mensagem;
       notificacao.tipo = tipo;
       notificacao.usuario = usuario;
+      notificacao.metadata = metadata || null;
       return notificacao;
     });
 
     await this.notificacaoRepo.save(notificacoes);
   }
 
-  async criarNotificacaoParaUsuario(mensagem: string, tipo: TipoNotificacao, usuario: Usuario) {
+  async criarNotificacaoParaUsuario(
+    mensagem: string,
+    tipo: TipoNotificacao,
+    usuario: Usuario,
+    metadata?: Notificacao['metadata'],
+  ) {
     const notificacao = new Notificacao();
     notificacao.mensagem = mensagem;
     notificacao.tipo = tipo;
     notificacao.usuario = usuario;
+    notificacao.metadata = metadata || null;
     await this.notificacaoRepo.save(notificacao);
   }
 }

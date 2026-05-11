@@ -9,7 +9,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
 
   // Clona a requisição para adicionar o token e as credenciais
-  const token = authService.getTokenAcesso();
+  const token = authService.tokenAcesso();
   const authReq = req.clone({
     withCredentials: true,
     setHeaders: token ? { Authorization: `Bearer ${token}` } : {},
@@ -55,7 +55,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
        * Token de acesso expirou durante o uso normal (mid-session).
        * Tenta renovar silenciosamente e retentar a requisição original.
        */
-      return authService.renovarToken().pipe(
+      return authService.silentRefresh().pipe(
         switchMap((res) => {
           const retryReq = req.clone({
             withCredentials: true,

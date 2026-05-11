@@ -14,6 +14,7 @@ import { Perfil } from './features/perfil/perfil.js';
 import { CadastroUsuarios } from './features/cadastro-usuarios/cadastro-usuarios.js';
 import { authGuard } from './core/guards/auth/auth-guard.js';
 import { guestGuard } from './core/guards/auth/guest-guard.js';
+import { roleGuard } from './core/guards/auth/role-guard.js';
 import { MainLayout } from './core/layouts/main-layout/main-layout.js';
 
 export const routes: Routes = [
@@ -76,10 +77,12 @@ export const routes: Routes = [
       {
         path: 'insumos',
         component: Insumos,
+        canActivate: [roleGuard(['operador'])],
       },
       {
         path: 'insumos/novo',
         component: InsumoNovo,
+        canActivate: [roleGuard(['operador'])],
       },
       {
         path: 'configuracoes',

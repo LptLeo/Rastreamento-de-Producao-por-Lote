@@ -60,8 +60,9 @@ describe('Autenticação (Integração)', () => {
 
     const response = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'login2@teste.com', senha: 'errada' });
+      .send({ email: 'login2@teste.com', senha: 'senha_incorreta_longa' });
 
     expect(response.status).toBe(401);
   });
 });
+

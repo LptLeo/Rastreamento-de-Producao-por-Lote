@@ -35,12 +35,6 @@ export class AuthService {
     const tokens = await this.gerarERegistrarTokens(usuario);
 
     return {
-      usuario: {
-        id: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email,
-        perfil: usuario.perfil,
-      },
       tokenAcesso: tokens.tokenAcesso,
       tokenAtualizacao: tokens.tokenAtualizacao,
     };
@@ -49,7 +43,6 @@ export class AuthService {
   async refresh(token: string) {
     if (!token) throw new AppError('Refresh token não fornecido.', 401);
 
-    // Bug #3: falha explicitamente se JWT_REFRESH_SECRET não estiver configurada
     const secretRefresh = process.env.JWT_REFRESH_SECRET;
     if (!secretRefresh) throw new AppError('JWT_REFRESH_SECRET não configurada.', 500);
 
@@ -80,7 +73,6 @@ export class AuthService {
   }
 
   private async gerarERegistrarTokens(usuario: Usuario) {
-    // Bug #3: falha explicitamente se qualquer segredo não estiver configurado
     const secret = process.env.JWT_SECRET;
     const secretRefresh = process.env.JWT_REFRESH_SECRET;
 
@@ -88,16 +80,23 @@ export class AuthService {
       throw new AppError('JWT_SECRET ou JWT_REFRESH_SECRET não configurados.', 500);
     }
 
+    const acessoExpiracao = process.env.JWT_EXPIRATION as string;
+    const refreshExpiracao = process.env.JWT_REFRESH_EXPIRATION as string;
+    const salt = parseInt(process.env.JWT_SALT as string);
+
+    if (!acessoExpiracao || !refreshExpiracao || isNaN(salt)) {
+      throw new AppError('JWT_EXPIRATION, JWT_REFRESH_EXPIRATION ou JWT_SALT não configurados.', 500);
+    }
+
     const tokenAcesso = jwt.sign(
       { id: usuario.id, nome: usuario.nome, perfil: usuario.perfil },
       secret,
-      { expiresIn: '15m' },
+      { expiresIn: acessoExpiracao as any },
     );
 
-    const tokenAtualizacao = jwt.sign({ id: usuario.id }, secretRefresh, { expiresIn: '7d' });
+    const tokenAtualizacao = jwt.sign({ id: usuario.id }, secretRefresh, { expiresIn: refreshExpiracao as any });
 
     // Salva hash do refresh token para permitir invalidação individual de sessão
-    const salt = 10;
     const hash = await bcrypt.hash(tokenAtualizacao, salt);
     await this.userRepo.update(usuario.id, { refresh_token: hash });
 

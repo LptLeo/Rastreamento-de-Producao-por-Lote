@@ -81,14 +81,9 @@
           @if (!isOperador) {
             <button
               (click)="iniciarFluxoPedido()"
-              [disabled]="pedidoProcessando()"
-              class="flex-1 md:flex-none border border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10 text-[10px] font-bold uppercase tracking-wider px-6 py-2.5 rounded transition-all disabled:opacity-30"
+              class="flex-1 md:flex-none border border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10 text-[10px] font-bold uppercase tracking-wider px-6 py-2.5 rounded transition-all"
             >
-              @if (pedidoProcessando()) {
-                🚚 Aguardando Chegada...
-              } @else {
-                Pedir Mais Insumos
-              }
+              Pedir Mais Insumos
             </button>
           }
           <button
@@ -188,7 +183,11 @@
       </div>
     </div>
 
-    <app-lotes-receber [lotes]="lotesReceber()" (receber)="receberLoteFisico($event)">
+    <app-lotes-receber
+      [lotes]="lotesReceber()"
+      [isGestor]="!isOperador"
+      (receber)="receberLoteFisico($event)"
+    >
     </app-lotes-receber>
 
     @if (!isOperador) {
@@ -199,14 +198,14 @@
         [totalEsgotados]="totalEsgotados()"
       >
       </app-metric-cards>
+    }
 
-      <!-- Content / Listing Estoque -->
-      <app-estoque-list [insumos]="insumos()" [carregando]="carregando()"> </app-estoque-list>
+    <!-- Content / Listing Estoque -->
+    <app-estoque-list [insumos]="insumos()" [carregando]="carregando()"> </app-estoque-list>
 
-      @if (paginationMetaEstoque(); as meta) {
-        @if (meta.totalPaginas > 1) {
-          <app-pagination [meta]="meta" (pageChange)="onPageChange($event)"></app-pagination>
-        }
+    @if (paginationMetaEstoque(); as meta) {
+      @if (meta.totalPaginas > 1) {
+        <app-pagination [meta]="meta" (pageChange)="onPageChange($event)"></app-pagination>
       }
     }
   }

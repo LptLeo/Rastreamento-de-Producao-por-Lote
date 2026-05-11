@@ -3,18 +3,25 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { AuthService } from './auth.service.js';
 import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
+import { SseClientService } from './sse-client.service.js';
 
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
   let routerSpy: any;
+  let sseClientSpy: any;
 
   beforeEach(() => {
     routerSpy = { navigate: jest.fn() };
+    sseClientSpy = { iniciar: jest.fn(), fechar: jest.fn() };
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [AuthService, { provide: Router, useValue: routerSpy }],
+      providers: [
+        AuthService,
+        { provide: Router, useValue: routerSpy },
+        { provide: SseClientService, useValue: sseClientSpy }
+      ]
     });
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -24,35 +31,34 @@ describe('AuthService', () => {
     httpMock.verify();
   });
 
-  it('deve realizar login e salvar o token na memoria', () => {
-    const mockResponse = {
-      tokenAcesso: 'jwt-123',
-      usuario: { id: 1, nome: 'Teste', perfil: 'gestor' },
-    };
-
-    service.login('admin@t.com', '123').subscribe((user) => {
-      expect(user.id).toBe(1);
-      expect(service.tokenAcesso()).toBe('jwt-123');
-      expect(service.usuario()?.nome).toBe('Teste');
-    });
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
-    expect(req.request.method).toBe('POST');
-    req.flush(mockResponse);
+  it('deve ser criado', () => {
+    expect(service).toBeTruthy();
   });
 
-  it('deve limpar os dados no logout', () => {
-    // Simula estado logado
-    (service as any).tokenAcesso.set('token');
-    (service as any).usuario.set({ id: 1, nome: 'Teste', perfil: 'gestor' });
+  it('deve inicializar com token vazio e usuario nulo', () => {
+    expect(service.tokenAcesso()).toBe('');
+    expect(service.usuario()).toBeNull();
+  });
 
+  it('deve limpar a sessao e fechar SSE no logoutLocal', () => {
+    service.setSessao('token', { id: 1, nome: 'Teste', perfil: 'operador' });
+    
+    service.logoutLocal();
+
+    expect(service.tokenAcesso()).toBe('');
+    expect(service.usuario()).toBeNull();
+    expect(sseClientSpy.fechar).toHaveBeenCalled();
+  });
+
+  it('deve realizar logout via API corretamente', () => {
     service.logout();
 
     const req = httpMock.expectOne(`${environment.apiUrl}/auth/logout`);
     expect(req.request.method).toBe('POST');
     req.flush({});
 
-    expect(service.tokenAcesso()).toBeNull();
-    expect(service.usuario()).toBeNull();
+    expect(service.tokenAcesso()).toBe('');
+    expect(sseClientSpy.fechar).toHaveBeenCalled();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
   });
 });

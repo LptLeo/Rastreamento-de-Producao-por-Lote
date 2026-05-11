@@ -22,4 +22,16 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// Polyfill para IntersectionObserver
+class MockIntersectionObserver {
+  observe = jest.fn();
+  unobserve = jest.fn();
+  disconnect = jest.fn();
+}
+
+Object.defineProperty(window, 'IntersectionObserver', {
+  writable: true,
+  value: MockIntersectionObserver,
+});
+
 TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());

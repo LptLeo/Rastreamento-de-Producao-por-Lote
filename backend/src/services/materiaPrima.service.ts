@@ -104,7 +104,7 @@ export class MateriaPrimaService {
 
   /** Lista categorias distintas para popular o dropdown no frontend */
   listarCategorias = async (requisitante: Requisitante): Promise<string[]> => {
-    verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
+    verificaPermissao(requisitante, [PerfilUsuario.OPERADOR, PerfilUsuario.GESTOR]);
 
     const resultados = await this.repo
       .createQueryBuilder('mp')

@@ -184,9 +184,66 @@ export class Header implements OnInit, OnDestroy {
       this.fecharDropdown();
     }
   }
+marcarLida(id: number): void {
+  this.notificacaoService.marcarComoLida(id);
+}
 
-  marcarLida(id: number): void {
-    this.notificacaoService.marcarComoLida(id);
+clicarNotificacao(notificacao: any): void {
+  // 1. Marca como lida
+  if (!notificacao.lida) {
+    this.notificacaoService.marcarComoLida(notificacao.id);
+  }
+
+  // 2. Fecha o painel
+  this.notificacoesAbertas.set(false);
+
+  // 3. Navega baseando-se no metadata
+  const metadata = notificacao.metadata;
+  if (metadata?.link) {
+    const queryParams: any = {};
+    if (metadata.filtro) {
+      queryParams.busca = metadata.filtro;
+    }
+
+    // Se houver um ID de referência, mapeia para o parâmetro correto dependendo do link
+    if (metadata.idRef) {
+      if (metadata.link.includes('lote/novo')) {
+        queryParams.produtoId = metadata.idRef;
+      } else {
+        queryParams.id = metadata.idRef;
+      }
+    }
+
+    // Converte link string em array de segmentos para o router
+    const urlSegments = metadata.link.split('/').filter((s: string) => s.length > 0);
+    this.router.navigate(urlSegments, { queryParams });
+    }
+    }/**
+ * Formata a data da notificação seguindo a regra:
+...
+   * - Hoje: 'Hoje HH:mm'
+   * - Ontem: 'Ontem HH:mm'
+   * - Antes de ontem: 'DD/MM HH:mm'
+   */
+  formatarDataNotificacao(dataIso: string): string {
+    const data = new Date(dataIso);
+    const hoje = new Date();
+    const ontem = new Date();
+    ontem.setDate(hoje.getDate() - 1);
+
+    const isHoje = data.toDateString() === hoje.toDateString();
+    const isOntem = data.toDateString() === ontem.toDateString();
+
+    const horas = data.getHours().toString().padStart(2, '0');
+    const minutos = data.getMinutes().toString().padStart(2, '0');
+    const horario = `${horas}:${minutos}`;
+
+    if (isHoje) return `Hoje ${horario}`;
+    if (isOntem) return `Ontem ${horario}`;
+
+    const dia = data.getDate().toString().padStart(2, '0');
+    const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+    return `${dia}/${mes} ${horario}`;
   }
 
   logout(): void {

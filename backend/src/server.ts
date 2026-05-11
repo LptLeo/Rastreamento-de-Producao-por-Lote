@@ -6,6 +6,7 @@ import { AppDataSource } from './config/AppDataSource.js';
 import routes from './routes/index.routes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { ProgressaoService } from './services/progressao.service.js';
+import { InsumoEstoqueService } from './services/insumoEstoque.service.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -56,8 +57,14 @@ app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
   AppDataSource.initialize()
-    .then(() => {
+    .then(async () => {
       console.log('Banco de dados conectado com sucesso.');
+
+      /** Padrão Ouro: Sistema de Auto-recuperação (Self-Healing)
+       * Resgata lotes que ficaram presos em trânsito devido a desligamentos do servidor.
+       */
+      const insumoService = new InsumoEstoqueService();
+      await insumoService.resgatarLotesTravados();
 
       /** Inicia o job de progressão automática de lotes */
       const progressao = new ProgressaoService();

@@ -106,6 +106,7 @@ export class ProdutoService {
         `Novo produto disponível para produção: ${produtoCompleto.nome} (${produtoCompleto.sku})`,
         TipoNotificacao.PRODUTO,
         [PerfilUsuario.OPERADOR],
+        { link: '/app/lote/novo', idRef: produtoCompleto.id },
       );
 
       return produtoCompleto;
@@ -158,6 +159,16 @@ export class ProdutoService {
         queryBuilder.andWhere('produto.ativo = true');
       } else if (status === 'inativos') {
         queryBuilder.andWhere('produto.ativo = false');
+      } else if (status === 'com_insumos') {
+        queryBuilder.andWhere((qb) => {
+          const subQuery = qb
+            .subQuery()
+            .select('r.id')
+            .from(ReceitaItem, 'r')
+            .where('r.produto_id = produto.id')
+            .getQuery();
+          return `EXISTS ${subQuery}`;
+        });
       } else if (status === 'sem_insumos') {
         queryBuilder.andWhere((qb) => {
           const subQuery = qb

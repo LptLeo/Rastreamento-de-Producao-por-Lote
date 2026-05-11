@@ -4,6 +4,7 @@ import { Lote, LoteStatus } from '../entities/Lote.js';
 import { NotificacaoService } from './notificacao.service.js';
 import { TipoNotificacao } from '../entities/Notificacao.js';
 import { PerfilUsuario } from '../entities/Usuario.js';
+import { SseService } from './sse.service.js';
 
 /**
  * Job de progressão automática de lotes.
@@ -66,11 +67,19 @@ export class ProgressaoService {
 
         console.log(`[progressão] Lote ${lote.numero_lote} avançado para AGUARDANDO_INSPECAO`);
 
+        // Notifica inspetores (única notificação com link clicável)
         await this.notificacaoService.criarNotificacaoParaPerfis(
-          `Novo lote aguardando inspeção: ${lote.numero_lote}`,
+          `Produção Concluída: O lote ${lote.numero_lote} está aguardando inspeção.`,
           TipoNotificacao.INSPECAO,
           [PerfilUsuario.INSPETOR],
+          { link: `/app/lote/${lote.id}` },
         );
+
+        // Notifica clientes SSE em tempo real
+        SseService.instancia.emitir('lote:status_alterado', {
+          id: lote.id,
+          status: LoteStatus.AGUARDANDO_INSPECAO,
+        });
       }
     } catch (error) {
       console.error('[progressão] Erro ao executar job:', error);

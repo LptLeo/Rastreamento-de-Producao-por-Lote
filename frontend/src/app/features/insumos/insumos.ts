@@ -20,8 +20,11 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
 import { rxResource } from '@angular/core/rxjs-interop';
 import { ToastService } from '../../core/services/toast.service.js';
 import { forkJoin } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import type { MateriaPrima, InsumoEstoque } from '../../shared/models/lote.models.js';
 import type { PedidoInsumoItem } from './components/pedir-insumos-modal/pedir-insumos-modal.component.js';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { SseClientService, type SseEvento } from '../../core/services/sse-client.service.js';
 
 @Component({
   selector: 'app-insumos',
@@ -42,6 +45,7 @@ import type { PedidoInsumoItem } from './components/pedir-insumos-modal/pedir-in
 export class Insumos {
   private insumosService = inject(InsumosService);
   private toastService = inject(ToastService);
+  private sseService = inject(SseClientService);
   authService = inject(AuthService);
 
   abaAtiva = signal<'estoque' | 'catalogo'>('estoque');
@@ -54,6 +58,19 @@ export class Insumos {
 
   currentPageEstoque = signal(1);
   currentPageCatalogo = signal(1);
+
+  constructor() {
+    /**
+     * Assina o stream SSE e mapeia eventos para reloads seletivos.
+     * takeUntilDestroyed() garante cancelamento automático ao sair da tela.
+     */
+    this.sseService.eventos$
+      .pipe(
+        takeUntilDestroyed(),
+        filter((e) => e.tipo === 'insumo:criado' || e.tipo === 'insumo:status_alterado'),
+      )
+      .subscribe((evento) => this.tratarEventoSse(evento));
+  }
 
   /** Resource para o Estoque de Lotes (Apenas Disponíveis) */
   estoqueResource = rxResource({
@@ -147,7 +164,6 @@ export class Insumos {
 
   // -- Modal Pedir Insumos --
   modalPedidoAberto = signal(false);
-  pedidoProcessando = signal(false);
 
   /** Métricas Dinâmicas Reais (Vindas do Backend) */
   totalRegistros = computed(() => this.contagemResource.value()?.total || 0);
@@ -258,37 +274,22 @@ export class Insumos {
 
   processarPedido(itens: PedidoInsumoItem[]): void {
     this.modalPedidoAberto.set(false);
-    this.pedidoProcessando.set(true);
 
-    const requests = itens.map((item) =>
-      this.insumosService.create({
-        ...this.montarPayloadPedido(item),
-        status: 'a_caminho',
-      }),
-    );
+    const payload = itens.map((item) => ({
+      ...this.montarPayloadPedido(item),
+      status: 'a_caminho' as const,
+    }));
 
-    forkJoin(requests).subscribe({
+    this.insumosService.createBulk(payload).subscribe({
       next: (lotesCriados) => {
         this.lotesReceberResource.reload();
-        this.toastService.success(`Pedido a caminho! Chegará em 10 segundos...`);
-
-        setTimeout(() => {
-          const updateRequests = lotesCriados.map((lote) =>
-            this.insumosService.atualizarStatus(lote.id, 'pendente'),
-          );
-          forkJoin(updateRequests).subscribe(() => {
-            this.lotesReceberResource.reload();
-            this.pedidoProcessando.set(false);
-            this.toastService.success(
-              '🚚 Logística: O pedido acabou de chegar na doca e está aguardando recebimento físico!',
-            );
-          });
-        }, 10000);
+        this.toastService.success(`Pedido realizado! ${lotesCriados.length} lotes estão a caminho.`);
       },
       error: (err) => {
         console.error('Erro ao pedir insumos:', err);
-        this.toastService.error('Erro ao processar o pedido de insumos.');
-        this.pedidoProcessando.set(false);
+        this.toastService.error(
+          err.error?.message || 'Erro ao processar o pedido de insumos em lote.',
+        );
       },
     });
   }
@@ -337,6 +338,36 @@ export class Insumos {
   private resetarPaginas(): void {
     this.currentPageEstoque.set(1);
     this.currentPageCatalogo.set(1);
+  }
+
+  /**
+   * Trata eventos SSE do domínio de insumos e dispara reloads seletivos.
+   * Preserva paginação, filtros e ordenação — o rxResource recarrega com os
+   * parâmetros atuais da UI, sem nenhuma manipulação manual de arrays.
+   */
+  private tratarEventoSse(evento: SseEvento): void {
+    switch (evento.tipo) {
+      case 'insumo:criado':
+        if (evento.dados.status === 'a_caminho') {
+          this.lotesReceberResource.reload();
+        } else if (evento.dados.status === 'disponivel') {
+          this.estoqueResource.reload();
+          this.contagemResource.reload();
+        }
+        break;
+
+      case 'insumo:status_alterado':
+        if (evento.dados.status === 'disponivel') {
+          // Saiu da logística, entrou no estoque
+          this.lotesReceberResource.reload();
+          this.estoqueResource.reload();
+          this.contagemResource.reload();
+        } else {
+          // Mudança dentro da logística (pendente → a_caminho ou vice-versa)
+          this.lotesReceberResource.reload();
+        }
+        break;
+    }
   }
 
   private montarPayloadPedido(item: PedidoInsumoItem): CriarInsumoEstoquePayload {

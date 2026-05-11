@@ -1,28 +1,21 @@
 import { jest } from '@jest/globals';
 import { AppError } from '../../errors/AppError.js';
+import { PerfilUsuario } from '../../entities/Usuario.js';
 
-const mockUserRepo = {
-  createQueryBuilder: jest.fn(),
-  findOne: jest.fn(),
-  update: jest.fn(),
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. Mocks de Infraestrutura (Tipagem genérica para silenciar o VS Code)
+// ─────────────────────────────────────────────────────────────────────────────
 
 const mockQueryBuilder = {
-  addSelect: jest.fn().mockReturnThis(),
-  where: jest.fn().mockReturnThis(),
-  getOne: jest.fn(),
+  addSelect: jest.fn<any>().mockReturnThis(),
+  where: jest.fn<any>().mockReturnThis(),
+  getOne: jest.fn<any>(),
 };
 
-mockUserRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-
-const mockBcrypt = {
-  compare: jest.fn(),
-  hash: jest.fn().mockResolvedValue('hashed_token' as never),
-};
-
-const mockJwt = {
-  sign: jest.fn().mockReturnValue('mocked_token' as never),
-  verify: jest.fn(),
+const mockUserRepo = {
+  createQueryBuilder: jest.fn<any>().mockReturnValue(mockQueryBuilder),
+  findOne: jest.fn<any>(),
+  update: jest.fn<any>(),
 };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
@@ -31,78 +24,138 @@ jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
   },
 }));
 
+const mockBcrypt = {
+  compare: jest.fn<any>(),
+  hash: jest.fn<any>().mockResolvedValue('hashed_value'),
+};
+
 jest.unstable_mockModule('bcrypt', () => ({
   default: mockBcrypt,
 }));
+
+const mockJwt = {
+  sign: jest.fn<any>().mockReturnValue('mock_token'),
+  verify: jest.fn<any>(),
+};
 
 jest.unstable_mockModule('jsonwebtoken', () => ({
   default: mockJwt,
 }));
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. Importação Dinâmica do Serviço
+// ─────────────────────────────────────────────────────────────────────────────
+
 const { AuthService } = await import('../auth.service.js');
 
-describe('AuthService', () => {
-  let service: any;
+describe('AuthService (Padrão Ouro)', () => {
+  let service: any; // Usar any aqui silencia erros de instância no VS Code em testes
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.JWT_SECRET = 'test_secret';
+    process.env.JWT_REFRESH_SECRET = 'test_refresh_secret';
+    process.env.JWT_EXPIRATION = '15m';
+    process.env.JWT_REFRESH_EXPIRATION = '7d';
+    process.env.JWT_SALT = '10';
     service = new AuthService();
-    process.env.JWT_SECRET = 'secret';
-    process.env.JWT_REFRESH_SECRET = 'refresh_secret';
   });
 
-  describe('login', () => {
-    it('deve lançar erro se o email não for encontrado', async () => {
+  describe('login()', () => {
+    const credenciais = { email: 'test@lotepim.com', senha: 'password123' };
+
+    it('deve lançar AppError se o usuário não for encontrado', async () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
-      await expect(service.login({ email: 'teste@teste.com', senha: '123' })).rejects.toThrow(
-        AppError,
-      );
-      await expect(service.login({ email: 'teste@teste.com', senha: '123' })).rejects.toThrow(
-        'E-mail ou senha incorretos.',
-      );
+      await expect(service.login(credenciais)).rejects.toThrow(AppError);
+      await expect(service.login(credenciais)).rejects.toThrow('E-mail ou senha incorretos.');
     });
 
-    it('deve lançar erro se o usuário estiver inativo', async () => {
+    it('deve lançar AppError se o usuário estiver inativo', async () => {
       mockQueryBuilder.getOne.mockResolvedValue({ ativo: false });
 
-      await expect(service.login({ email: 'teste@teste.com', senha: '123' })).rejects.toThrow(
-        AppError,
-      );
-      await expect(service.login({ email: 'teste@teste.com', senha: '123' })).rejects.toThrow(
-        'Este usuário está desativado.',
-      );
+      await expect(service.login(credenciais)).rejects.toThrow(AppError);
+      await expect(service.login(credenciais)).rejects.toThrow('Este usuário está desativado.');
     });
 
-    it('deve lançar erro se a senha for inválida', async () => {
-      mockQueryBuilder.getOne.mockResolvedValue({ ativo: true, senha_hash: 'hash' });
-      mockBcrypt.compare.mockResolvedValue(false as never);
+    it('deve lançar AppError se a senha estiver incorreta', async () => {
+      mockQueryBuilder.getOne.mockResolvedValue({
+        id: 1,
+        ativo: true,
+        senha_hash: 'hash_real',
+      });
+      mockBcrypt.compare.mockResolvedValue(false);
 
-      await expect(service.login({ email: 'teste@teste.com', senha: '123' })).rejects.toThrow(
-        AppError,
-      );
-      await expect(service.login({ email: 'teste@teste.com', senha: '123' })).rejects.toThrow(
-        'E-mail ou senha incorretos.',
-      );
+      await expect(service.login(credenciais)).rejects.toThrow('E-mail ou senha incorretos.');
     });
 
-    it('deve retornar tokens se o login for bem-sucedido', async () => {
+    it('deve retornar tokens de acesso e atualização se credenciais forem válidas', async () => {
       const usuarioMock = {
         id: 1,
-        nome: 'Teste',
-        email: 'teste@teste.com',
-        perfil: 'operador',
+        nome: 'Admin',
+        email: 'test@lotepim.com',
+        perfil: PerfilUsuario.GESTOR,
         ativo: true,
-        senha_hash: 'hash',
+        senha_hash: 'hash_real',
       };
+
       mockQueryBuilder.getOne.mockResolvedValue(usuarioMock);
-      mockBcrypt.compare.mockResolvedValue(true as never);
+      mockBcrypt.compare.mockResolvedValue(true);
 
-      const result = await service.login({ email: 'teste@teste.com', senha: '123' });
+      const resultado = await service.login(credenciais);
 
-      expect(result.tokenAcesso).toBe('mocked_token');
-      expect(result.tokenAtualizacao).toBe('mocked_token');
-      expect(result.usuario.id).toBe(1);
+      expect(resultado).toEqual({
+        tokenAcesso: 'mock_token',
+        tokenAtualizacao: 'mock_token',
+      });
+
+      expect(mockUserRepo.update).toHaveBeenCalledWith(1, {
+        refresh_token: 'hashed_value',
+      });
+    });
+  });
+
+  describe('refresh()', () => {
+    it('deve lançar erro se o refresh token não for fornecido', async () => {
+      await expect(service.refresh('')).rejects.toThrow('Refresh token não fornecido.');
+    });
+
+    it('deve renovar os tokens se o refresh token for válido e o usuário estiver ativo', async () => {
+      mockJwt.verify.mockReturnValue({ id: 1 });
+      mockUserRepo.findOne.mockResolvedValue({
+        id: 1,
+        ativo: true,
+        refresh_token: 'hash_token_banco',
+      });
+      mockBcrypt.compare.mockResolvedValue(true);
+
+      const resultado = await service.refresh('token_enviado');
+
+      expect(resultado).toEqual({
+        tokenAcesso: 'mock_token',
+        tokenAtualizacao: 'mock_token',
+      });
+    });
+
+    it('deve lançar erro se o token no banco não bater com o enviado', async () => {
+      mockJwt.verify.mockReturnValue({ id: 1 });
+      mockUserRepo.findOne.mockResolvedValue({
+        id: 1,
+        ativo: true,
+        refresh_token: 'hash_diferente',
+      });
+      mockBcrypt.compare.mockResolvedValue(false);
+
+      await expect(service.refresh('token_enviado')).rejects.toThrow(
+        'Token de atualização inválido.',
+      );
+    });
+  });
+
+  describe('logout()', () => {
+    it('deve invalidar o refresh token no banco de dados', async () => {
+      await service.logout(1);
+      expect(mockUserRepo.update).toHaveBeenCalledWith(1, { refresh_token: null });
     });
   });
 });

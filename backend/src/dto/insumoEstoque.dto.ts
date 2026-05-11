@@ -15,6 +15,7 @@ export const ListInsumosQueryDto = PaginacaoQueryDto.extend({
   ordenarPor: z
     .enum(['menor_estoque', 'maior_estoque', 'mais_recente', 'menos_recente'])
     .optional(),
+  cache_buster: z.string().optional(),
 });
 
 export type ListInsumosQueryDto = z.infer<typeof ListInsumosQueryDto>;
@@ -64,4 +65,9 @@ export const criarInsumoEstoqueSchema = z.object({
   observacoes: z.string().max(1000).optional().default(''),
 });
 
+export const criarInsumoEstoqueBulkSchema = z.object({
+  itens: z.array(criarInsumoEstoqueSchema).min(1, 'A lista de itens não pode estar vazia.'),
+});
+
 export type CriarInsumoEstoqueDTO = z.infer<typeof criarInsumoEstoqueSchema>;
+export type CriarInsumoEstoqueBulkDTO = z.infer<typeof criarInsumoEstoqueBulkSchema>;

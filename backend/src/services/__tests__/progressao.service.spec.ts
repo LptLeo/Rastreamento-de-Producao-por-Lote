@@ -38,6 +38,7 @@ describe('ProgressaoService', () => {
       expect.stringContaining('L-01'),
       'inspecao',
       ['inspetor'],
+      { link: '/app/lote/1' },
     );
   });
 

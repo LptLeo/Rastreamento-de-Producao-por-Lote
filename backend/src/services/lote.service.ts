@@ -151,6 +151,7 @@ export class LoteService {
               `Estoque Baixo: O insumo ${insumo.numero_lote_interno} (${insumo.materiaPrima.nome}) atingiu ${percentualNovo.toFixed(1)}% do seu volume inicial.`,
               TipoNotificacao.ESTOQUE,
               gestor,
+              { link: '/app/insumos', filtro: insumo.materiaPrima.nome }
             );
           }
 
@@ -160,6 +161,7 @@ export class LoteService {
               `URGENTE: O lote de insumo ${insumo.numero_lote_interno} (${insumo.materiaPrima.nome}) ACABOU completamente.`,
               TipoNotificacao.ESTOQUE,
               gestor,
+              { link: '/app/insumos', filtro: insumo.materiaPrima.nome }
             );
           }
         }
@@ -256,6 +258,45 @@ export class LoteService {
     result.todos = total;
 
     return result;
+  };
+
+  buscarSugestoes = async (q: string, requisitante: Requisitante) => {
+    verificaPermissao(requisitante, [
+      PerfilUsuario.GESTOR,
+      PerfilUsuario.INSPETOR,
+      PerfilUsuario.OPERADOR,
+    ]);
+
+    const termo = `%${q}%`;
+
+    const [lotes, produtos] = await Promise.all([
+      this.loteRepo
+        .createQueryBuilder('l')
+        .where('l.numero_lote ILIKE :termo', { termo })
+        .limit(5)
+        .getMany(),
+      this.produtoRepo
+        .createQueryBuilder('p')
+        .where('p.nome ILIKE :termo OR p.sku ILIKE :termo', { termo })
+        .limit(5)
+        .getMany(),
+    ]);
+
+    return [
+      ...lotes.map((l) => ({
+        id: l.id,
+        label: l.numero_lote,
+        subtext: 'Lote de Produção',
+        tipo: 'lote' as const,
+        status: l.status,
+      })),
+      ...produtos.map((p) => ({
+        id: p.id,
+        label: p.nome,
+        subtext: p.sku,
+        tipo: 'produto' as const,
+      })),
+    ];
   };
 
   buscarPorId = async (id: number, requisitante: Requisitante): Promise<Lote> => {
