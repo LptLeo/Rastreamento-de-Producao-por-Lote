@@ -1,9 +1,11 @@
 import type { Repository } from 'typeorm';
+import type { StringValue } from 'ms';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { Usuario } from '../entities/Usuario.js';
 import { AppDataSource } from '../config/AppDataSource.js';
 import { AppError } from '../errors/AppError.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { env } from '../config/env.js';
 import type { LoginDTO } from '../dto/login.dto.js';
 
 export class AuthService {
@@ -43,11 +45,8 @@ export class AuthService {
   async refresh(token: string) {
     if (!token) throw new AppError('Refresh token não fornecido.', 401);
 
-    const secretRefresh = process.env.JWT_REFRESH_SECRET;
-    if (!secretRefresh) throw new AppError('JWT_REFRESH_SECRET não configurada.', 500);
-
     try {
-      const decoded = jwt.verify(token, secretRefresh) as { id: number };
+      const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET) as { id: number };
       const usuario = await this.userRepo.findOne({
         where: { id: decoded.id },
         select: ['id', 'nome', 'email', 'perfil', 'ativo', 'refresh_token'],
@@ -73,31 +72,18 @@ export class AuthService {
   }
 
   private async gerarERegistrarTokens(usuario: Usuario) {
-    const secret = process.env.JWT_SECRET;
-    const secretRefresh = process.env.JWT_REFRESH_SECRET;
-
-    if (!secret || !secretRefresh) {
-      throw new AppError('JWT_SECRET ou JWT_REFRESH_SECRET não configurados.', 500);
-    }
-
-    const acessoExpiracao = process.env.JWT_EXPIRATION as string;
-    const refreshExpiracao = process.env.JWT_REFRESH_EXPIRATION as string;
-    const salt = parseInt(process.env.JWT_SALT as string);
-
-    if (!acessoExpiracao || !refreshExpiracao || isNaN(salt)) {
-      throw new AppError('JWT_EXPIRATION, JWT_REFRESH_EXPIRATION ou JWT_SALT não configurados.', 500);
-    }
-
     const tokenAcesso = jwt.sign(
       { id: usuario.id, nome: usuario.nome, perfil: usuario.perfil },
-      secret,
-      { expiresIn: acessoExpiracao as any },
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_EXPIRATION as StringValue },
     );
 
-    const tokenAtualizacao = jwt.sign({ id: usuario.id }, secretRefresh, { expiresIn: refreshExpiracao as any });
+    const tokenAtualizacao = jwt.sign({ id: usuario.id }, env.JWT_REFRESH_SECRET, {
+      expiresIn: env.JWT_REFRESH_EXPIRATION as StringValue,
+    });
 
     // Salva hash do refresh token para permitir invalidação individual de sessão
-    const hash = await bcrypt.hash(tokenAtualizacao, salt);
+    const hash = await bcrypt.hash(tokenAtualizacao, env.JWT_SALT);
     await this.userRepo.update(usuario.id, { refresh_token: hash });
 
     return { tokenAcesso, tokenAtualizacao };

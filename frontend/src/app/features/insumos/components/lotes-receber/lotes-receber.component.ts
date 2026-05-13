@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
+import type { InsumoEstoque } from '../../../../shared/models/lote.models.js';
 
 @Component({
   selector: 'app-lotes-receber',
@@ -65,7 +66,7 @@ import { trigger, transition, style, animate, query, stagger } from '@angular/an
   ],
 })
 export class LotesReceberComponent implements OnChanges, AfterViewInit, OnDestroy {
-  @Input() lotes: any[] = [];
+  @Input() lotes: InsumoEstoque[] = [];
   @Input() isGestor = false;
   @Output() receber = new EventEmitter<number>();
 

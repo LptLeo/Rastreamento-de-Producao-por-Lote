@@ -4,7 +4,7 @@ import { PerfilUsuario, Usuario } from '../entities/Usuario.js';
 import { Lote } from '../entities/Lote.js';
 import { Inspecao } from '../entities/Inspecao.js';
 import { Produto } from '../entities/Produto.js';
-import { CreateUsuarioDto, UpdateUsuarioDto, UpdateSenhaDto } from '../dto/usuario.dto.js';
+import { CreateUsuarioDto, UpdateUsuarioDto, UpdateSenhaDto, ListUsuariosQueryDto } from '../dto/usuario.dto.js';
 import {
   PaginacaoQueryDto,
   formatarRespostaPaginada,
@@ -22,11 +22,17 @@ function omitSenha(usuario: Usuario): UsuarioSemSenha {
   return resto as UsuarioSemSenha;
 }
 
+export interface UsuarioStats {
+  lotes_produzidos: number;
+  lotes_inspecionados: number;
+  produtos_registrados: number;
+}
+
 export class UsuarioService {
   private userRepo = AppDataSource.getRepository(Usuario);
 
   findAll = async (
-    query: PaginacaoQueryDto & { perfil?: string; ativo?: string },
+    query: ListUsuariosQueryDto,
     requisitante: Requisitante,
   ): Promise<RespostaPaginada<UsuarioSemSenha>> => {
     verificaPermissao(requisitante, [PerfilUsuario.GESTOR]);
@@ -73,7 +79,7 @@ export class UsuarioService {
     return omitSenha(usuario);
   };
 
-  getStats = async (id: number, requisitante: Requisitante): Promise<any> => {
+  getStats = async (id: number, requisitante: Requisitante): Promise<UsuarioStats> => {
     const usuario = await this.userRepo.findOne({ where: { id } });
     if (!usuario) throw new AppError('Usuário não encontrado', 404);
 

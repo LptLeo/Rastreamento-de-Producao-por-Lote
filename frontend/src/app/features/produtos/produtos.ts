@@ -1,7 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { ProdutosService } from './services/produtos.service.js';
+import { ProdutosService, ContagemProdutos } from './services/produtos.service.js';
 import { AuthService } from '../../core/services/auth.service.js';
 import { ProdutoFilterButtonComponent } from './components/produto-filter-button/produto-filter-button.js';
 import { ProdutoCardComponent } from './components/produto-card/produto-card.js';
@@ -81,9 +81,9 @@ export class Produtos {
 
   totalProdutos = computed(() => this.paginationMeta()?.totalItens || 0);
 
-  contagens = computed(
+  contagens = computed<ContagemProdutos>(
     () =>
-      this.contagemResource.value() || {
+      this.contagemResource.value() ?? {
         total: 0,
         ativos: 0,
         inativos: 0,

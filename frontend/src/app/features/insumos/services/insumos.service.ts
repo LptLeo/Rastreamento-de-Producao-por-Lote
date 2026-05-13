@@ -6,15 +6,9 @@ import type { InsumoEstoque, MateriaPrima } from '../../../shared/models/lote.mo
 
 const API_URL = environment.apiUrl;
 
-export interface RespostaPaginada<T> {
-  itens: T[];
-  meta: {
-    totalItens: number;
-    itensPorPagina: number;
-    totalPaginas: number;
-    paginaAtual: number;
-  };
-}
+import type { RespostaPaginada } from '../../../shared/models/pagination.models.js';
+
+export type StatusInsumo = 'disponivel' | 'esgotado' | 'a_caminho' | 'pendente' | 'em_uso';
 
 export type OrdenacaoEstoque =
   | 'menor_estoque'
@@ -49,6 +43,16 @@ export interface CriarInsumoEstoquePayload {
   data_validade: string | null;
 }
 
+export interface RegistrarEntradaForm {
+  materia_prima_id: number;
+  numero_lote_fornecedor: string;
+  fornecedor: string;
+  quantidade_inicial: number;
+  turno: 'manha' | 'tarde' | 'noite';
+  naoAplicaValidade?: boolean;
+  data_validade?: string | null;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -57,16 +61,7 @@ export class InsumosService {
 
   /** Lista lotes de insumo com paginação e filtros */
   getAll(filtros?: FiltrosEstoque): Observable<RespostaPaginada<InsumoEstoque>> {
-    let params = new HttpParams();
-
-    if (filtros) {
-      Object.entries(filtros).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params = params.set(key, String(value));
-        }
-      });
-    }
-
+    const params = this.montarHttpParams(filtros);
     return this.http.get<RespostaPaginada<InsumoEstoque>>(`${API_URL}/insumos-estoque`, { params });
   }
 
@@ -75,6 +70,7 @@ export class InsumosService {
     return this.http.get<InsumoEstoque>(`${API_URL}/insumos-estoque/${id}`);
   }
 
+  /** Retorna estatísticas rápidas do estoque */
   getContagem(): Observable<{ total: number; comSaldo: number; esgotados: number }> {
     return this.http.get<{ total: number; comSaldo: number; esgotados: number }>(
       `${API_URL}/insumos-estoque/stats/contagem`,
@@ -82,7 +78,7 @@ export class InsumosService {
   }
 
   /** Registra entrada de novo lote de insumo no estoque */
-  create(payload: any): Observable<InsumoEstoque> {
+  create(payload: CriarInsumoEstoquePayload): Observable<InsumoEstoque> {
     return this.http.post<InsumoEstoque>(`${API_URL}/insumos-estoque`, payload);
   }
 
@@ -91,26 +87,18 @@ export class InsumosService {
     return this.http.post<InsumoEstoque[]>(`${API_URL}/insumos-estoque/bulk`, { itens });
   }
 
-  atualizarStatus(id: number, status: string): Observable<InsumoEstoque> {
+  /** Altera o status de um lote (ex: de 'a_caminho' para 'disponivel') */
+  atualizarStatus(id: number, status: StatusInsumo): Observable<InsumoEstoque> {
     return this.http.patch<InsumoEstoque>(`${API_URL}/insumos-estoque/${id}/status`, { status });
   }
 
   /** Lista matérias-primas do catálogo com paginação e filtros */
   getMateriasPrimasPaginado(filtros?: FiltrosCatalogo): Observable<RespostaPaginada<MateriaPrima>> {
-    let params = new HttpParams();
-
-    if (filtros) {
-      Object.entries(filtros).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params = params.set(key, String(value));
-        }
-      });
-    }
-
+    const params = this.montarHttpParams(filtros);
     return this.http.get<RespostaPaginada<MateriaPrima>>(`${API_URL}/materias-primas`, { params });
   }
 
-  /** Lista matérias-primas do catálogo (paginado mas carregando catálogo grande) */
+  /** Lista matérias-primas do catálogo (sem paginação, mas com limite alto) */
   getMateriasPrimas(): Observable<MateriaPrima[]> {
     const params = new HttpParams().set('limite', '1000');
     return this.http
@@ -123,8 +111,24 @@ export class InsumosService {
     return this.http.post<MateriaPrima>(`${API_URL}/materias-primas`, payload);
   }
 
-  /** Lista categorias de matérias-primas */
+  /** Lista categorias de matérias-primas cadastradas */
   getCategoriasMateriasPrimas(): Observable<string[]> {
     return this.http.get<string[]>(`${API_URL}/materias-primas/categorias`);
+  }
+
+  /** 
+   * Método privado auxiliar para converter objetos de filtro em HttpParams,
+   * removendo automaticamente valores nulos ou vazios (Pattern DRY).
+   */
+  private montarHttpParams(filtros?: FiltrosEstoque | FiltrosCatalogo): HttpParams {
+    let params = new HttpParams();
+    if (filtros) {
+      Object.entries(filtros).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params = params.set(key, String(value));
+        }
+      });
+    }
+    return params;
   }
 }

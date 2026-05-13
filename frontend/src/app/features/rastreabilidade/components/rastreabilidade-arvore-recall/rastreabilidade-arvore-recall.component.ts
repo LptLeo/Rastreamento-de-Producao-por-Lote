@@ -56,10 +56,9 @@ export class RastreabilidadeArvoreRecallComponent {
 
   readonly STATUS_CONFIG = STATUS_CONFIG;
 
-  getStatusConfig(status: any) {
-    const s = status as LoteStatus;
+  getStatusConfig(status: LoteStatus) {
     return (
-      this.STATUS_CONFIG[s] || {
+      this.STATUS_CONFIG[status] || {
         label: status,
         cor: '#ADAAAA',
         corBg: 'transparent',

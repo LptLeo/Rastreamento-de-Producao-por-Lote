@@ -15,7 +15,7 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
 import { HeaderService } from './services/header.service.js';
 import { AuthService } from '../../../core/services/auth.service.js';
-import { NotificacaoService } from '../../../core/services/notificacao/notificacao.service.js';
+import { NotificacaoService, Notificacao } from '../../../core/services/notificacao/notificacao.service.js';
 import { SugestaoItem, LoteStatus, STATUS_CONFIG } from '../../models/lote.models.js';
 
 /** Padrão exato de número de lote gerado pelo backend */
@@ -73,8 +73,6 @@ export class Header implements OnInit, OnDestroy {
   // ── Lifecycle ───────────────────────────────────────────────────────────
 
   ngOnInit(): void {
-    this.notificacaoService.carregarNotificacoes();
-
     this.subscription = this.pesquisaSubject
       .pipe(
         debounceTime(400),
@@ -188,7 +186,7 @@ marcarLida(id: number): void {
   this.notificacaoService.marcarComoLida(id);
 }
 
-clicarNotificacao(notificacao: any): void {
+clicarNotificacao(notificacao: Notificacao): void {
   // 1. Marca como lida
   if (!notificacao.lida) {
     this.notificacaoService.marcarComoLida(notificacao.id);
@@ -200,7 +198,7 @@ clicarNotificacao(notificacao: any): void {
   // 3. Navega baseando-se no metadata
   const metadata = notificacao.metadata;
   if (metadata?.link) {
-    const queryParams: any = {};
+    const queryParams: { busca?: string; produtoId?: number; id?: number } = {};
     if (metadata.filtro) {
       queryParams.busca = metadata.filtro;
     }

@@ -2,20 +2,18 @@ import { jest } from '@jest/globals';
 import { AppError } from '../../errors/AppError.js';
 import { PerfilUsuario } from '../../entities/Usuario.js';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 1. Mocks de Infraestrutura (Tipagem genérica para silenciar o VS Code)
-// ─────────────────────────────────────────────────────────────────────────────
+type JestMock = ReturnType<typeof jest.fn>;
 
 const mockQueryBuilder = {
-  addSelect: jest.fn<any>().mockReturnThis(),
-  where: jest.fn<any>().mockReturnThis(),
-  getOne: jest.fn<any>(),
+  addSelect: jest.fn().mockReturnThis(),
+  where: jest.fn().mockReturnThis(),
+  getOne: jest.fn(() => Promise.resolve(null as unknown)),
 };
 
 const mockUserRepo = {
-  createQueryBuilder: jest.fn<any>().mockReturnValue(mockQueryBuilder),
-  findOne: jest.fn<any>(),
-  update: jest.fn<any>(),
+  createQueryBuilder: jest.fn(() => mockQueryBuilder),
+  findOne: jest.fn(() => Promise.resolve(null as unknown)),
+  update: jest.fn(() => Promise.resolve({} as unknown)),
 };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
@@ -25,8 +23,8 @@ jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
 }));
 
 const mockBcrypt = {
-  compare: jest.fn<any>(),
-  hash: jest.fn<any>().mockResolvedValue('hashed_value'),
+  compare: jest.fn(() => Promise.resolve(true)),
+  hash: jest.fn(() => Promise.resolve('hashed_value')),
 };
 
 jest.unstable_mockModule('bcrypt', () => ({
@@ -34,22 +32,18 @@ jest.unstable_mockModule('bcrypt', () => ({
 }));
 
 const mockJwt = {
-  sign: jest.fn<any>().mockReturnValue('mock_token'),
-  verify: jest.fn<any>(),
+  sign: jest.fn(() => 'mock_token'),
+  verify: jest.fn(() => ({ id: 1 })),
 };
 
 jest.unstable_mockModule('jsonwebtoken', () => ({
   default: mockJwt,
 }));
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 2. Importação Dinâmica do Serviço
-// ─────────────────────────────────────────────────────────────────────────────
-
 const { AuthService } = await import('../auth.service.js');
 
-describe('AuthService (Padrão Ouro)', () => {
-  let service: any; // Usar any aqui silencia erros de instância no VS Code em testes
+describe('AuthService', () => {
+  let service: InstanceType<typeof AuthService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -65,26 +59,26 @@ describe('AuthService (Padrão Ouro)', () => {
     const credenciais = { email: 'test@lotepim.com', senha: 'password123' };
 
     it('deve lançar AppError se o usuário não for encontrado', async () => {
-      mockQueryBuilder.getOne.mockResolvedValue(null);
+      (mockQueryBuilder.getOne as JestMock).mockResolvedValue(null);
 
       await expect(service.login(credenciais)).rejects.toThrow(AppError);
       await expect(service.login(credenciais)).rejects.toThrow('E-mail ou senha incorretos.');
     });
 
     it('deve lançar AppError se o usuário estiver inativo', async () => {
-      mockQueryBuilder.getOne.mockResolvedValue({ ativo: false });
+      (mockQueryBuilder.getOne as JestMock).mockResolvedValue({ ativo: false });
 
       await expect(service.login(credenciais)).rejects.toThrow(AppError);
       await expect(service.login(credenciais)).rejects.toThrow('Este usuário está desativado.');
     });
 
     it('deve lançar AppError se a senha estiver incorreta', async () => {
-      mockQueryBuilder.getOne.mockResolvedValue({
+      (mockQueryBuilder.getOne as JestMock).mockResolvedValue({
         id: 1,
         ativo: true,
         senha_hash: 'hash_real',
       });
-      mockBcrypt.compare.mockResolvedValue(false);
+      (mockBcrypt.compare as JestMock).mockResolvedValue(false);
 
       await expect(service.login(credenciais)).rejects.toThrow('E-mail ou senha incorretos.');
     });
@@ -99,8 +93,8 @@ describe('AuthService (Padrão Ouro)', () => {
         senha_hash: 'hash_real',
       };
 
-      mockQueryBuilder.getOne.mockResolvedValue(usuarioMock);
-      mockBcrypt.compare.mockResolvedValue(true);
+      (mockQueryBuilder.getOne as JestMock).mockResolvedValue(usuarioMock);
+      (mockBcrypt.compare as JestMock).mockResolvedValue(true);
 
       const resultado = await service.login(credenciais);
 
@@ -121,13 +115,13 @@ describe('AuthService (Padrão Ouro)', () => {
     });
 
     it('deve renovar os tokens se o refresh token for válido e o usuário estiver ativo', async () => {
-      mockJwt.verify.mockReturnValue({ id: 1 });
-      mockUserRepo.findOne.mockResolvedValue({
+      (mockJwt.verify as JestMock).mockReturnValue({ id: 1 });
+      (mockUserRepo.findOne as JestMock).mockResolvedValue({
         id: 1,
         ativo: true,
         refresh_token: 'hash_token_banco',
       });
-      mockBcrypt.compare.mockResolvedValue(true);
+      (mockBcrypt.compare as JestMock).mockResolvedValue(true);
 
       const resultado = await service.refresh('token_enviado');
 
@@ -138,13 +132,13 @@ describe('AuthService (Padrão Ouro)', () => {
     });
 
     it('deve lançar erro se o token no banco não bater com o enviado', async () => {
-      mockJwt.verify.mockReturnValue({ id: 1 });
-      mockUserRepo.findOne.mockResolvedValue({
+      (mockJwt.verify as JestMock).mockReturnValue({ id: 1 });
+      (mockUserRepo.findOne as JestMock).mockResolvedValue({
         id: 1,
         ativo: true,
         refresh_token: 'hash_diferente',
       });
-      mockBcrypt.compare.mockResolvedValue(false);
+      (mockBcrypt.compare as JestMock).mockResolvedValue(false);
 
       await expect(service.refresh('token_enviado')).rejects.toThrow(
         'Token de atualização inválido.',

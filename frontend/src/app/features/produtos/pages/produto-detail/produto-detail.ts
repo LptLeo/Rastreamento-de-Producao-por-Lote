@@ -1,10 +1,11 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProdutosService } from '../../services/produtos.service.js';
-import { Produto } from '../../../../shared/models/lote.models.js';
+import type { Produto, ReceitaItem, MateriaPrima } from '../../../../shared/models/lote.models.js';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth.service.js';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 
 import { ProdutoInfoCardsComponent } from './components/produto-info-cards/produto-info-cards.component.js';
 import { ProdutoReceitaComponent } from './components/produto-receita/produto-receita.component.js';
@@ -15,108 +16,112 @@ import { ProdutoReceitaComponent } from './components/produto-receita/produto-re
   imports: [CommonModule, ProdutoInfoCardsComponent, ProdutoReceitaComponent],
   templateUrl: './produto-detail.html',
 })
-export class ProdutoDetail implements OnInit {
+export class ProdutoDetail {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private produtosService = inject(ProdutosService);
   private authService = inject(AuthService);
 
-  produto = signal<Produto | null>(null);
-  carregando = signal<boolean>(true);
-  erro = signal<string | null>(null);
+  // ── Rota reativa ──
+  private params = toSignal(this.route.paramMap);
+  private produtoId = computed(() => Number(this.params()?.get('id')));
 
-  materiasPrimas = signal<any[]>([]);
+  // ── Resources Declarativos ──
+  /**
+   * Resource do produto: recarrega automaticamente se o ID da rota mudar.
+   * Elimina ngOnInit + subscribe manual.
+   */
+  produtoResource = rxResource<Produto, { id: number }>({
+    params: () => ({ id: this.produtoId() }),
+    stream: ({ params }) => this.produtosService.getProdutoById(params.id),
+  });
+
+  /**
+   * Resource de matérias-primas: carregado uma única vez.
+   * Fonte de verdade para o seletor de edição da receita.
+   */
+  materiasResource = rxResource<MateriaPrima[], void>({
+    stream: () => this.produtosService.getMateriasPrimas(),
+  });
+
+  // ── Derivações reativas ──
+  produto = computed(() => this.produtoResource.value() ?? null);
+  carregando = computed(() => this.produtoResource.isLoading());
+  erro = computed(() =>
+    this.produtoResource.error() ? 'Não foi possível carregar os detalhes do produto. Ele pode não existir ou o servidor está offline.' : null,
+  );
+  materiasPrimas = computed(() => this.materiasResource.value() ?? []);
+
+  // ── Estado local de edição ──
   modoEdicaoReceita = signal<boolean>(false);
-  receitaEditada = signal<any[]>([]);
+  /**
+   * Cópia editável da receita — inicializada/resetada via effect
+   * sempre que o produto carregar ou a edição for cancelada.
+   */
+  receitaEditada = signal<ReceitaItem[]>([]);
   salvandoReceita = signal<boolean>(false);
   alterandoStatus = signal<boolean>(false);
 
+  // ── Erros de ação (inline, sem alert()) ──
+  erroReceita = signal<string | null>(null);
+
+  /**
+   * Confirmação de alternância de status: null = nenhuma confirmação pendente.
+   * Substitui window.confirm() por um dialog declarativo no template.
+   */
+  confirmacaoPendente = signal<'ativar' | 'desativar' | null>(null);
+
   isGestor = computed(() => this.authService.usuario()?.perfil === 'gestor');
 
-  mpDisponiveis = computed(() => {
-    const idsUsados = this.receitaEditada().map((r: any) => r.materiaPrima.id);
+  /** Matérias-primas disponíveis: exclui as que já estão na receita em edição */
+  mpDisponiveis = computed<MateriaPrima[]>(() => {
+    const idsUsados = this.receitaEditada().map((r) => r.materiaPrima.id);
     return this.materiasPrimas().filter((mp) => !idsUsados.includes(mp.id));
   });
 
-  ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.carregarProduto(Number(id));
-      this.carregarMateriasPrimas();
-    } else {
-      this.erro.set('ID do produto não informado.');
-      this.carregando.set(false);
-    }
-  }
-
-  carregarMateriasPrimas(): void {
-    this.produtosService.getMateriasPrimas().subscribe({
-      next: (mps) => this.materiasPrimas.set(mps),
-      error: (e) => console.error('Erro ao carregar matérias-primas', e),
+  constructor() {
+    /**
+     * Sincroniza a cópia editável sempre que o produto for carregado.
+     * Garante que ao navegar para outro produto, a receita não persiste.
+     */
+    effect(() => {
+      const prod = this.produto();
+      if (prod) {
+        this.receitaEditada.set(structuredClone(prod.receita ?? []));
+      }
     });
   }
 
-  carregarProduto(id: number): void {
-    this.carregando.set(true);
-    this.erro.set(null);
-
-    this.produtosService
-      .getProdutoById(id)
-      .pipe(finalize(() => this.carregando.set(false)))
-      .subscribe({
-        next: (data) => {
-          this.produto.set(data);
-          // Inicializa o estado de edição com uma cópia profunda da receita
-          this.receitaEditada.set(JSON.parse(JSON.stringify(data.receita || [])));
-        },
-        error: (err) => {
-          console.error('Erro ao carregar produto:', err);
-          this.erro.set(
-            'Não foi possível carregar os detalhes do produto. Ele pode não existir ou o servidor está offline.',
-          );
-        },
-      });
-  }
-
   iniciarEdicaoReceita(): void {
-    this.modoEdicaoReceita.set(true);
     const prod = this.produto();
     if (prod) {
-      this.receitaEditada.set(JSON.parse(JSON.stringify(prod.receita || [])));
+      this.receitaEditada.set(structuredClone(prod.receita ?? []));
     }
+    this.erroReceita.set(null);
+    this.modoEdicaoReceita.set(true);
   }
 
   cancelarEdicaoReceita(): void {
     this.modoEdicaoReceita.set(false);
+    this.erroReceita.set(null);
     const prod = this.produto();
     if (prod) {
-      this.receitaEditada.set(JSON.parse(JSON.stringify(prod.receita || [])));
+      this.receitaEditada.set(structuredClone(prod.receita ?? []));
     }
   }
 
   adicionarMateriaPrima(mpId: number): void {
-    const mp = this.materiasPrimas().find((m) => m.id === Number(mpId));
+    const mp = this.materiasPrimas().find((m) => m.id === mpId);
     if (!mp) return;
 
-    this.receitaEditada.update((receita) => {
-      return [
-        ...receita,
-        {
-          id: 0, // novo item
-          materiaPrima: mp,
-          quantidade: 1,
-          unidade: mp.unidade_medida,
-        },
-      ];
-    });
+    this.receitaEditada.update((receita) => [
+      ...receita,
+      { id: 0, materiaPrima: mp, quantidade: 1, unidade: mp.unidade_medida },
+    ]);
   }
 
   removerItemReceita(index: number): void {
-    this.receitaEditada.update((receita) => {
-      const nova = [...receita];
-      nova.splice(index, 1);
-      return nova;
-    });
+    this.receitaEditada.update((receita) => receita.filter((_, i) => i !== index));
   }
 
   atualizarQuantidade(index: number, novaQtd: string): void {
@@ -125,7 +130,7 @@ export class ProdutoDetail implements OnInit {
 
     this.receitaEditada.update((receita) => {
       const nova = [...receita];
-      nova[index].quantidade = qtd;
+      nova[index] = { ...nova[index], quantidade: qtd };
       return nova;
     });
   }
@@ -135,6 +140,8 @@ export class ProdutoDetail implements OnInit {
     if (!prod) return;
 
     this.salvandoReceita.set(true);
+    this.erroReceita.set(null);
+
     const payload = this.receitaEditada().map((item) => ({
       materia_prima_id: item.materiaPrima.id,
       quantidade: item.quantidade,
@@ -145,25 +152,19 @@ export class ProdutoDetail implements OnInit {
       .atualizarReceita(prod.id, payload)
       .pipe(finalize(() => this.salvandoReceita.set(false)))
       .subscribe({
-        next: (atualizado) => {
-          this.produto.set(atualizado);
-          this.receitaEditada.set(JSON.parse(JSON.stringify(atualizado.receita || [])));
+        next: () => {
           this.modoEdicaoReceita.set(false);
+          this.produtoResource.reload();
         },
         error: (err) => {
-          console.error('Erro ao salvar receita:', err);
-
-          let errorMsg = err.error?.message || 'Erro ao salvar a receita.';
-
+          let msg = err.error?.message || 'Erro ao salvar a receita.';
           if (err.error?.details && Array.isArray(err.error.details)) {
-            const details = err.error.details.map((d: any) => d.mensagem).join('\n');
-            if (details) {
-              errorMsg += `\n\nDetalhes:\n${details}`;
-            }
+            const detalhes = (err.error.details as { mensagem: string }[])
+              .map((d) => d.mensagem)
+              .join(' • ');
+            if (detalhes) msg += ` — ${detalhes}`;
           }
-
-          alert(errorMsg);
-          // O modo de edição NÃO é fechado se der erro, permitindo que o usuário conserte e salve de novo.
+          this.erroReceita.set(msg);
         },
       });
   }
@@ -172,28 +173,31 @@ export class ProdutoDetail implements OnInit {
     this.router.navigate(['/app/produtos']);
   }
 
-  alternarStatus(): void {
+  /** Abre o dialog de confirmação inline — substitui window.confirm() */
+  solicitarAlternanciaStatus(): void {
+    const prod = this.produto();
+    if (!prod) return;
+    this.confirmacaoPendente.set(prod.ativo ? 'desativar' : 'ativar');
+  }
+
+  cancelarAlternanciaStatus(): void {
+    this.confirmacaoPendente.set(null);
+  }
+
+  confirmarAlternanciaStatus(): void {
     const prod = this.produto();
     if (!prod) return;
 
-    const acao = prod.ativo ? 'desativar' : 'ativar';
-    const confirmado = window.confirm(`Tem certeza que deseja ${acao} o produto "${prod.nome}"?`);
-    if (!confirmado) return;
-
+    this.confirmacaoPendente.set(null);
     this.alterandoStatus.set(true);
-    const novoStatus = !prod.ativo;
 
     this.produtosService
-      .alternarStatus(prod.id, novoStatus)
+      .alternarStatus(prod.id, !prod.ativo)
       .pipe(finalize(() => this.alterandoStatus.set(false)))
       .subscribe({
-        next: (atualizado) => {
-          this.produto.set(atualizado);
-        },
-        error: (err) => {
-          console.error('Erro ao alternar status do produto:', err);
-          alert(err.error?.message || 'Erro ao alterar o status do produto.');
-        },
+        next: () => this.produtoResource.reload(),
+        error: (err) =>
+          this.erroReceita.set(err.error?.message || 'Erro ao alterar o status do produto.'),
       });
   }
 }

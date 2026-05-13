@@ -6,14 +6,14 @@ import type { Produto, MateriaPrima } from '../../../shared/models/lote.models.j
 
 const API_URL = environment.apiUrl;
 
-export interface RespostaPaginada<T> {
-  itens: T[];
-  meta: {
-    totalItens: number;
-    itensPorPagina: number;
-    totalPaginas: number;
-    paginaAtual: number;
-  };
+import type { RespostaPaginada } from '../../../shared/models/pagination.models.js';
+
+export interface ContagemProdutos {
+  total: number;
+  ativos: number;
+  inativos: number;
+  sem_insumos: number;
+  mais_produzidos: number;
 }
 
 export interface CriarProdutoPayload {
@@ -49,8 +49,8 @@ export class ProdutosService {
     return this.http.get<RespostaPaginada<Produto>>(`${API_URL}/produtos`, { params });
   }
 
-  getContagem(): Observable<any> {
-    return this.http.get<any>(`${API_URL}/produtos/contagem`);
+  getContagem(): Observable<ContagemProdutos> {
+    return this.http.get<ContagemProdutos>(`${API_URL}/produtos/contagem`);
   }
 
   getProdutoById(id: number): Observable<Produto> {

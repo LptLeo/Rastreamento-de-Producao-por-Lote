@@ -9,14 +9,14 @@ export class NotificacaoController {
   }
 
   listar = async (req: Request, res: Response): Promise<void> => {
-    const usuarioId = Number((req as any).auth.id);
+    const usuarioId = req.auth!.id;
     const notificacoes = await this.notificacaoService.listarPorUsuario(usuarioId);
     res.status(200).json(notificacoes);
   };
 
   marcarComoLida = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
-    const usuarioId = Number((req as any).auth.id);
+    const usuarioId = req.auth!.id;
     const notificacao = await this.notificacaoService.marcarComoLida(Number(id), usuarioId);
     res.status(200).json(notificacao);
   };

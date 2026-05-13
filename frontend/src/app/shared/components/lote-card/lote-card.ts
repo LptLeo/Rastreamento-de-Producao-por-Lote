@@ -30,7 +30,7 @@ export class LoteCardComponent implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
 
   animatedProgresso = 0;
-  private intervalId: any;
+  private intervalId?: ReturnType<typeof setInterval>;
 
   ngOnInit() {
     // Calcula o progresso inicial imediatamente

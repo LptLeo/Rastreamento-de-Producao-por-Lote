@@ -1,24 +1,17 @@
 import type { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { AppError } from '../errors/AppError.js';
-import jwt, { type JwtPayload } from 'jsonwebtoken';
 import { AppDataSource } from '../config/AppDataSource.js';
 import { Usuario } from '../entities/Usuario.js';
-
-const getAccessSecret = () => {
-  const value = process.env.JWT_SECRET;
-
-  if (!value) {
-    throw new AppError('JWT_SECRET não definido', 500);
-  }
-
-  return value;
-};
+import { env } from '../config/env.js';
+import type { TokenPayload } from '../types/auth.js';
 
 export const authGuard = async (req: Request, res: Response, next: NextFunction) => {
+  const userRepo = AppDataSource.getRepository(Usuario);
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(new AppError('Token ausente', 401));
+  if (!authHeader?.startsWith('Bearer ')) {
+    return next(new AppError('Token ausente ou inválido', 401));
   }
 
   const token = authHeader.split(' ')[1];
@@ -28,11 +21,12 @@ export const authGuard = async (req: Request, res: Response, next: NextFunction)
   }
 
   try {
-    const payload = jwt.verify(token, getAccessSecret()) as JwtPayload;
+    const payload = jwt.verify(token, env.JWT_SECRET) as TokenPayload;
 
-    // Verificação de segurança: checar se o usuário ainda está ativo no banco
-    const userRepo = AppDataSource.getRepository(Usuario);
-    const user = await userRepo.findOne({ where: { id: Number(payload.id) }, select: ['ativo'] });
+    const user = await userRepo.findOne({
+      where: { id: payload.id },
+      select: ['ativo'],
+    });
 
     if (!user || !user.ativo) {
       return next(
@@ -40,7 +34,7 @@ export const authGuard = async (req: Request, res: Response, next: NextFunction)
       );
     }
 
-    (req as { auth?: JwtPayload }).auth = payload;
+    req.auth = payload;
 
     return next();
   } catch {

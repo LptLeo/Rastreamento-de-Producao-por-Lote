@@ -10,6 +10,13 @@ import { AuthService } from '../../core/services/auth.service.js';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+// Augmentação de tipo para propriedades injetadas pelo plugin jspdf-autotable
+declare module 'jspdf' {
+  interface jsPDF {
+    lastAutoTable: { finalY: number };
+  }
+}
+
 @Component({
   selector: 'app-dashboard',
   imports: [DatePipe, PageHeaderComponent],
@@ -30,7 +37,7 @@ export class Dashboard {
     return perfil === 'operador' || perfil === 'gestor';
   });
 
-  dashboardResource = rxResource<DashboardData, any>({
+  dashboardResource = rxResource<DashboardData, void>({
     stream: () =>
       this.dashboardService.getDashboardData(
         this.settings().dashboard.lotesComparacao,
@@ -152,7 +159,7 @@ export class Dashboard {
       },
     });
 
-    let currentY = (doc as any).lastAutoTable.finalY + 15;
+    let currentY = doc.lastAutoTable.finalY + 15;
 
     // ── Tabelas de Ranking ──
     // Top Produtos e Funcionários lado a lado (ou sequenciais)
@@ -163,12 +170,12 @@ export class Dashboard {
       autoTable(doc, {
         startY: currentY + 5,
         head: [['Produto (Top 10)', 'Unidades Produzidas']],
-        body: data.top_produtos.map((p: any) => [p.nome, p.quantidade]),
+        body: data.top_produtos.map((p) => [p.nome, p.quantidade]),
         theme: 'grid',
         headStyles: { fillColor: [0, 77, 87], textColor: [255, 255, 255] },
         styles: { fontSize: 9 },
       });
-      currentY = (doc as any).lastAutoTable.finalY + 15;
+      currentY = doc.lastAutoTable.finalY + 15;
     }
 
     if (data.top_funcionarios && data.top_funcionarios.length > 0) {
@@ -179,12 +186,12 @@ export class Dashboard {
       autoTable(doc, {
         startY: currentY,
         head: [['Funcionário Destaque', 'Lotes Operados']],
-        body: data.top_funcionarios.map((f: any) => [f.nome, f.quantidade_lotes]),
+        body: data.top_funcionarios.map((f) => [f.nome, f.quantidade_lotes]),
         theme: 'grid',
         headStyles: { fillColor: [0, 77, 87], textColor: [255, 255, 255] },
         styles: { fontSize: 9 },
       });
-      currentY = (doc as any).lastAutoTable.finalY + 15;
+      currentY = doc.lastAutoTable.finalY + 15;
     }
 
     // ── Últimos 10 Lotes ──
@@ -199,7 +206,7 @@ export class Dashboard {
       autoTable(doc, {
         startY: currentY + 5,
         head: [['Lote', 'Produto', 'Operador', 'Status', 'Data']],
-        body: data.ultimos_lotes.map((l: any) => [
+        body: data.ultimos_lotes.map((l) => [
           l.numero_lote,
           l.produto.nome,
           l.operador.nome,
@@ -213,7 +220,7 @@ export class Dashboard {
     }
 
     // Rodapé
-    const pageCount = (doc as any).internal.getNumberOfPages();
+    const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);

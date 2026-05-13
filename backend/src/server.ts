@@ -7,71 +7,42 @@ import routes from './routes/index.routes.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { ProgressaoService } from './services/progressao.service.js';
 import { InsumoEstoqueService } from './services/insumoEstoque.service.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { env, isProduction, isTest } from './config/env.js';
 
 export const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Configuração de Origens Permitidas
-const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : '';
-
-const allowedOrigins = ['http://localhost:4200', frontendUrl].filter(Boolean);
-
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  }),
-);
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Permite requisições sem origin ou se estiver na lista ou se for do render
-      if (
-        !origin ||
-        allowedOrigins.includes(origin) ||
-        (process.env.NODE_ENV === 'production' && origin.endsWith('.onrender.com'))
-      ) {
-        callback(null, true);
-      } else {
-        console.error(`Bloqueado pelo CORS. Origem: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: isProduction ? env.ALLOWED_ORIGINS : true,
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
   }),
 );
 
-app.use(express.json());
-app.use(cookieParser());
-
-// Trust Proxy (Importante para o Render/Heroku detectar HTTPS corretamente)
-app.set('trust proxy', 1);
+app.use(express.json()); // Permite receber json
+app.use(cookieParser()); // Anexa os cookies nas requisições
+app.set('trust proxy', 1); // 'trust proxy' diz para acreditar no servidor intermediário e 1 que
+// tem que ser o primeiro servidor intermediario
 
 app.use('/api', routes);
 app.use(errorHandler);
 
-if (process.env.NODE_ENV !== 'test') {
+if (!isTest) {
   AppDataSource.initialize()
     .then(async () => {
       console.log('Banco de dados conectado com sucesso.');
 
-      /** Padrão Ouro: Sistema de Auto-recuperação (Self-Healing)
-       * Resgata lotes que ficaram presos em trânsito devido a desligamentos do servidor.
-       */
       const insumoService = new InsumoEstoqueService();
       await insumoService.resgatarLotesTravados();
 
-      /** Inicia o job de progressão automática de lotes */
       const progressao = new ProgressaoService();
       progressao.iniciar();
 
-      app.listen(PORT, () => {
-        console.log(`Servidor rodando na porta ${PORT}`);
+      app.listen(env.PORT, () => {
+        console.log(`Servidor rodando na porta ${env.PORT} (${env.NODE_ENV})`);
       });
     })
     .catch((error) => {

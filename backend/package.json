@@ -9,6 +9,7 @@
     "db:reset": "sudo docker compose down -v && sudo docker compose up -d",
     "dev": "tsx watch src/server.ts",
     "seed": "tsx src/config/seed.ts",
+    "reset:db": "npx typeorm-ts-node-esm schema:drop -d src/config/AppDataSource.ts && NODE_ENV=development npm run seed",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --testPathPatterns=src/services/__tests__",

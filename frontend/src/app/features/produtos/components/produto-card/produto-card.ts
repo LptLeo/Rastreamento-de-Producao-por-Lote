@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import type { Produto } from '../../../../shared/models/lote.models.js';
 
 @Component({
   selector: 'app-produto-card',
@@ -11,7 +12,7 @@ import { CommonModule } from '@angular/common';
   },
 })
 export class ProdutoCardComponent {
-  @Input({ required: true }) prod!: any;
+  @Input({ required: true }) prod!: Produto;
   @Output() cardClick = new EventEmitter<number>();
 
   formatarData(data: string) {

@@ -2,14 +2,17 @@ import { jest } from '@jest/globals';
 import { AppError } from '../../errors/AppError.js';
 import { TipoNotificacao } from '../../entities/Notificacao.js';
 
+type JestMock = ReturnType<typeof jest.fn>;
+
 const mockNotifRepo = { find: jest.fn(), findOne: jest.fn(), save: jest.fn() };
 const mockUserRepo = { createQueryBuilder: jest.fn() };
 
 const mockAppDataSource = {
-  getRepository: jest.fn((entity: any) => {
-    if (entity.name === 'Notificacao' || entity === 'Notificacao') return mockNotifRepo;
-    if (entity.name === 'Usuario' || entity === 'Usuario') return mockUserRepo;
-    return {} as any;
+  getRepository: jest.fn((entity: { name?: string } | string | unknown) => {
+    const name = (entity as { name?: string }).name || (entity as string);
+    if (name === 'Notificacao') return mockNotifRepo;
+    if (name === 'Usuario') return mockUserRepo;
+    return {};
   }),
 };
 
@@ -20,7 +23,7 @@ jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
 const { NotificacaoService } = await import('../notificacao.service.js');
 
 describe('NotificacaoService', () => {
-  let service: any;
+  let service: InstanceType<typeof NotificacaoService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -51,7 +54,7 @@ describe('NotificacaoService', () => {
         where: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue(mockUsers),
       };
-      mockUserRepo.createQueryBuilder.mockReturnValue(mockQB as any);
+      mockUserRepo.createQueryBuilder.mockReturnValue(mockQB);
 
       await service.criarNotificacaoParaPerfis('Mensagem', TipoNotificacao.SISTEMA, ['gestor']);
 

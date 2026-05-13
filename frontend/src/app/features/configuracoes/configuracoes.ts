@@ -37,15 +37,15 @@ export class Configuracoes {
     { value: 'dia', label: 'Dia' },
   ];
 
-  updateDashboard(key: string, value: any) {
+  updateDashboard(key: string, value: string | number | boolean) {
     this.configuracoesService.updateDashboardSettings({ [key]: value });
   }
 
-  updateLote(key: string, value: any) {
+  updateLote(key: string, value: string | number | boolean) {
     this.configuracoesService.updateLoteSettings({ [key]: value });
   }
 
-  onNumericInput(key: string, target: any, section: 'dashboard' | 'lote') {
+  onNumericInput(key: string, target: HTMLInputElement, section: 'dashboard' | 'lote') {
     const val = parseFloat(target.value);
     if (!isNaN(val)) {
       if (section === 'dashboard') {

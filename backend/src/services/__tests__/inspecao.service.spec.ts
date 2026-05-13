@@ -2,6 +2,9 @@ import { jest } from '@jest/globals';
 import { AppError } from '../../errors/AppError.js';
 import { PerfilUsuario } from '../../entities/Usuario.js';
 import { LoteStatus } from '../../entities/Lote.js';
+import type { Requisitante } from '../../utils/auth.utils.js';
+
+type JestMock = ReturnType<typeof jest.fn>;
 
 const mockInspecaoRepo = { findOneBy: jest.fn(), findOne: jest.fn(), save: jest.fn() };
 const mockLoteRepo = { findOne: jest.fn(), save: jest.fn() };
@@ -9,13 +12,14 @@ const mockUserRepo = { findOneBy: jest.fn() };
 const mockManager = { create: jest.fn(), save: jest.fn() };
 
 const mockAppDataSource = {
-  getRepository: jest.fn((entity: any) => {
-    if (entity.name === 'Inspecao' || entity === 'Inspecao') return mockInspecaoRepo;
-    if (entity.name === 'Lote' || entity === 'Lote') return mockLoteRepo;
-    if (entity.name === 'Usuario' || entity === 'Usuario') return mockUserRepo;
-    return {} as any;
+  getRepository: jest.fn((entity: { name?: string } | string | unknown) => {
+    const name = (entity as { name?: string }).name || (entity as string);
+    if (name === 'Inspecao') return mockInspecaoRepo;
+    if (name === 'Lote') return mockLoteRepo;
+    if (name === 'Usuario') return mockUserRepo;
+    return {};
   }),
-  transaction: jest.fn(async (cb: any) => await cb(mockManager)),
+  transaction: jest.fn(async (cb: (em: typeof mockManager) => Promise<unknown>) => await cb(mockManager)),
 };
 
 jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
@@ -25,7 +29,8 @@ jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
 const { InspecaoService } = await import('../inspecao.service.js');
 
 describe('InspecaoService', () => {
-  let service: any;
+  let service: InstanceType<typeof InspecaoService>;
+  const requisitanteMock: Requisitante = { id: 1, perfil: PerfilUsuario.INSPETOR };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -33,7 +38,6 @@ describe('InspecaoService', () => {
   });
 
   describe('registrar', () => {
-    const requisitanteMock = { id: 1, perfil: PerfilUsuario.INSPETOR };
     const dtoMock = { quantidade_reprovada: 5, descricao_desvio: 'Teste' };
 
     it('deve lançar erro se o lote não existir', async () => {

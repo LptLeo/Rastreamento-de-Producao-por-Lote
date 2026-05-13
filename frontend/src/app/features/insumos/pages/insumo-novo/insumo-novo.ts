@@ -31,6 +31,7 @@ export class InsumoNovo implements OnInit {
     quantidade_inicial: [0, [Validators.required, Validators.min(0.01)]],
     data_fabricacao: ['', [Validators.required]],
     data_validade: ['', [Validators.required]],
+    turno: [this.getTurnoAtual() as 'manha' | 'tarde' | 'noite', [Validators.required]],
   });
 
   ngOnInit() {
@@ -44,7 +45,7 @@ export class InsumoNovo implements OnInit {
     // Carregar catálogo
     this.insumosService.getMateriasPrimas().subscribe({
       next: (mp: MateriaPrima[]) => this.materiasPrimasExistentes.set(mp),
-      error: (e: any) => console.error('Falha ao carregar catálogo:', e),
+      error: (e: Error) => this.erro.set(e.message || 'Falha ao carregar catálogo de matérias-primas.'),
     });
   }
 
@@ -64,15 +65,15 @@ export class InsumoNovo implements OnInit {
     const raw = this.form.value;
     const payload = {
       materia_prima_id: Number(raw.materia_prima_id),
-      fornecedor: raw.fornecedor,
-      lote_fabricante: raw.lote_fabricante,
+      fornecedor: raw.fornecedor ?? '',
+      numero_lote_fornecedor: raw.lote_fabricante ?? '',
       quantidade_inicial: Number(raw.quantidade_inicial),
-      data_fabricacao: raw.data_fabricacao,
-      data_validade: raw.data_validade,
+      turno: raw.turno as 'manha' | 'tarde' | 'noite',
+      data_validade: raw.data_validade ?? null,
     };
 
     this.insumosService
-      .create(payload as any)
+      .create(payload)
       .pipe(finalize(() => this.salvando.set(false)))
       .subscribe({
         next: () => this.router.navigate(['/app/insumos']),
@@ -81,5 +82,13 @@ export class InsumoNovo implements OnInit {
           this.erro.set(err.error?.message || 'Erro ao salvar insumo.');
         },
       });
+  }
+
+  /** Infere o turno pelo horário do sistema: manha (06-14h), tarde (14-22h), noite (22-06h) */
+  private getTurnoAtual(): 'manha' | 'tarde' | 'noite' {
+    const hora = new Date().getHours();
+    if (hora >= 6 && hora < 14) return 'manha';
+    if (hora >= 14 && hora < 22) return 'tarde';
+    return 'noite';
   }
 }

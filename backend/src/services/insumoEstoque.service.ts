@@ -12,13 +12,11 @@ import { TipoNotificacao } from '../entities/Notificacao.js';
 
 export class InsumoEstoqueService {
   private repo: Repository<InsumoEstoque>;
-  private mpRepo: Repository<MateriaPrima>;
-  private usuarioRepo: Repository<Usuario>;
+  private notificacaoService: NotificacaoService;
 
   constructor() {
     this.repo = AppDataSource.getRepository(InsumoEstoque);
-    this.mpRepo = AppDataSource.getRepository(MateriaPrima);
-    this.usuarioRepo = AppDataSource.getRepository(Usuario);
+    this.notificacaoService = new NotificacaoService();
   }
 
   /** Gera número de lote interno sequencial no padrão INS-DDMMAAAA-N (N = item do dia) */
@@ -93,7 +91,7 @@ export class InsumoEstoqueService {
       const mpIds = dto.itens.map((i) => i.materia_prima_id);
       const materiasPrimas = await manager.findBy(MateriaPrima, { id: In(mpIds) });
 
-      const resultados: InsumoEstoque[] = [];
+      const entidades: InsumoEstoque[] = [];
 
       for (const itemDto of dto.itens) {
         const mp = materiasPrimas.find((m) => m.id === itemDto.materia_prima_id);
@@ -116,11 +114,11 @@ export class InsumoEstoqueService {
           observacoes: itemDto.observacoes || '',
         });
 
-        const salvo = await manager.save(entidade);
-        resultados.push(salvo);
+        entidades.push(entidade);
       }
 
-      return resultados;
+      // Salva tudo de uma vez mitigando latência (Padrão GEMINI.md)
+      return manager.save(entidades, { chunk: 100 });
     });
   };
 
@@ -205,8 +203,7 @@ export class InsumoEstoqueService {
 
     // Se o status mudou para DISPONIVEL, notifica os gestores
     if (statusAnterior !== InsumoEstoqueStatus.DISPONIVEL && novoStatus === InsumoEstoqueStatus.DISPONIVEL) {
-      const notificacaoService = new NotificacaoService();
-      await notificacaoService.criarNotificacaoParaPerfis(
+      await this.notificacaoService.criarNotificacaoParaPerfis(
         `Logística: O lote de insumo ${insumo.numero_lote_interno} (${insumo.materiaPrima.nome}) foi recebido e está disponível para produção.`,
         TipoNotificacao.SISTEMA,
         [PerfilUsuario.GESTOR],
@@ -283,7 +280,7 @@ export class InsumoEstoqueService {
    */
   resgatarLotesTravados = async (): Promise<void> => {
     const umMinutoAtras = new Date(Date.now() - 60000);
-    
+
     const resultado = await this.repo
       .createQueryBuilder()
       .update(InsumoEstoque)

@@ -1,10 +1,10 @@
-@if (carregando) {
+@if (carregando()) {
   <div class="flex justify-center items-center py-20 w-full">
     <div
       class="w-8 h-8 border-4 border-[#484847] border-t-[#00E5FF] rounded-full animate-spin"
     ></div>
   </div>
-} @else if (catalogo.length === 0) {
+} @else if (catalogo().length === 0) {
   <div
     class="flex flex-col justify-center items-center py-20 w-full border border-dashed border-[#484847]/50 rounded-lg bg-[#131313]"
   >
@@ -29,7 +29,7 @@
 } @else {
   <!-- Mobile View: Cards -->
   <div class="flex flex-col gap-4 md:hidden">
-    @for (mp of catalogo; track mp.id) {
+    @for (mp of catalogo(); track mp.id) {
       <div
         class="bg-[#131313] border border-[#484847]/30 rounded-lg p-5 flex flex-col gap-4 transition-all hover:border-[#00E5FF]/40"
       >
@@ -87,7 +87,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (mp of catalogo; track mp.id) {
+        @for (mp of catalogo(); track mp.id) {
           <tr class="border-b border-[#1e1e1e] hover:bg-[#1a1a1a] transition-colors">
             <td class="py-4 px-4 text-[13px] font-medium text-white">{{ mp.nome }}</td>
             <td class="py-4 px-4">

@@ -4,7 +4,7 @@ import { AppError } from '../errors/AppError.js';
 
 export const roleGuard = (...perfisPermitidos: PerfilUsuario[]) => {
   return (req: Request, _res: Response, next: NextFunction) => {
-    const usuarioLogado = (req as any).auth;
+    const usuarioLogado = req.auth;
 
     if (!usuarioLogado) {
       return next(new AppError('Usuário não autenticado', 401));

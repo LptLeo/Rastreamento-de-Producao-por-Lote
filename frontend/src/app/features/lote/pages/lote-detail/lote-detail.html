@@ -303,6 +303,12 @@
             ></textarea>
           </div>
 
+          @if (erroInspecao()) {
+            <div class="p-3 bg-red-950/20 border border-[#dc2626]/40 rounded flex items-center gap-2">
+              <span class="text-[11px] text-red-400 font-semibold">{{ erroInspecao() }}</span>
+            </div>
+          }
+
           <div class="flex justify-end">
             <button
               type="submit"

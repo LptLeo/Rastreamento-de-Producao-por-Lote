@@ -1,48 +1,36 @@
 import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { AuthService } from '../../../../core/services/auth.service.js';
 import { LoteFeatureService } from '../../services/lote.service.js';
-import type { Produto, InsumoEstoque } from '../../../../shared/models/lote.models.js';
+import type { Produto, InsumoEstoque, CriarLoteDTO } from '../../../../shared/models/lote.models.js';
 import { finalize, of } from 'rxjs';
 import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { LoteInsumoItemComponent } from './components/lote-insumo-item/lote-insumo-item.js';
 import { criarLoteSchema } from '../../../../core/schemas/lote.schema.js';
 import { ZodError } from 'zod';
 
-type ConsumoFormulario = {
-  materia_prima_id: number;
-  materia_prima_nome: string;
-  quantidade_necessaria: number;
-  unidade: string;
-  insumo_estoque_id: number;
-  quantidade_consumida: number;
-};
+/** Interface para o FormGroup de cada item de consumo */
+export interface ConsumoFormGroup {
+  materia_prima_id: FormControl<number>;
+  materia_prima_nome: FormControl<string>;
+  quantidade_necessaria: FormControl<number>;
+  unidade: FormControl<string>;
+  insumo_estoque_id: FormControl<number>;
+  quantidade_consumida: FormControl<number>;
+}
 
-type LoteFormValue = {
-  produto_id: number;
-  data_producao: string;
-  turno: 'manha' | 'tarde' | 'noite';
-  quantidade_planejada: number;
-  data_validade: string;
-  sem_validade: boolean;
-  observacoes: string;
-  consumos: ConsumoFormulario[];
-};
-
-type CriarLotePayload = {
-  produto_id: number;
-  data_producao: string;
-  turno: 'manha' | 'tarde' | 'noite';
-  quantidade_planejada: number;
-  data_validade: string | null;
-  observacoes: string;
-  consumos: Array<{
-    insumo_estoque_id: number;
-    quantidade_consumida: number;
-  }>;
-};
+/** Interface para o FormGroup principal do Lote */
+interface LoteFormGroup {
+  produto_id: FormControl<number>;
+  data_producao: FormControl<string>;
+  turno: FormControl<'manha' | 'tarde' | 'noite'>;
+  quantidade_planejada: FormControl<number>;
+  data_validade: FormControl<string>;
+  sem_validade: FormControl<boolean>;
+  observacoes: FormControl<string>;
+  consumos: FormArray<FormGroup<ConsumoFormGroup>>;
+}
 
 @Component({
   selector: 'app-lote-novo',
@@ -52,7 +40,6 @@ type CriarLotePayload = {
 })
 export class LoteNovo implements OnInit {
   private fb = inject(FormBuilder);
-  private authService = inject(AuthService);
   private loteService = inject(LoteFeatureService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -72,21 +59,22 @@ export class LoteNovo implements OnInit {
     return 'noite';
   }
 
-  form = this.fb.nonNullable.group({
-    produto_id: [0, [Validators.required, Validators.min(1)]],
-    data_producao: [this.getHojeLocal(), [Validators.required]],
-    turno: [this.getTurnoAtual(), [Validators.required]],
-    quantidade_planejada: [0, [Validators.required, Validators.min(1)]],
-    data_validade: [''],
-    sem_validade: [true],
-    observacoes: [''],
-    consumos: this.fb.array<FormGroup>([]),
+  /** Formulário Tipado */
+  form = this.fb.nonNullable.group<LoteFormGroup>({
+    produto_id: this.fb.nonNullable.control(0, [Validators.required, Validators.min(1)]),
+    data_producao: this.fb.nonNullable.control(this.getHojeLocal(), [Validators.required]),
+    turno: this.fb.nonNullable.control(this.getTurnoAtual(), [Validators.required]),
+    quantidade_planejada: this.fb.nonNullable.control(0, [Validators.required, Validators.min(1)]),
+    data_validade: this.fb.nonNullable.control(''),
+    sem_validade: this.fb.nonNullable.control(true),
+    observacoes: this.fb.nonNullable.control(''),
+    consumos: this.fb.array<FormGroup<ConsumoFormGroup>>([]),
   });
 
-  /** Sinal que acompanha as mudanças do dropdown de produto */
-  private produtoIdSignal = toSignal(this.form.controls.produto_id.valueChanges, {
-    initialValue: 0,
-  });
+  /** Sinais reativos a partir dos controles do formulário */
+  produtoIdSignal = toSignal(this.form.controls.produto_id.valueChanges, { initialValue: 0 });
+  qtdPlanejadaSignal = toSignal(this.form.controls.quantidade_planejada.valueChanges, { initialValue: 0 });
+  semValidadeSignal = toSignal(this.form.controls.sem_validade.valueChanges, { initialValue: true });
 
   /** Resource para carregar os produtos cadastrados */
   produtosResource = rxResource({
@@ -95,7 +83,7 @@ export class LoteNovo implements OnInit {
 
   produtos = computed(() => this.produtosResource.value() || []);
 
-  /** Produto selecionado no dropdown reagindo a mudanças */
+  /** Produto selecionado reagindo ao sinal do dropdown */
   produtoSelecionado = computed(() => {
     const id = Number(this.produtoIdSignal());
     return this.produtos().find((p) => p.id === id) ?? null;
@@ -105,7 +93,7 @@ export class LoteNovo implements OnInit {
   insumosResource = rxResource({
     params: () => {
       const produto = this.produtoSelecionado();
-      return produto?.receita?.map((r: any) => r.materiaPrima.id) || [];
+      return produto?.receita?.map((r) => r.materiaPrima.id) || [];
     },
     stream: ({ params: mpIds }) => {
       if (!mpIds.length) return of([]);
@@ -130,20 +118,20 @@ export class LoteNovo implements OnInit {
   salvando = signal(false);
   erro = signal<string | null>(null);
   fieldErrors = signal<Record<string, string>>({});
-
-  /** Flag de carregamento dos insumos */
   carregandoInsumos = computed(() => this.insumosResource.isLoading());
 
   constructor() {
-    /** Reação automática para mudança de produto - reconstrói o FormArray de consumos */
+    /** 
+     * Reação 1: Mudança de Produto
+     * Reconstrói o FormArray de consumos de forma declarativa.
+     */
     effect(() => {
       const produto = this.produtoSelecionado();
-
       this.consumosArray.clear();
 
       if (!produto || !produto.receita?.length) return;
 
-      const qtdPlanejada = Number(this.form.controls.quantidade_planejada.value) || 1;
+      const qtdPlanejada = Number(this.qtdPlanejadaSignal()) || 1;
 
       for (const item of produto.receita) {
         const consumidoInicial = this.calcularQuantidadeConsumida(
@@ -153,25 +141,54 @@ export class LoteNovo implements OnInit {
         );
 
         this.consumosArray.push(
-          this.fb.nonNullable.group({
-            materia_prima_id: [item.materiaPrima.id],
-            materia_prima_nome: [item.materiaPrima.nome],
-            quantidade_necessaria: [item.quantidade],
-            unidade: [item.unidade],
-            insumo_estoque_id: [0, [Validators.required, Validators.min(1)]],
-            quantidade_consumida: [consumidoInicial, [Validators.required, Validators.min(0)]],
+          this.fb.nonNullable.group<ConsumoFormGroup>({
+            materia_prima_id: this.fb.nonNullable.control(item.materiaPrima.id),
+            materia_prima_nome: this.fb.nonNullable.control(item.materiaPrima.nome),
+            quantidade_necessaria: this.fb.nonNullable.control(item.quantidade),
+            unidade: this.fb.nonNullable.control(item.unidade),
+            insumo_estoque_id: this.fb.nonNullable.control(0, [Validators.required, Validators.min(1)]),
+            quantidade_consumida: this.fb.nonNullable.control(consumidoInicial, [Validators.required, Validators.min(0)]),
           }),
         );
       }
     });
+
+    /**
+     * Reação 2: Mudança na Quantidade Planejada
+     * Recalcula quantidades sugeridas de consumo sem subscrição manual.
+     * Guarda de array vazio evita corrida com o Effect 1 durante troca de produto.
+     */
+    effect(() => {
+      const qtdPlanejada = Number(this.qtdPlanejadaSignal()) || 1;
+      if (!this.consumosArray.length) return;
+
+      this.consumosArray.controls.forEach((ctrl) => {
+        const unidade = ctrl.controls.unidade.value;
+        const necessita = ctrl.controls.quantidade_necessaria.value;
+        const novoValor = this.calcularQuantidadeConsumida(necessita, qtdPlanejada, unidade);
+        ctrl.controls.quantidade_consumida.setValue(novoValor);
+      });
+    });
+
+    /**
+     * Reação 3: Controle de Validade
+     * Gerencia habilitação do campo de forma declarativa.
+     */
+    effect(() => {
+      const semValidade = this.semValidadeSignal();
+      if (semValidade) {
+        this.form.controls.data_validade.disable();
+        this.form.controls.data_validade.setValue('');
+      } else {
+        this.form.controls.data_validade.enable();
+      }
+    });
   }
 
-  /** Getter tipado para o FormArray de consumos */
-  get consumosArray(): FormArray<FormGroup> {
+  get consumosArray() {
     return this.form.controls.consumos;
   }
 
-  /** Formata a data no padrão brasileiro para exibição */
   get dataFormatada(): string {
     const data = this.form.controls.data_producao.value;
     if (!data) return 'DD/MM/AAAA';
@@ -180,34 +197,11 @@ export class LoteNovo implements OnInit {
   }
 
   ngOnInit(): void {
-    /** Pré-preenche o produto se vier via Query Param (ex: vindo de uma notificação) */
+    /** Pré-preenche o produto se vier via Query Param */
     const produtoIdParam = this.route.snapshot.queryParamMap.get('produtoId');
     if (produtoIdParam) {
       this.form.controls.produto_id.setValue(Number(produtoIdParam));
     }
-
-    /** Reação automática para a validade */
-    this.form.controls.sem_validade.valueChanges.subscribe((sem) => {
-      if (sem) {
-        this.form.controls.data_validade.disable();
-        this.form.controls.data_validade.setValue('');
-      } else {
-        this.form.controls.data_validade.enable();
-      }
-    });
-    this.form.controls.data_validade.disable();
-
-    /** Reação automática para recalcular quantidades sugeridas de consumo */
-    this.form.controls.quantidade_planejada.valueChanges.subscribe((qtd) => {
-      const qtdPlanejada = Number(qtd) || 1;
-      this.consumosArray.controls.forEach((ctrl) => {
-        const unidade = ctrl.get('unidade')?.value;
-        const necessita = Number(ctrl.get('quantidade_necessaria')?.value) || 0;
-        const novoValor = this.calcularQuantidadeConsumida(necessita, qtdPlanejada, unidade);
-
-        ctrl.get('quantidade_consumida')?.setValue(novoValor);
-      });
-    });
   }
 
   getInsumosParaMP(materiaPrimaId: number): InsumoEstoque[] {
@@ -222,10 +216,10 @@ export class LoteNovo implements OnInit {
     this.erro.set(null);
     this.fieldErrors.set({});
 
-    const formValue = this.form.getRawValue() as LoteFormValue;
+    const formValue = this.form.getRawValue();
 
     try {
-      // Validação rigorosa com Zod
+      // Validação com Zod usando o valor bruto do formulário tipado
       criarLoteSchema.parse(formValue);
     } catch (err) {
       if (err instanceof ZodError) {
@@ -243,13 +237,24 @@ export class LoteNovo implements OnInit {
 
     this.salvando.set(true);
 
-    const payload = this.montarPayloadCriacao(formValue);
+    const payload: CriarLoteDTO = {
+      produto_id: formValue.produto_id,
+      data_producao: formValue.data_producao,
+      turno: formValue.turno,
+      quantidade_planejada: formValue.quantidade_planejada,
+      data_validade: formValue.sem_validade ? null : formValue.data_validade || null,
+      observacoes: formValue.observacoes,
+      consumos: formValue.consumos.map(c => ({
+        insumo_estoque_id: c.insumo_estoque_id,
+        quantidade_consumida: c.quantidade_consumida
+      }))
+    };
 
     this.loteService
       .createLote(payload)
       .pipe(finalize(() => this.salvando.set(false)))
       .subscribe({
-        next: (loteGerado: { id: number }) => {
+        next: (loteGerado) => {
           this.router.navigate(['/app/lote', loteGerado.id]);
         },
         error: (err) => {
@@ -265,20 +270,5 @@ export class LoteNovo implements OnInit {
   ): number {
     const calculado = quantidadeBase * qtdPlanejada;
     return unidade === 'UN' ? Math.floor(calculado) : Number(calculado.toFixed(2));
-  }
-
-  private montarPayloadCriacao(formValue: LoteFormValue): CriarLotePayload {
-    return {
-      produto_id: Number(formValue.produto_id),
-      data_producao: formValue.data_producao,
-      turno: formValue.turno,
-      quantidade_planejada: Number(formValue.quantidade_planejada),
-      data_validade: formValue.sem_validade ? null : formValue.data_validade || null,
-      observacoes: formValue.observacoes || '',
-      consumos: formValue.consumos.map((consumo) => ({
-        insumo_estoque_id: Number(consumo.insumo_estoque_id),
-        quantidade_consumida: Number(consumo.quantidade_consumida),
-      })),
-    };
   }
 }

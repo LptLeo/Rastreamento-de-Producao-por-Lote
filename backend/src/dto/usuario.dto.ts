@@ -1,16 +1,22 @@
 import { z } from 'zod';
 import { PerfilUsuario } from '../entities/Usuario.js';
 import { PaginacaoQueryDto } from './paginacao.dto.js';
+import { env } from '../config/env.js';
 
 const perfilUsuario = z.enum(
   [PerfilUsuario.GESTOR, PerfilUsuario.INSPETOR, PerfilUsuario.OPERADOR],
   'Perfil inválido',
 );
 
+const senhaSchema = z
+  .string()
+  .min(env.SENHA_MIN_LENGTH, `Senha deve ter no mínimo ${env.SENHA_MIN_LENGTH} caracteres`)
+  .max(env.SENHA_MAX_LENGTH, `Senha deve ter no máximo ${env.SENHA_MAX_LENGTH} caracteres`);
+
 export const CreateUsuarioDto = z.object({
   email: z.email('E-mail inválido'),
   nome: z.string().min(1, 'Nome é obrigatório'),
-  senha: z.string().min(8, 'Senha deve ter no mínimo 8 caracteres'),
+  senha: senhaSchema,
   perfil: perfilUsuario,
   ativo: z.boolean().default(true),
 });
@@ -23,8 +29,8 @@ export const UpdateUsuarioDto = z.object({
 });
 
 export const UpdateSenhaDto = z.object({
-  senha_atual: z.string().min(8, 'Senha atual é obrigatória'),
-  nova_senha: z.string().min(8, 'Nova senha deve ter no mínimo 8 caracteres'),
+  senha_atual: z.string().min(1, 'Senha atual é obrigatória'),
+  nova_senha: senhaSchema,
 });
 
 export const ListUsuariosQueryDto = PaginacaoQueryDto.extend({

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import type { Produto } from '../../../../../../shared/models/lote.models.js';
+import type { Produto, ReceitaItem, MateriaPrima } from '../../../../../../shared/models/lote.models.js';
 
 @Component({
   selector: 'app-produto-receita',
@@ -11,8 +11,8 @@ import type { Produto } from '../../../../../../shared/models/lote.models.js';
 export class ProdutoReceitaComponent {
   @Input() produto!: Produto;
   @Input() modoEdicao: boolean = false;
-  @Input() receitaEditada: any[] = [];
-  @Input() mpDisponiveis: any[] = [];
+  @Input() receitaEditada: ReceitaItem[] = [];
+  @Input() mpDisponiveis: MateriaPrima[] = [];
   @Input() salvando: boolean = false;
 
   @Output() iniciarEdicao = new EventEmitter<void>();

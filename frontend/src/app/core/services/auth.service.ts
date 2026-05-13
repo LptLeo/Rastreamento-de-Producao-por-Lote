@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
 import { catchError, of, ReplaySubject, tap } from 'rxjs';
 import { SseClientService } from './sse-client.service.js';
+import { NotificacaoService } from './notificacao/notificacao.service.js';
 
 export interface UsuarioInfo {
   id: number;
@@ -18,6 +19,7 @@ export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
   private sseClientService = inject(SseClientService);
+  private notificacaoService = inject(NotificacaoService);
   private readonly AUTH_URL = `${environment.apiUrl}/auth`;
 
   private _tokenAcesso = signal<string>('');
@@ -31,35 +33,33 @@ export class AuthService {
     this.usuario.set(usuario);
   }
 
+  private processarSucessoAuth(tokenAcesso: string) {
+    const usuario = this.decodificarUsuarioDoToken(tokenAcesso);
+    this.setSessao(tokenAcesso, usuario);
+    // Inicia conexões globais após autenticação bem-sucedida
+    this.sseClientService.iniciar();
+    this.notificacaoService.iniciarPolling();
+  }
+
   silentRefresh() {
     return this.http
       .post<{ tokenAcesso: string }>(`${this.AUTH_URL}/refresh`, {}, { withCredentials: true })
       .pipe(
-        tap((res) => {
-          const usuario = this.decodificarUsuarioDoToken(res.tokenAcesso);
-          this.setSessao(res.tokenAcesso, usuario);
-          // Reabre a conexão SSE com novo ticket (token foi renovado)
-          this.sseClientService.iniciar();
-        }),
+        tap((res) => this.processarSucessoAuth(res.tokenAcesso)),
         catchError((err) => {
           this.logoutLocal();
           throw err;
-        })
-      )
+        }),
+      );
   }
 
-  login(credentials: { email: string, senha: string }) {
+  login(credentials: { email: string; senha: string }) {
     return this.http
-      .post<{ tokenAcesso: string }>(`${this.AUTH_URL}/login`, credentials, { withCredentials: true })
-      .pipe(
-        tap((res) => {
-          const usuario = this.decodificarUsuarioDoToken(res.tokenAcesso);
-          this.setSessao(res.tokenAcesso, usuario);
-          // Abre a conexão SSE após login bem-sucedido
-          this.sseClientService.iniciar();
-        })
-      )
-  };
+      .post<{ tokenAcesso: string }>(`${this.AUTH_URL}/login`, credentials, {
+        withCredentials: true,
+      })
+      .pipe(tap((res) => this.processarSucessoAuth(res.tokenAcesso)));
+  }
 
   logout() {
     this.http
@@ -94,9 +94,9 @@ export class AuthService {
   }
 
   logoutLocal() {
-    // Fecha a conexão SSE ANTES de limpar o token
-    // Garante que nenhuma tentativa de reconexão ocorra com token inválido
+    // Desliga todos os serviços globais que dependem de sessão ativa
     this.sseClientService.fechar();
+    this.notificacaoService.pararPolling();
     this.setSessao('', null);
   }
 

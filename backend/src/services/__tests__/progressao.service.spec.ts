@@ -1,6 +1,8 @@
 import { jest } from '@jest/globals';
 import { LoteStatus } from '../../entities/Lote.js';
 
+type JestMock = ReturnType<typeof jest.fn>;
+
 const mockLoteRepo = { find: jest.fn(), save: jest.fn() };
 const mockNotificacaoService = { criarNotificacaoParaPerfis: jest.fn() };
 
@@ -17,7 +19,7 @@ jest.unstable_mockModule('../notificacao.service.js', () => ({
 const { ProgressaoService } = await import('../progressao.service.js');
 
 describe('ProgressaoService', () => {
-  let service: any;
+  let service: InstanceType<typeof ProgressaoService>;
 
   beforeEach(() => {
     jest.clearAllMocks();

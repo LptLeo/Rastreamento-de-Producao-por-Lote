@@ -1,5 +1,6 @@
-import { Component, Input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import type { MateriaPrima } from '../../../../shared/models/lote.models.js';
 
 @Component({
   selector: 'app-catalogo-table',
@@ -8,6 +9,6 @@ import { CommonModule } from '@angular/common';
   templateUrl: './catalogo-table.component.html',
 })
 export class CatalogoTableComponent {
-  @Input() catalogo: any[] = [];
-  @Input() carregando: boolean = false;
+  catalogo = input<MateriaPrima[]>([]);
+  carregando = input<boolean>(false);
 }

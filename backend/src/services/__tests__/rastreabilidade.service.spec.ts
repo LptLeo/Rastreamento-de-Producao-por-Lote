@@ -1,17 +1,21 @@
 import { jest } from '@jest/globals';
 import { AppError } from '../../errors/AppError.js';
 import { PerfilUsuario } from '../../entities/Usuario.js';
+import type { Requisitante } from '../../utils/auth.utils.js';
+
+type JestMock = ReturnType<typeof jest.fn>;
 
 const mockLoteRepo = { createQueryBuilder: jest.fn() };
 const mockInsumoRepo = { createQueryBuilder: jest.fn(), findOne: jest.fn() };
 const mockConsumoRepo = { createQueryBuilder: jest.fn() };
 
 const mockAppDataSource = {
-  getRepository: jest.fn((entity: any) => {
-    if (entity.name === 'Lote' || entity === 'Lote') return mockLoteRepo;
-    if (entity.name === 'InsumoEstoque' || entity === 'InsumoEstoque') return mockInsumoRepo;
-    if (entity.name === 'ConsumoInsumo' || entity === 'ConsumoInsumo') return mockConsumoRepo;
-    return {} as any;
+  getRepository: jest.fn((entity: { name?: string } | string | unknown) => {
+    const name = (entity as { name?: string }).name || (entity as string);
+    if (name === 'Lote') return mockLoteRepo;
+    if (name === 'InsumoEstoque') return mockInsumoRepo;
+    if (name === 'ConsumoInsumo') return mockConsumoRepo;
+    return {};
   }),
 };
 
@@ -22,7 +26,9 @@ jest.unstable_mockModule('../../config/AppDataSource.js', () => ({
 const { RastreabilidadeService } = await import('../rastreabilidade.service.js');
 
 describe('RastreabilidadeService', () => {
-  let service: any;
+  let service: InstanceType<typeof RastreabilidadeService>;
+  const req: Requisitante = { id: 1, perfil: PerfilUsuario.GESTOR };
+  const query = { pagina: 1, limite: 10 };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,8 +36,6 @@ describe('RastreabilidadeService', () => {
   });
 
   describe('consultar', () => {
-    const req = { id: 1, perfil: PerfilUsuario.GESTOR };
-    const query = { pagina: 1, limite: 10 };
 
     it('deve chamar consultarPorLote quando o termo inicia com LOT-', async () => {
       const mockQB = {

@@ -288,10 +288,10 @@
           }
 
           <div formArrayName="consumos" class="flex flex-col gap-4">
-            @for (consumo of consumosArray.controls; track consumo; let i = $index) {
+            @for (consumo of consumosArray.controls; track i; let i = $index) {
               <app-lote-insumo-item
-                [formGroup]="$any(consumo)"
-                [insumosDisponiveis]="getInsumosParaMP(consumo.get('materia_prima_id')?.value)"
+                [formGroup]="consumo"
+                [insumosDisponiveis]="getInsumosParaMP(consumo.controls.materia_prima_id.value)"
               >
               </app-lote-insumo-item>
             }

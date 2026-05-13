@@ -1,11 +1,10 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { NgIf, DatePipe } from '@angular/common';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.js';
 import {
   UsuarioService,
-  UsuarioPerfil,
-  UsuarioStats,
 } from '../../core/services/usuario.service.js';
 import { AuthService } from '../../core/services/auth.service.js';
 import { forkJoin, finalize } from 'rxjs';
@@ -17,14 +16,25 @@ import { forkJoin, finalize } from 'rxjs';
   templateUrl: './perfil.html',
   styleUrl: './perfil.css',
 })
-export class Perfil implements OnInit {
+export class Perfil {
   private usuarioService = inject(UsuarioService);
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
 
-  perfil = signal<UsuarioPerfil | null>(null);
-  stats = signal<UsuarioStats | null>(null);
-  loading = signal(true);
+  perfilResource = rxResource({
+    params: () => this.authService.usuario()?.id,
+    stream: ({ params: id }) => {
+      if (!id) throw new Error('Usuário não autenticado');
+      return forkJoin({
+        perfil: this.usuarioService.getPerfil(id),
+        stats: this.usuarioService.getStats(id),
+      });
+    }
+  });
+
+  perfil = computed(() => this.perfilResource.value()?.perfil ?? null);
+  stats = computed(() => this.perfilResource.value()?.stats ?? null);
+  loading = this.perfilResource.isLoading;
 
   isOperador = computed(() => this.perfil()?.perfil === 'operador');
   isInspetor = computed(() => this.perfil()?.perfil === 'inspetor');
@@ -51,35 +61,17 @@ export class Perfil implements OnInit {
     nova_senha: ['', [Validators.required, Validators.minLength(8)]],
   });
 
-  ngOnInit() {
-    this.carregarDados();
-  }
-
-  carregarDados() {
-    this.loading.set(true);
-    const user = this.authService.usuario();
-    if (user?.id) {
-      forkJoin({
-        perfil: this.usuarioService.getPerfil(user.id),
-        stats: this.usuarioService.getStats(user.id),
-      }).subscribe({
-        next: (res) => {
-          this.perfil.set(res.perfil);
-          this.stats.set(res.stats);
-
-          this.formPerfil.patchValue({
-            nome: res.perfil.nome,
-            email: res.perfil.email,
-          });
-
-          this.loading.set(false);
-        },
-        error: (err) => {
-          console.error('Erro ao carregar perfil', err);
-          this.loading.set(false);
-        },
-      });
-    }
+  constructor() {
+    // Sincroniza o formulário quando o perfil carregar
+    effect(() => {
+      const p = this.perfil();
+      if (p && !this.isEditingPerfil()) {
+        this.formPerfil.patchValue({
+          nome: p.nome,
+          email: p.email,
+        });
+      }
+    });
   }
 
   toggleEditPerfil() {
@@ -124,16 +116,10 @@ export class Perfil implements OnInit {
       .updatePerfil(currentUserId, payload)
       .pipe(finalize(() => this.salvandoPerfil.set(false)))
       .subscribe({
-        next: (atualizado) => {
-          this.perfil.set(atualizado);
+        next: () => {
+          this.perfilResource.reload();
           this.isEditingPerfil.set(false);
           this.sucessoPerfil.set('Perfil atualizado com sucesso.');
-
-          // Atualiza a visualização do header atualizando o sinal local no authService se aplicável
-          // Como o authService apenas tem o payload básico decodificado do JWT, uma alteração de nome/email
-          // não refletirá no Header até o próximo login (pois o JWT precisaria ser renovado).
-          // Para forçar a renovação local (se a API suportar) precisaria chamar o refresh ou relogar,
-          // mas vamos apenas exibir o sucesso para o usuário.
         },
         error: (err) => {
           this.erroPerfil.set(err.error?.message || 'Falha ao atualizar o perfil.');

@@ -38,7 +38,6 @@ export interface Produto {
   percentual_ressalva: number;
   ativo: boolean;
   receita: ReceitaItem[];
-  lotes?: any[];
   criadoPor?: { nome: string };
   criado_em: string;
   atualizado_em: string;
@@ -107,6 +106,28 @@ export interface SugestaoItem {
   label: string;
   sublabel: string;
   status?: LoteStatus;
+}
+
+// ── DTOs de Operação ──
+
+export interface CriarLoteConsumoDTO {
+  insumo_estoque_id: number;
+  quantidade_consumida: number;
+}
+
+export interface CriarLoteDTO {
+  produto_id: number;
+  data_producao: string;
+  turno: 'manha' | 'tarde' | 'noite';
+  quantidade_planejada: number;
+  data_validade: string | null;
+  observacoes?: string;
+  consumos: CriarLoteConsumoDTO[];
+}
+
+export interface RegistrarInspecaoDTO {
+  quantidade_reprovada: number;
+  descricao_desvio?: string;
 }
 
 // ──────────────────────────────────────────────
