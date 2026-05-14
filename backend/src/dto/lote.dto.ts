@@ -13,8 +13,8 @@ const turnoSchema = z.enum(['manha', 'tarde', 'noite'], {
 
 /** Cada item de consumo vincula um lote de InsumoEstoque à ordem de produção */
 const consumoItemSchema = z.object({
-  insumo_estoque_id: z.number().int().positive('ID do lote de insumo inválido.'),
-  quantidade_consumida: z.number().positive('A quantidade deve ser maior que zero.'),
+  insumo_estoque_id: z.coerce.number().int().positive('ID do lote de insumo inválido.'),
+  quantidade_consumida: z.coerce.number().positive('A quantidade deve ser maior que zero.'),
 });
 
 export const criarLoteSchema = z.object({

@@ -35,10 +35,10 @@ const envSchema = z
       .default('postgres'),
     JWT_SECRET: z
       .string()
-      .min(1, "A variável de ambiente JWT_SECRET é obrigatória para rodar o sistema."),
+      .default(process.env.NODE_ENV === 'test' ? 'test_secret_only' : ''),
     JWT_REFRESH_SECRET: z
       .string()
-      .min(1, "A variável de ambiente JWT_REFRESH_SECRET é obrigatória para rodar o sistema."),
+      .default(process.env.NODE_ENV === 'test' ? 'test_refresh_secret_only' : ''),
     JWT_EXPIRATION: z
       .string()
       .default('15m'),

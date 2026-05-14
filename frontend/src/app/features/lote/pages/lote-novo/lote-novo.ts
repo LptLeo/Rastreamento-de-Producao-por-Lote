@@ -200,7 +200,10 @@ export class LoteNovo implements OnInit {
     /** Pré-preenche o produto se vier via Query Param */
     const produtoIdParam = this.route.snapshot.queryParamMap.get('produtoId');
     if (produtoIdParam) {
-      this.form.controls.produto_id.setValue(Number(produtoIdParam));
+      const pid = Number(produtoIdParam);
+      if (!isNaN(pid) && pid > 0) {
+        this.form.controls.produto_id.setValue(pid);
+      }
     }
   }
 
@@ -245,8 +248,8 @@ export class LoteNovo implements OnInit {
       data_validade: formValue.sem_validade ? null : formValue.data_validade || null,
       observacoes: formValue.observacoes,
       consumos: formValue.consumos.map(c => ({
-        insumo_estoque_id: c.insumo_estoque_id,
-        quantidade_consumida: c.quantidade_consumida
+        insumo_estoque_id: Number(c.insumo_estoque_id),
+        quantidade_consumida: Number(c.quantidade_consumida),
       }))
     };
 
@@ -258,7 +261,21 @@ export class LoteNovo implements OnInit {
           this.router.navigate(['/app/lote', loteGerado.id]);
         },
         error: (err) => {
-          this.erro.set(err.error?.message || 'Não foi possível criar o lote.');
+          console.error('[LoteNovo] Erro ao criar lote:', err);
+          
+          // Se for erro de validação do backend (400) com detalhes por campo
+          if (err.status === 400 && err.error?.details) {
+            console.table(err.error.details);
+            const backendErrors: Record<string, string> = {};
+            err.error.details.forEach((e: any) => {
+              const path = e.campo || 'geral';
+              backendErrors[path] = e.mensagem;
+            });
+            this.fieldErrors.set(backendErrors);
+            this.erro.set('Erro de validação no servidor. Verifique os campos destacados.');
+          } else {
+            this.erro.set(err.error?.message || 'Não foi possível criar o lote. Verifique se há estoque suficiente.');
+          }
         },
       });
   }
